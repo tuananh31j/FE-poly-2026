@@ -1,0 +1,27 @@
+<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg2" x1="36" y1="38" x2="1560" y2="592" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09203D"/>
+      <stop offset="0.58" stop-color="#123C6E"/>
+      <stop offset="1" stop-color="#1D5B97"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#bg2)"/>
+  <path d="M0 520C220 448 400 438 592 518C772 594 940 612 1140 560C1292 520 1450 474 1600 500V620H0V520Z" fill="#0B274A" fill-opacity="0.65"/>
+
+  <circle cx="1220" cy="212" r="94" fill="#F8FAFC"/>
+  <circle cx="1220" cy="212" r="31" fill="#E9BA5E"/>
+  <circle cx="1328" cy="318" r="58" fill="#F1F5F9"/>
+  <circle cx="1328" cy="318" r="18" fill="#1E293B"/>
+  <circle cx="1118" cy="320" r="44" fill="#CBD5E1"/>
+  <circle cx="1118" cy="320" r="12" fill="#0F172A"/>
+  <rect x="1010" y="420" width="430" height="15" rx="7.5" transform="rotate(-20 1010 420)" fill="#E2E8F0"/>
+
+  <text x="120" y="212" fill="#F8FAFC" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="58" font-weight="700">
+    Trusted Club-Level Accessories
+  </text>
+  <text x="120" y="286" fill="#D5E6FF" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="31" font-weight="500">
+    Cases, gloves, chalk and pro tools curated by Golden Billiards
+  </text>
+</svg>

@@ -1,0 +1,29 @@
+<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="0" y1="0" x2="1600" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#081B35"/>
+      <stop offset="0.55" stop-color="#0F325E"/>
+      <stop offset="1" stop-color="#245B98"/>
+    </linearGradient>
+    <radialGradient id="spot1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1290 115) rotate(112) scale(500 620)">
+      <stop stop-color="#F5D97A" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#F5D97A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#bg1)"/>
+  <rect width="1600" height="620" fill="url(#spot1)"/>
+
+  <circle cx="1180" cy="350" r="182" fill="#0B2A4F" fill-opacity="0.95"/>
+  <circle cx="1180" cy="350" r="88" fill="#F8FAFC"/>
+  <circle cx="1180" cy="350" r="26" fill="#E7B95B"/>
+  <rect x="930" y="482" width="470" height="20" rx="10" transform="rotate(-25 930 482)" fill="#E2E8F0"/>
+  <circle cx="1352" cy="270" r="13" fill="#F2C35B"/>
+
+  <text x="120" y="208" fill="#F8FAFC" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="64" font-weight="700">
+    Golden Billiards
+  </text>
+  <text x="120" y="282" fill="#D8E7FF" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="32" font-weight="500">
+    Signature cue collections for committed players
+  </text>
+</svg>

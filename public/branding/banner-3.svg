@@ -1,0 +1,33 @@
+<svg width="1600" height="620" viewBox="0 0 1600 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="1600" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1F3C"/>
+      <stop offset="0.5" stop-color="#16457A"/>
+      <stop offset="1" stop-color="#2A6AA6"/>
+    </linearGradient>
+    <linearGradient id="line3" x1="0" y1="0" x2="1600" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.2" stop-color="#FFFFFF" stop-opacity="0.36"/>
+      <stop offset="0.8" stop-color="#FFFFFF" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="620" fill="url(#bg3)"/>
+  <path d="M0 420H1600" stroke="url(#line3)" stroke-width="2"/>
+  <path d="M0 470H1600" stroke="url(#line3)" stroke-width="1"/>
+  <path d="M0 370H1600" stroke="url(#line3)" stroke-width="1"/>
+
+  <circle cx="1210" cy="330" r="142" fill="#0A2A50" fill-opacity="0.92"/>
+  <circle cx="1210" cy="330" r="63" fill="#F8FAFC"/>
+  <circle cx="1210" cy="330" r="20" fill="#E8BA5C"/>
+  <rect x="928" y="490" width="500" height="18" rx="9" transform="rotate(-30 928 490)" fill="#E2E8F0"/>
+  <circle cx="1364" cy="238" r="12" fill="#D39B43"/>
+
+  <text x="120" y="206" fill="#F8FAFC" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="58" font-weight="700">
+    Championship Season Offers
+  </text>
+  <text x="120" y="280" fill="#CFE5FF" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="31" font-weight="500">
+    Premium bundles and exclusive pricing from Golden Billiards
+  </text>
+</svg>

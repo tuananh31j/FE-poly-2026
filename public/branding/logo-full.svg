@@ -1,0 +1,26 @@
+<svg width="560" height="130" viewBox="0 0 560 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="full-bg" x1="8" y1="8" x2="116" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A2547"/>
+      <stop offset="1" stop-color="#143E73"/>
+    </linearGradient>
+    <linearGradient id="full-gold" x1="42" y1="28" x2="86" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5D97A"/>
+      <stop offset="1" stop-color="#B9892E"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="104" height="104" rx="28" fill="url(#full-bg)"/>
+  <circle cx="60" cy="60" r="32" fill="#0C2A51"/>
+  <circle cx="60" cy="60" r="20" fill="none" stroke="url(#full-gold)" stroke-width="8"/>
+  <circle cx="60" cy="60" r="7" fill="#F8FAFC"/>
+  <rect x="29" y="75" width="66" height="7" rx="3.5" transform="rotate(-38 29 75)" fill="#E2E8F0"/>
+  <circle cx="83" cy="37" r="4.5" fill="#F2C35B"/>
+
+  <text x="136" y="54" fill="#0F2746" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="34" font-weight="700">
+    Golden Billiards
+  </text>
+  <text x="136" y="84" fill="#475569" font-family="Montserrat, Segoe UI, Arial, sans-serif" font-size="16" font-weight="500">
+    Premium Gear For Serious Cue Players
+  </text>
+</svg>
