@@ -137,8 +137,7 @@ export const PrivateLayout = () => {
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_COLORS ||
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_SIZES
     const shouldOpenProducts =
-      selectedMenuKey === MENU_KEYS.PRODUCTS_LIST ||
-      selectedMenuKey === MENU_KEYS.PRODUCTS_CREATE
+      selectedMenuKey === MENU_KEYS.PRODUCTS_LIST || selectedMenuKey === MENU_KEYS.PRODUCTS_CREATE
     const shouldOpenAttributes =
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_CATEGORIES ||
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_BRANDS ||
@@ -204,18 +203,12 @@ export const PrivateLayout = () => {
           onOpenChange={setManualOpenKeys}
           items={[
             {
-              key: SUBMENU_KEYS.OVERVIEW,
-              label: 'Tổng quan',
-              children: [
-                {
-                  key: MENU_KEYS.CENTER,
-                  label: <Link to={ROUTE_PATHS.DASHBOARD_CENTER}>Trung tâm</Link>,
-                },
-                {
-                  key: MENU_KEYS.STATISTICS,
-                  label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
-                },
-              ],
+              key: MENU_KEYS.CENTER,
+              label: <Link to={ROUTE_PATHS.DASHBOARD_CENTER}>Trung tâm</Link>,
+            },
+            {
+              key: MENU_KEYS.STATISTICS,
+              label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
             },
             {
               key: SUBMENU_KEYS.SALES,
@@ -255,7 +248,11 @@ export const PrivateLayout = () => {
                         children: [
                           {
                             key: MENU_KEYS.PRODUCTS_LIST,
-                            label: <Link to={buildDashboardProductsPath('list')}>Danh sách sản phẩm</Link>,
+                            label: (
+                              <Link to={buildDashboardProductsPath('list')}>
+                                Danh sách sản phẩm
+                              </Link>
+                            ),
                           },
                           {
                             key: MENU_KEYS.PRODUCTS_CREATE,
@@ -269,11 +266,15 @@ export const PrivateLayout = () => {
                         children: [
                           {
                             key: MENU_KEYS.ATTRIBUTE_CATEGORIES,
-                            label: <Link to={buildDashboardMasterDataPath('categories')}>Danh mục</Link>,
+                            label: (
+                              <Link to={buildDashboardMasterDataPath('categories')}>Danh mục</Link>
+                            ),
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_BRANDS,
-                            label: <Link to={buildDashboardMasterDataPath('brands')}>Thương hiệu</Link>,
+                            label: (
+                              <Link to={buildDashboardMasterDataPath('brands')}>Thương hiệu</Link>
+                            ),
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_COLORS,
@@ -281,7 +282,9 @@ export const PrivateLayout = () => {
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_SIZES,
-                            label: <Link to={buildDashboardMasterDataPath('sizes')}>Kích thước</Link>,
+                            label: (
+                              <Link to={buildDashboardMasterDataPath('sizes')}>Kích thước</Link>
+                            ),
                           },
                         ],
                       },
