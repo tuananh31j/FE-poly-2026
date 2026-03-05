@@ -1,3 +1,24 @@
+import {
+  AppstoreOutlined,
+  BarChartOutlined,
+  BgColorsOutlined,
+  DashboardOutlined,
+  FolderOpenOutlined,
+  GiftOutlined,
+  MessageOutlined,
+  OrderedListOutlined,
+  PlusSquareOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  ShoppingCartOutlined,
+  ShoppingOutlined,
+  StarOutlined,
+  TagOutlined,
+  TagsOutlined,
+  TeamOutlined,
+  TrademarkOutlined,
+  UnorderedListOutlined,
+} from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Menu, message, Typography } from 'antd'
 import { useMemo, useState } from 'react'
@@ -94,8 +115,12 @@ export const PrivateLayout = () => {
       return MENU_KEYS.ATTRIBUTE_CATEGORIES
     }
 
+    if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_PRODUCTS_CREATE)) {
+      return MENU_KEYS.PRODUCTS_CREATE
+    }
+
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_PRODUCTS)) {
-      return params.get('mode') === 'create' ? MENU_KEYS.PRODUCTS_CREATE : MENU_KEYS.PRODUCTS_LIST
+      return MENU_KEYS.PRODUCTS_LIST
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_VOUCHERS)) {
@@ -191,9 +216,11 @@ export const PrivateLayout = () => {
     <Layout className="min-h-screen">
       <Sider breakpoint="lg" collapsedWidth="0" theme="light" width={240}>
         <div className="border-b border-slate-200 px-5 py-4">
-          <Typography.Title level={4} className="!mb-0 !text-blue-700">
-            Golden Billiards
-          </Typography.Title>
+          <Link to="/">
+            <Typography.Title level={4} className="!mb-0 !text-blue-700">
+              Golden Billiards
+            </Typography.Title>
+          </Link>
         </div>
 
         <Menu
@@ -204,32 +231,39 @@ export const PrivateLayout = () => {
           items={[
             {
               key: MENU_KEYS.CENTER,
+              icon: <DashboardOutlined />,
               label: <Link to={ROUTE_PATHS.DASHBOARD_CENTER}>Trung tâm</Link>,
             },
             {
               key: MENU_KEYS.STATISTICS,
+              icon: <BarChartOutlined />,
               label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
             },
             {
               key: SUBMENU_KEYS.SALES,
+              icon: <ShoppingCartOutlined />,
               label: 'Bán hàng',
               children: [
                 {
                   key: MENU_KEYS.ORDERS,
+                  icon: <OrderedListOutlined />,
                   label: <Link to={ROUTE_PATHS.DASHBOARD_ORDERS}>Đơn hàng</Link>,
                 },
                 {
                   key: MENU_KEYS.REVIEWS,
+                  icon: <StarOutlined />,
                   label: <Link to={ROUTE_PATHS.DASHBOARD_REVIEWS}>Đánh giá</Link>,
                 },
                 {
                   key: MENU_KEYS.COMMENTS,
+                  icon: <MessageOutlined />,
                   label: <Link to={ROUTE_PATHS.DASHBOARD_COMMENTS}>Bình luận</Link>,
                 },
                 ...(user?.role === 'admin'
                   ? [
                       {
                         key: MENU_KEYS.VOUCHERS,
+                        icon: <GiftOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_VOUCHERS}>Voucher</Link>,
                       },
                     ]
@@ -240,14 +274,17 @@ export const PrivateLayout = () => {
               ? [
                   {
                     key: SUBMENU_KEYS.CATALOG,
+                    icon: <AppstoreOutlined />,
                     label: 'Catalog',
                     children: [
                       {
                         key: SUBMENU_KEYS.PRODUCTS,
+                        icon: <ShoppingOutlined />,
                         label: 'Sản phẩm',
                         children: [
                           {
                             key: MENU_KEYS.PRODUCTS_LIST,
+                            icon: <UnorderedListOutlined />,
                             label: (
                               <Link to={buildDashboardProductsPath('list')}>
                                 Danh sách sản phẩm
@@ -256,32 +293,38 @@ export const PrivateLayout = () => {
                           },
                           {
                             key: MENU_KEYS.PRODUCTS_CREATE,
+                            icon: <PlusSquareOutlined />,
                             label: <Link to={buildDashboardProductsPath('create')}>Thêm mới</Link>,
                           },
                         ],
                       },
                       {
                         key: SUBMENU_KEYS.ATTRIBUTES,
+                        icon: <TagsOutlined />,
                         label: 'Thuộc tính',
                         children: [
                           {
                             key: MENU_KEYS.ATTRIBUTE_CATEGORIES,
+                            icon: <FolderOpenOutlined />,
                             label: (
                               <Link to={buildDashboardMasterDataPath('categories')}>Danh mục</Link>
                             ),
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_BRANDS,
+                            icon: <TrademarkOutlined />,
                             label: (
                               <Link to={buildDashboardMasterDataPath('brands')}>Thương hiệu</Link>
                             ),
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_COLORS,
+                            icon: <BgColorsOutlined />,
                             label: <Link to={buildDashboardMasterDataPath('colors')}>Màu sắc</Link>,
                           },
                           {
                             key: MENU_KEYS.ATTRIBUTE_SIZES,
+                            icon: <TagOutlined />,
                             label: (
                               <Link to={buildDashboardMasterDataPath('sizes')}>Kích thước</Link>
                             ),
@@ -292,14 +335,17 @@ export const PrivateLayout = () => {
                   },
                   {
                     key: SUBMENU_KEYS.SYSTEM,
+                    icon: <SettingOutlined />,
                     label: 'Hệ thống',
                     children: [
                       {
                         key: MENU_KEYS.ACCOUNTS,
+                        icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
                       },
                       {
                         key: MENU_KEYS.ROLES,
+                        icon: <SafetyCertificateOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_USERS}>Phân quyền</Link>,
                       },
                     ],

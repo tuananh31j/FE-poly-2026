@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
   Card,
+  Checkbox,
   Divider,
   Empty,
   Form,
@@ -29,13 +30,13 @@ import {
   listAvailableCheckoutVouchers,
   listMyAddresses,
 } from '@/features/account/api/account.api'
-import type { CheckoutVoucherItem, UpsertAddressPayload } from '@/features/account/model/account.types'
+import type {
+  CheckoutVoucherItem,
+  UpsertAddressPayload,
+} from '@/features/account/model/account.types'
 import { getMyCart } from '@/features/cart/api/cart.api'
 import { queryKeys } from '@/shared/api/queryKeys'
-import {
-  buildProductDetailPath,
-  ROUTE_PATHS,
-} from '@/shared/constants/routes'
+import { buildProductDetailPath, ROUTE_PATHS } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
@@ -89,8 +90,13 @@ export const CheckoutPage = () => {
   const [manualAddressId, setManualAddressId] = useState<string | null>(null)
   const [createAddressModalOpen, setCreateAddressModalOpen] = useState(false)
   const [voucherModalOpen, setVoucherModalOpen] = useState(false)
+  const [termsModalOpen, setTermsModalOpen] = useState(false)
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false)
 
-  const requestedVariantIds = useMemo(() => resolveVariantIdsFromQuery(searchParams), [searchParams])
+  const requestedVariantIds = useMemo(
+    () => resolveVariantIdsFromQuery(searchParams),
+    [searchParams]
+  )
 
   const cartQuery = useQuery({
     queryKey: queryKeys.cart.me,
@@ -148,6 +154,22 @@ export const CheckoutPage = () => {
     const normalizedCode = normalizeVoucherCode(voucherCode)
     return (availableVouchersQuery.data ?? []).find((item) => item.code === normalizedCode)
   }, [availableVouchersQuery.data, voucherCode])
+
+  const sortedAvailableVouchers = useMemo(() => {
+    return [...(availableVouchersQuery.data ?? [])].sort((firstVoucher, secondVoucher) => {
+      if (secondVoucher.estimatedDiscount !== firstVoucher.estimatedDiscount) {
+        return secondVoucher.estimatedDiscount - firstVoucher.estimatedDiscount
+      }
+
+      if (secondVoucher.discountValue !== firstVoucher.discountValue) {
+        return secondVoucher.discountValue - firstVoucher.discountValue
+      }
+
+      return (
+        dayjs(firstVoucher.expirationDate).valueOf() - dayjs(secondVoucher.expirationDate).valueOf()
+      )
+    })
+  }, [availableVouchersQuery.data])
 
   const estimatedDiscount = selectedVoucher?.estimatedDiscount ?? 0
   const estimatedTotalAmount = getEstimatedTotalAmount(selectedSubtotal, estimatedDiscount)
@@ -219,6 +241,12 @@ export const CheckoutPage = () => {
       return
     }
 
+    if (!hasAcceptedTerms) {
+      void message.warning('Vui lòng đồng ý điều khoản của cửa hàng trước khi đặt hàng')
+      setTermsModalOpen(true)
+      return
+    }
+
     createOrderMutation.mutate({
       addressId: selectedAddressId,
       paymentMethod,
@@ -227,7 +255,7 @@ export const CheckoutPage = () => {
     })
   }
 
-  const voucherCount = availableVouchersQuery.data?.length ?? 0
+  const voucherCount = sortedAvailableVouchers.length
 
   return (
     <div className="space-y-6 py-6">
@@ -287,16 +315,10 @@ export const CheckoutPage = () => {
                 </Button>
               }
             >
-              {addressesQuery.isLoading ? (
-                <Spin />
-              ) : null}
+              {addressesQuery.isLoading ? <Spin /> : null}
 
               {!addressesQuery.isLoading && addresses.length === 0 ? (
-                <Empty description="Bạn chưa có địa chỉ nhận hàng">
-                  <Button type="primary" icon={<PlusOutlined />} onClick={openCreateAddressModal}>
-                    Tạo địa chỉ
-                  </Button>
-                </Empty>
+                <Empty description="Bạn chưa có địa chỉ nhận hàng"></Empty>
               ) : null}
 
               {addresses.length > 0 ? (
@@ -314,7 +336,9 @@ export const CheckoutPage = () => {
                         hoverable
                         size="small"
                         className={`cursor-pointer border ${
-                          selectedAddressId === address.id ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200'
+                          selectedAddressId === address.id
+                            ? 'border-blue-500 bg-blue-50/40'
+                            : 'border-slate-200'
                         }`}
                         onClick={() => {
                           setManualAddressId(address.id)
@@ -456,7 +480,9 @@ export const CheckoutPage = () => {
                       </Tag>
                     </div>
                     <Typography.Text type="secondary" className="mt-2 block text-xs">
-                      HSD: {dayjs(selectedVoucher.expirationDate).format('DD/MM/YYYY HH:mm')}
+                      HSD: {dayjs(selectedVoucher.expirationDate).format('DD/MM/YYYY HH:mm')} · Tối
+                      đa / tài khoản: {selectedVoucher.maxUsagePerUser} · Còn:{' '}
+                      {selectedVoucher.remainingUsagePerUser}
                     </Typography.Text>
                   </div>
                 ) : null}
@@ -488,11 +514,35 @@ export const CheckoutPage = () => {
                 Tổng giảm giá là ước tính theo voucher đã chọn. Server sẽ kiểm tra lại khi đặt hàng.
               </Typography.Text>
 
+              <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                <Checkbox
+                  checked={hasAcceptedTerms}
+                  onChange={(event) => {
+                    setHasAcceptedTerms(event.target.checked)
+                  }}
+                >
+                  <Typography.Text className="text-xs">
+                    Tôi đã đọc và đồng ý với{' '}
+                    <Typography.Link
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        setTermsModalOpen(true)
+                      }}
+                    >
+                      điều khoản của cửa hàng
+                    </Typography.Link>
+                    .
+                  </Typography.Text>
+                </Checkbox>
+              </div>
+
               <Button
                 type="primary"
                 className="!mt-4 !w-full"
                 size="large"
                 loading={createOrderMutation.isPending}
+                disabled={!hasAcceptedTerms}
                 onClick={handlePlaceOrder}
               >
                 Đặt hàng
@@ -523,6 +573,7 @@ export const CheckoutPage = () => {
         >
           <Form.Item label="Nhãn địa chỉ" name="label">
             <Select
+              placeholder="Chọn nhãn địa chỉ"
               options={[
                 { value: 'home', label: 'Nhà riêng' },
                 { value: 'work', label: 'Văn phòng' },
@@ -535,7 +586,7 @@ export const CheckoutPage = () => {
             name="recipientName"
             rules={[{ required: true, message: 'Vui lòng nhập tên người nhận' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: Nguyễn Văn A" />
           </Form.Item>
 
           <Form.Item
@@ -543,7 +594,7 @@ export const CheckoutPage = () => {
             name="phone"
             rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: 09xxxxxxxx" />
           </Form.Item>
 
           <Form.Item
@@ -551,7 +602,7 @@ export const CheckoutPage = () => {
             name="street"
             rules={[{ required: true, message: 'Vui lòng nhập số nhà, tên đường' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: 123 Nguyễn Trãi" />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -560,14 +611,14 @@ export const CheckoutPage = () => {
               name="city"
               rules={[{ required: true, message: 'Vui lòng nhập tỉnh/thành phố' }]}
             >
-              <Input />
+              <Input placeholder="Ví dụ: TP. Hồ Chí Minh" />
             </Form.Item>
             <Form.Item
               label="Quận/Huyện"
               name="district"
               rules={[{ required: true, message: 'Vui lòng nhập quận/huyện' }]}
             >
-              <Input />
+              <Input placeholder="Ví dụ: Quận 3" />
             </Form.Item>
           </div>
 
@@ -576,7 +627,7 @@ export const CheckoutPage = () => {
             name="ward"
             rules={[{ required: true, message: 'Vui lòng nhập phường/xã' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: Phường Võ Thị Sáu" />
           </Form.Item>
 
           <Form.Item label="Đặt làm mặc định" name="isDefault" valuePropName="checked">
@@ -597,6 +648,62 @@ export const CheckoutPage = () => {
             </Button>
           </div>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Điều khoản của cửa hàng"
+        open={termsModalOpen}
+        destroyOnHidden
+        width={680}
+        onCancel={() => {
+          setTermsModalOpen(false)
+        }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setTermsModalOpen(false)
+            }}
+          >
+            Đóng
+          </Button>,
+          <Button
+            key="accept"
+            type="primary"
+            onClick={() => {
+              setHasAcceptedTerms(true)
+              setTermsModalOpen(false)
+            }}
+          >
+            Đồng ý điều khoản
+          </Button>,
+        ]}
+      >
+        <Space direction="vertical" size={10} className="w-full">
+          <Typography.Paragraph className="!mb-0 text-sm">
+            Vui lòng đọc kỹ các điều khoản trước khi xác nhận đặt hàng:
+          </Typography.Paragraph>
+
+          <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
+            <li>Đơn hàng chỉ được xác nhận khi thông tin nhận hàng và thanh toán hợp lệ.</li>
+            <li>
+              Voucher và ưu đãi được áp dụng theo điều kiện cụ thể, hệ thống sẽ kiểm tra lại tại
+              thời điểm tạo đơn.
+            </li>
+            <li>Thời gian giao hàng dự kiến phụ thuộc khu vực nhận và tình trạng tồn kho.</li>
+            <li>
+              Sản phẩm lỗi do nhà sản xuất hoặc vận chuyển được hỗ trợ đổi trả theo chính sách hiện
+              hành.
+            </li>
+            <li>
+              Với thanh toán online, đơn hàng chỉ hoàn tất khi cổng thanh toán trả về kết quả thành
+              công.
+            </li>
+            <li>
+              Thông tin cá nhân của khách hàng được bảo mật theo chính sách riêng tư của cửa hàng.
+            </li>
+          </ul>
+        </Space>
       </Modal>
 
       <Modal
@@ -621,7 +728,7 @@ export const CheckoutPage = () => {
 
         {!availableVouchersQuery.isLoading && voucherCount > 0 ? (
           <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
-            {(availableVouchersQuery.data ?? []).map((voucher) => (
+            {sortedAvailableVouchers.map((voucher) => (
               <Card key={voucher.id} size="small" className="border border-slate-200">
                 <div className="flex items-start justify-between gap-4">
                   <Space direction="vertical" size={2}>
@@ -640,7 +747,9 @@ export const CheckoutPage = () => {
                     ) : null}
                     <Typography.Text type="secondary" className="text-xs">
                       Đơn tối thiểu: {formatVndCurrency(voucher.minOrderValue)} · Còn lại:{' '}
-                      {voucher.remainingUsage} lượt · HSD:{' '}
+                      {voucher.remainingUsage} lượt · Tối đa / tài khoản: {voucher.maxUsagePerUser}{' '}
+                      · Bạn đã dùng: {voucher.usedCountByCurrentUser} · Còn:{' '}
+                      {voucher.remainingUsagePerUser} · HSD:{' '}
                       {dayjs(voucher.expirationDate).format('DD/MM/YYYY HH:mm')}
                     </Typography.Text>
                   </Space>

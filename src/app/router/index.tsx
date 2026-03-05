@@ -20,6 +20,7 @@ import { DashboardCenterPage } from '@/pages/dashboard/DashboardCenterPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { MasterDataManagementPage } from '@/pages/dashboard/MasterDataManagementPage'
 import { OrderManagementPage } from '@/pages/dashboard/OrderManagementPage'
+import { ProductCreatePage } from '@/pages/dashboard/ProductCreatePage'
 import { ProductManagementPage } from '@/pages/dashboard/ProductManagementPage'
 import { ReviewManagementPage } from '@/pages/dashboard/ReviewManagementPage'
 import { UserRoleManagementPage } from '@/pages/dashboard/UserRoleManagementPage'
@@ -150,6 +151,14 @@ export const router = createBrowserRouter([
       {
         path: 'comments',
         element: <CommentManagementPage />,
+      },
+      {
+        path: 'products/create',
+        element: (
+          <RequireAdmin>
+            <ProductCreatePage />
+          </RequireAdmin>
+        ),
       },
       {
         path: 'products',

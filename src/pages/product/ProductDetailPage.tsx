@@ -234,15 +234,15 @@ export const ProductDetailPage = () => {
     .filter((item) => item.id !== productId)
     .slice(0, 8)
 
-// worklog: 2026-03-04 21:11:32 | quochuy | refactor | handleSelectVariant
-// worklog: 2026-03-04 18:01:37 | trantu | cleanup | handleSelectVariant
+  // worklog: 2026-03-04 21:11:32 | quochuy | refactor | handleSelectVariant
+  // worklog: 2026-03-04 18:01:37 | trantu | cleanup | handleSelectVariant
   const handleSelectVariant = (variant: ProductVariantItem) => {
     setSelectedVariantId(variant.id)
     setPurchaseQuantity(1)
     carouselRef.current?.goTo(variantImageIndexMap.get(variant.id) ?? 0)
   }
 
-// worklog: 2026-03-04 14:54:46 | trantu | refactor | handleDecreaseQuantity
+  // worklog: 2026-03-04 14:54:46 | trantu | refactor | handleDecreaseQuantity
   const handleDecreaseQuantity = () => {
     setPurchaseQuantity((prev) => Math.max(1, prev - 1))
   }
@@ -624,9 +624,25 @@ export const ProductDetailPage = () => {
                     <Typography.Paragraph className="!mb-0">
                       {review.content || 'Không có nội dung'}
                     </Typography.Paragraph>
+
                     <Typography.Text type="secondary" className="text-xs">
                       {formatDateTime(review.createdAt)}
                     </Typography.Text>
+                    {review.replyContent ? (
+                      <div className="rounded-md border border-blue-100 bg-blue-50 px-3 py-2">
+                        <Typography.Text strong className="block text-xs text-blue-700">
+                          Phản hồi từ cửa hàng
+                        </Typography.Text>
+                        <Typography.Paragraph className="!mb-0 !mt-1 text-sm">
+                          {review.replyContent}
+                        </Typography.Paragraph>
+                        {review.repliedAt ? (
+                          <Typography.Text type="secondary" className="text-xs">
+                            {formatDateTime(review.repliedAt)}
+                          </Typography.Text>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </Space>
                 }
               />

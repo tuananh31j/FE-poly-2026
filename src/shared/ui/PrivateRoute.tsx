@@ -15,6 +15,7 @@ export const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const userRole = useAppSelector((state) => state.auth.user?.role)
   const authStatus = useAppSelector((state) => state.auth.status)
   const meQuery = useMeQuery()
+  const resolvedRole = userRole ?? meQuery.data?.role
 
   if (authStatus === 'idle' || authStatus === 'loading') {
     return <AppSpinner fullScreen />
@@ -24,11 +25,11 @@ export const PrivateRoute = ({ children }: PrivateRouteProps) => {
     return <Navigate to={ROUTE_PATHS.LOGIN} replace />
   }
 
-  if (!userRole && meQuery.isLoading) {
+  if (!resolvedRole && (meQuery.isPending || meQuery.isFetching)) {
     return <AppSpinner fullScreen />
   }
 
-  if (!isBackofficeRole(userRole)) {
+  if (!isBackofficeRole(resolvedRole)) {
     return <Navigate to={ROUTE_PATHS.ROOT} replace />
   }
 

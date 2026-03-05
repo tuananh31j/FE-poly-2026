@@ -109,7 +109,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
       {
         key: 'products-create',
         title: 'Thêm sản phẩm',
-        description: 'Tạo mới sản phẩm/variant ngay từ form quản lý.',
+        description: 'Tạo mới sản phẩm trên page riêng với form động cho biến thể.',
         to: buildDashboardProductsPath('create'),
         icon: <PlusCircleOutlined />,
         iconBackground: '#dbeafe',

@@ -148,7 +148,7 @@ export const UserRoleManagementPage = () => {
         key: 'user',
         render: (_, record) => (
           <Space direction="vertical" size={0}>
-            <Typography.Text strong>{record.fullName || record.username || 'N/A'}</Typography.Text>
+            <Typography.Text strong>{record.fullName || 'N/A'}</Typography.Text>
             <Typography.Text type="secondary" className="text-xs">
               {record.email}
             </Typography.Text>
@@ -167,7 +167,9 @@ export const UserRoleManagementPage = () => {
         dataIndex: 'role',
         key: 'role',
         width: 120,
-        render: (value: AdminUserItem['role']) => <Tag color={ROLE_COLORS[value]}>{ROLE_LABELS[value]}</Tag>,
+        render: (value: AdminUserItem['role']) => (
+          <Tag color={ROLE_COLORS[value]}>{ROLE_LABELS[value]}</Tag>
+        ),
       },
       {
         title: 'Ngày tạo',
@@ -194,9 +196,7 @@ export const UserRoleManagementPage = () => {
                 setUpdateRoleModalOpen(true)
               }}
               disabled={record.role === 'admin'}
-            >
-              Phân role
-            </Button>
+            ></Button>
 
             <Popconfirm
               title={`Xóa tài khoản ${record.email}?`}
@@ -213,9 +213,7 @@ export const UserRoleManagementPage = () => {
                 icon={<DeleteOutlined />}
                 loading={deleteUserMutation.isPending}
                 disabled={record.role === 'admin'}
-              >
-                Xóa
-              </Button>
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -226,7 +224,8 @@ export const UserRoleManagementPage = () => {
 
   const totalUsers = usersQuery.data?.totalItems ?? 0
   const staffCount = usersQuery.data?.items.filter((item) => item.role === 'staff').length ?? 0
-  const customerCount = usersQuery.data?.items.filter((item) => item.role === 'customer').length ?? 0
+  const customerCount =
+    usersQuery.data?.items.filter((item) => item.role === 'customer').length ?? 0
 
   return (
     <div className="space-y-5">
@@ -234,7 +233,8 @@ export const UserRoleManagementPage = () => {
         Admin - Quản lý phân role
       </Typography.Title>
       <Typography.Paragraph className="!mb-0" type="secondary">
-        Tạo tài khoản nhân sự và phân quyền giữa `customer` / `staff`. Role `admin` không tạo bằng UI.
+        Tạo tài khoản nhân sự và phân quyền giữa `customer` / `staff`. Role `admin` không tạo bằng
+        UI.
       </Typography.Paragraph>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -265,7 +265,7 @@ export const UserRoleManagementPage = () => {
           <Input.Search
             allowClear
             className="w-full md:max-w-sm"
-            placeholder="Tìm theo email, username, fullName"
+            placeholder="Tìm theo email, fullName"
             value={searchValue}
             onChange={(event) => {
               setSearchValue(event.target.value)
@@ -346,7 +346,7 @@ export const UserRoleManagementPage = () => {
               { type: 'email', message: 'Email không hợp lệ' },
             ]}
           >
-            <Input />
+            <Input placeholder="you@example.com" />
           </Form.Item>
 
           <Form.Item
@@ -357,19 +357,15 @@ export const UserRoleManagementPage = () => {
               { min: 8, message: 'Mật khẩu tối thiểu 8 ký tự' },
             ]}
           >
-            <Input.Password />
+            <Input.Password placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)" />
           </Form.Item>
 
           <Form.Item name="fullName" label="Họ tên">
-            <Input />
-          </Form.Item>
-
-          <Form.Item name="username" label="Username">
-            <Input />
+            <Input placeholder="Nguyễn Văn A" />
           </Form.Item>
 
           <Form.Item name="phone" label="Số điện thoại">
-            <Input />
+            <Input placeholder="09xxxxxxxx" />
           </Form.Item>
 
           <Form.Item
@@ -377,7 +373,7 @@ export const UserRoleManagementPage = () => {
             label="Role"
             rules={[{ required: true, message: 'Vui lòng chọn role' }]}
           >
-            <Select options={creatableRoleOptions} />
+            <Select placeholder="Chọn role" options={creatableRoleOptions} />
           </Form.Item>
 
           <div className="flex justify-end gap-2">
@@ -409,7 +405,9 @@ export const UserRoleManagementPage = () => {
       >
         <Space direction="vertical" size={12} className="w-full">
           <div>
-            <Typography.Text strong>{selectedUser?.fullName || selectedUser?.email}</Typography.Text>
+            <Typography.Text strong>
+              {selectedUser?.fullName || selectedUser?.email}
+            </Typography.Text>
             <Typography.Paragraph className="!mb-0" type="secondary">
               {selectedUser?.email}
             </Typography.Paragraph>
@@ -434,7 +432,7 @@ export const UserRoleManagementPage = () => {
               label="Role mới"
               rules={[{ required: true, message: 'Vui lòng chọn role' }]}
             >
-              <Select options={creatableRoleOptions} />
+              <Select placeholder="Chọn role mới" options={creatableRoleOptions} />
             </Form.Item>
 
             <div className="flex justify-end gap-2">

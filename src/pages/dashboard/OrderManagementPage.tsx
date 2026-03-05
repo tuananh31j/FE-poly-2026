@@ -23,10 +23,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { sumBy } from 'lodash'
 import { useMemo, useState } from 'react'
 
-import {
-  listAdminOrders,
-  updateAdminOrderStatus,
-} from '@/features/admin/api/order-management.api'
+import { listAdminOrders, updateAdminOrderStatus } from '@/features/admin/api/order-management.api'
 import type {
   AdminOrderItem,
   AdminOrderStatus,
@@ -121,13 +118,8 @@ export const OrderManagementPage = () => {
   })
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({
-      orderId,
-      payload,
-    }: {
-      orderId: string
-      payload: UpdateStatusFormValues
-    }) => updateAdminOrderStatus(orderId, payload),
+    mutationFn: ({ orderId, payload }: { orderId: string; payload: UpdateStatusFormValues }) =>
+      updateAdminOrderStatus(orderId, payload),
     onSuccess: async (updatedOrder) => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
       void message.success('Đã cập nhật trạng thái đơn hàng')
@@ -185,100 +177,98 @@ export const OrderManagementPage = () => {
   }
 
   const columns: ColumnsType<AdminOrderItem> = [
-      {
-        title: 'Mã đơn',
-        key: 'order',
-        width: 190,
-        render: (_, record) => (
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>{record.orderCode}</Typography.Text>
-            <Typography.Text type="secondary" className="text-xs">
-              {formatDateTime(record.createdAt)}
-            </Typography.Text>
-          </Space>
-        ),
-      },
-      {
-        title: 'Khách nhận hàng',
-        key: 'customer',
-        width: 280,
-        render: (_, record) => (
-          <Space direction="vertical" size={0}>
-            <Typography.Text strong>{record.shippingRecipientName}</Typography.Text>
-            <Typography.Text type="secondary">{record.shippingPhone}</Typography.Text>
-            <Typography.Text type="secondary" className="text-xs">
-              UID: {record.userId}
-            </Typography.Text>
-          </Space>
-        ),
-      },
-      {
-        title: 'Thanh toán',
-        key: 'payment',
-        width: 170,
-        render: (_, record) => (
-          <Space direction="vertical" size={2}>
-            <Tag color="blue" className="!m-0 w-fit">
-              {PAYMENT_METHOD_LABEL[record.paymentMethod]}
-            </Tag>
-            <Typography.Text type="secondary" className="text-xs">
-              {PAYMENT_STATUS_LABEL[record.paymentStatus]}
-            </Typography.Text>
-          </Space>
-        ),
-      },
-      {
-        title: 'Số lượng SP',
-        key: 'itemCount',
-        dataIndex: 'items',
-        width: 120,
-        render: (items: AdminOrderItem['items']) => items.length,
-      },
-      {
-        title: 'Tổng tiền',
-        key: 'total',
-        dataIndex: 'totalAmount',
-        width: 160,
-        render: (value: number) => <Typography.Text strong>{formatVndCurrency(value)}</Typography.Text>,
-      },
-      {
-        title: 'Trạng thái',
-        key: 'status',
-        dataIndex: 'status',
-        width: 150,
-        render: (value: AdminOrderStatus) => (
-          <Tag color={ORDER_STATUS_COLOR[value]}>{ORDER_STATUS_LABEL[value]}</Tag>
-        ),
-      },
-      {
-        title: 'Hành động',
-        key: 'actions',
-        width: 230,
-        render: (_, record) => (
-          <Space>
-            <Button
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setDetailOrder(record)
-              }}
-            >
-              Chi tiết
-            </Button>
-            <Button
-              type="primary"
-              ghost
-              icon={<SyncOutlined />}
-              onClick={() => {
-                openUpdateStatusModal(record)
-              }}
-              disabled={ORDER_STATUS_TRANSITIONS[record.status].length === 0}
-            >
-              Cập nhật
-            </Button>
-          </Space>
-        ),
-      },
-    ]
+    {
+      title: 'Mã đơn',
+      key: 'order',
+      width: 190,
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>{record.orderCode}</Typography.Text>
+          <Typography.Text type="secondary" className="text-xs">
+            {formatDateTime(record.createdAt)}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Khách nhận hàng',
+      key: 'customer',
+      width: 280,
+      render: (_, record) => (
+        <Space direction="vertical" size={0}>
+          <Typography.Text strong>{record.shippingRecipientName}</Typography.Text>
+          <Typography.Text type="secondary">{record.shippingPhone}</Typography.Text>
+          <Typography.Text type="secondary" className="text-xs">
+            UID: {record.userId}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Thanh toán',
+      key: 'payment',
+      width: 170,
+      render: (_, record) => (
+        <Space direction="vertical" size={2}>
+          <Tag color="blue" className="!m-0 w-fit">
+            {PAYMENT_METHOD_LABEL[record.paymentMethod]}
+          </Tag>
+          <Typography.Text type="secondary" className="text-xs">
+            {PAYMENT_STATUS_LABEL[record.paymentStatus]}
+          </Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: 'Số lượng SP',
+      key: 'itemCount',
+      dataIndex: 'items',
+      width: 120,
+      render: (items: AdminOrderItem['items']) => items.length,
+    },
+    {
+      title: 'Tổng tiền',
+      key: 'total',
+      dataIndex: 'totalAmount',
+      width: 160,
+      render: (value: number) => (
+        <Typography.Text strong>{formatVndCurrency(value)}</Typography.Text>
+      ),
+    },
+    {
+      title: 'Trạng thái',
+      key: 'status',
+      dataIndex: 'status',
+      width: 150,
+      render: (value: AdminOrderStatus) => (
+        <Tag color={ORDER_STATUS_COLOR[value]}>{ORDER_STATUS_LABEL[value]}</Tag>
+      ),
+    },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      width: 230,
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => {
+              setDetailOrder(record)
+            }}
+          ></Button>
+          <Button
+            type="primary"
+            ghost
+            icon={<SyncOutlined />}
+            onClick={() => {
+              openUpdateStatusModal(record)
+            }}
+            disabled={ORDER_STATUS_TRANSITIONS[record.status].length === 0}
+          ></Button>
+        </Space>
+      ),
+    },
+  ]
 
   const orders = ordersQuery.data?.items ?? []
   const totalRevenue = sumBy(orders, (order) => order.totalAmount)
@@ -429,16 +419,25 @@ export const OrderManagementPage = () => {
         {availableStatusOptions.length === 0 ? (
           <Empty description="Đơn hàng này không còn trạng thái khả dụng để chuyển tiếp" />
         ) : (
-          <Form<UpdateStatusFormValues> form={statusForm} layout="vertical" onFinish={handleSubmitStatus}>
+          <Form<UpdateStatusFormValues>
+            form={statusForm}
+            layout="vertical"
+            onFinish={handleSubmitStatus}
+          >
             <Form.Item
               label="Trạng thái mới"
               name="status"
               rules={[{ required: true, message: 'Vui lòng chọn trạng thái mới' }]}
             >
-              <Select options={availableStatusOptions} />
+              <Select placeholder="Chọn trạng thái mới" options={availableStatusOptions} />
             </Form.Item>
             <Form.Item label="Ghi chú" name="note">
-              <Input.TextArea rows={3} showCount maxLength={255} placeholder="Nhập ghi chú (tùy chọn)" />
+              <Input.TextArea
+                rows={3}
+                showCount
+                maxLength={255}
+                placeholder="Nhập ghi chú (tùy chọn)"
+              />
             </Form.Item>
           </Form>
         )}
@@ -515,11 +514,13 @@ export const OrderManagementPage = () => {
                   label: 'Tổng tiền',
                   children: (
                     <Space direction="vertical" size={0}>
-                      <Typography.Text strong>{formatVndCurrency(detailOrder.totalAmount)}</Typography.Text>
+                      <Typography.Text strong>
+                        {formatVndCurrency(detailOrder.totalAmount)}
+                      </Typography.Text>
                       <Typography.Text type="secondary" className="text-xs">
-                        Tạm tính: {formatVndCurrency(detailOrder.subtotal)} ·
-                        Giảm giá: {formatVndCurrency(detailOrder.discountAmount)} ·
-                        Phí ship: {formatVndCurrency(detailOrder.shippingFee)}
+                        Tạm tính: {formatVndCurrency(detailOrder.subtotal)} · Giảm giá:{' '}
+                        {formatVndCurrency(detailOrder.discountAmount)} · Phí ship:{' '}
+                        {formatVndCurrency(detailOrder.shippingFee)}
                       </Typography.Text>
                     </Space>
                   ),

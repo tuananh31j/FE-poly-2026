@@ -70,8 +70,13 @@ export const AddressesPage = () => {
   })
 
   const updateAddressMutation = useMutation({
-    mutationFn: ({ addressId, payload }: { addressId: string; payload: Partial<UpsertAddressPayload> }) =>
-      updateMyAddress(addressId, payload),
+    mutationFn: ({
+      addressId,
+      payload,
+    }: {
+      addressId: string
+      payload: Partial<UpsertAddressPayload>
+    }) => updateMyAddress(addressId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.account.addresses,
@@ -99,8 +104,8 @@ export const AddressesPage = () => {
     },
   })
 
-// worklog: 2026-03-04 08:59:15 | ducanh | cleanup | openCreateModal
-// worklog: 2026-03-04 20:41:46 | quochuy | fix | openCreateModal
+  // worklog: 2026-03-04 08:59:15 | ducanh | cleanup | openCreateModal
+  // worklog: 2026-03-04 20:41:46 | quochuy | fix | openCreateModal
   const openCreateModal = () => {
     setEditingAddress(null)
     form.setFieldsValue(defaultAddressFormValues)
@@ -124,12 +129,12 @@ export const AddressesPage = () => {
 
   const isSubmitting = createAddressMutation.isPending || updateAddressMutation.isPending
 
-// worklog: 2026-03-04 14:54:15 | ducanh | refactor | onSubmitAddress
-// worklog: 2026-03-04 20:51:53 | ducanh | feature | onSubmitAddress
-// worklog: 2026-03-04 21:16:19 | ducanh | cleanup | onSubmitAddress
-// worklog: 2026-03-04 12:58:05 | trantu | fix | onSubmitAddress
-// worklog: 2026-03-04 10:16:25 | quochuy | cleanup | onSubmitAddress
-// worklog: 2026-03-04 11:09:10 | quochuy | refactor | onSubmitAddress
+  // worklog: 2026-03-04 14:54:15 | ducanh | refactor | onSubmitAddress
+  // worklog: 2026-03-04 20:51:53 | ducanh | feature | onSubmitAddress
+  // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | onSubmitAddress
+  // worklog: 2026-03-04 12:58:05 | trantu | fix | onSubmitAddress
+  // worklog: 2026-03-04 10:16:25 | quochuy | cleanup | onSubmitAddress
+  // worklog: 2026-03-04 11:09:10 | quochuy | refactor | onSubmitAddress
   const onSubmitAddress = (values: AddressFormValues) => {
     if (editingAddress) {
       updateAddressMutation.mutate({
@@ -164,7 +169,6 @@ export const AddressesPage = () => {
           <Spin />
         </div>
       ) : null}
-
 
       <List
         dataSource={addressesQuery.data ?? []}
@@ -217,7 +221,11 @@ export const AddressesPage = () => {
                       deleteAddressMutation.mutate(address.id)
                     }}
                   >
-                    <Button danger icon={<DeleteOutlined />} loading={deleteAddressMutation.isPending}>
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      loading={deleteAddressMutation.isPending}
+                    >
                       Xóa
                     </Button>
                   </Popconfirm>
@@ -247,6 +255,7 @@ export const AddressesPage = () => {
         >
           <Form.Item label="Nhãn địa chỉ" name="label">
             <Select
+              placeholder="Chọn nhãn địa chỉ"
               options={[
                 { value: 'home', label: 'Nhà riêng' },
                 { value: 'work', label: 'Văn phòng' },
@@ -259,7 +268,7 @@ export const AddressesPage = () => {
             name="recipientName"
             rules={[{ required: true, message: 'Vui lòng nhập tên người nhận' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: Nguyễn Văn A" />
           </Form.Item>
 
           <Form.Item
@@ -267,7 +276,7 @@ export const AddressesPage = () => {
             name="phone"
             rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: 09xxxxxxxx" />
           </Form.Item>
 
           <Form.Item
@@ -275,7 +284,7 @@ export const AddressesPage = () => {
             name="street"
             rules={[{ required: true, message: 'Vui lòng nhập số nhà, tên đường' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: 123 Nguyễn Trãi" />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -284,7 +293,7 @@ export const AddressesPage = () => {
               name="city"
               rules={[{ required: true, message: 'Vui lòng nhập tỉnh/thành phố' }]}
             >
-              <Input />
+              <Input placeholder="Ví dụ: TP. Hồ Chí Minh" />
             </Form.Item>
 
             <Form.Item
@@ -292,7 +301,7 @@ export const AddressesPage = () => {
               name="district"
               rules={[{ required: true, message: 'Vui lòng nhập quận/huyện' }]}
             >
-              <Input />
+              <Input placeholder="Ví dụ: Quận 3" />
             </Form.Item>
           </div>
 
@@ -301,7 +310,7 @@ export const AddressesPage = () => {
             name="ward"
             rules={[{ required: true, message: 'Vui lòng nhập phường/xã' }]}
           >
-            <Input />
+            <Input placeholder="Ví dụ: Phường Võ Thị Sáu" />
           </Form.Item>
 
           <Form.Item label="Đặt làm mặc định" name="isDefault" valuePropName="checked">

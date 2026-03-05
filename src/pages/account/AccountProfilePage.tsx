@@ -27,7 +27,6 @@ export const AccountProfilePage = () => {
     }
 
     form.setFieldsValue({
-      username: user.username,
       fullName: user.fullName,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
@@ -89,19 +88,7 @@ export const AccountProfilePage = () => {
 
       <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
         <Form.Item label="Email">
-          <Input disabled value={user?.email ?? ''} />
-        </Form.Item>
-
-        <Form.Item
-          hidden
-          label="Username"
-          name="username"
-          rules={[
-            { min: 3, message: 'Username tối thiểu 3 ký tự' },
-            { max: 50, message: 'Username tối đa 50 ký tự' },
-          ]}
-        >
-          <Input hidden placeholder="your-username" />
+          <Input disabled value={user?.email ?? ''} placeholder="Email tài khoản" />
         </Form.Item>
 
         <Form.Item
@@ -148,7 +135,7 @@ export const AccountProfilePage = () => {
           hidden
           rules={[{ type: 'url', message: 'Avatar URL không hợp lệ' }]}
         >
-          <Input />
+          <Input placeholder="https://..." />
         </Form.Item>
 
         <Button type="primary" htmlType="submit" loading={updateProfileMutation.isPending}>

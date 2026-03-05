@@ -35,6 +35,12 @@ const normalizeDiscountType = (value: unknown): VoucherDiscountType => {
 }
 
 const normalizeVoucher = (value: Record<string, unknown>): AdminVoucherItem => {
+  const usageLimit = Number(value.usageLimit ?? 0)
+  const normalizedMaxUsagePerUserRaw = Number(value.maxUsagePerUser)
+  const maxUsagePerUser = Number.isFinite(normalizedMaxUsagePerUserRaw)
+    ? normalizedMaxUsagePerUserRaw
+    : Math.max(1, usageLimit - 1)
+
   return {
     id: toId(value.id ?? value._id),
     code: String(value.code ?? ''),
@@ -46,7 +52,8 @@ const normalizeVoucher = (value: Record<string, unknown>): AdminVoucherItem => {
       typeof value.maxDiscountAmount === 'number' ? value.maxDiscountAmount : undefined,
     startDate: String(value.startDate ?? ''),
     expirationDate: String(value.expirationDate ?? ''),
-    usageLimit: Number(value.usageLimit ?? 0),
+    usageLimit,
+    maxUsagePerUser,
     usedCount: Number(value.usedCount ?? 0),
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     createdAt: String(value.createdAt ?? ''),
@@ -122,4 +129,3 @@ export const deleteAdminVoucher = async (voucherId: string) => {
     throw toApiClientError(error)
   }
 }
-

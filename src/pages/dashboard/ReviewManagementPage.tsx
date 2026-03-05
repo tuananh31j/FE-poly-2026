@@ -175,11 +175,6 @@ export const ReviewManagementPage = () => {
           <Typography.Text type="secondary" className="text-xs">
             Product ID: {record.productId}
           </Typography.Text>
-          {record.product?.slug ? (
-            <Typography.Text type="secondary" className="text-xs">
-              /{record.product.slug}
-            </Typography.Text>
-          ) : null}
         </Space>
       ),
     },
@@ -258,9 +253,7 @@ export const ReviewManagementPage = () => {
             onClick={() => {
               setDetailReview(record)
             }}
-          >
-            Chi tiết
-          </Button>
+          ></Button>
 
           <Button
             type={record.isPublished ? 'default' : 'primary'}
@@ -281,9 +274,7 @@ export const ReviewManagementPage = () => {
             onClick={() => {
               handleOpenReplyModal(record)
             }}
-          >
-            Phản hồi
-          </Button>
+          ></Button>
 
           <Popconfirm
             title="Xóa đánh giá này?"
@@ -318,7 +309,10 @@ export const ReviewManagementPage = () => {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
-          <Statistic title="Tổng đánh giá (theo filter)" value={reviewsQuery.data?.totalItems ?? 0} />
+          <Statistic
+            title="Tổng đánh giá (theo filter)"
+            value={reviewsQuery.data?.totalItems ?? 0}
+          />
         </Card>
         <Card>
           <Statistic title="Đánh giá đang ẩn (trang hiện tại)" value={hiddenCount} />
@@ -462,7 +456,11 @@ export const ReviewManagementPage = () => {
           loading: replyReviewMutation.isPending,
         }}
       >
-        <Form<ReplyReviewFormValues> form={replyForm} layout="vertical" onFinish={handleReplySubmit}>
+        <Form<ReplyReviewFormValues>
+          form={replyForm}
+          layout="vertical"
+          onFinish={handleReplySubmit}
+        >
           <Form.Item
             label="Nội dung phản hồi"
             name="replyContent"
@@ -472,7 +470,12 @@ export const ReviewManagementPage = () => {
               { max: 2000, message: 'Nội dung phản hồi vượt quá 2000 ký tự' },
             ]}
           >
-            <Input.TextArea rows={4} showCount maxLength={2000} />
+            <Input.TextArea
+              rows={4}
+              showCount
+              maxLength={2000}
+              placeholder="Nhập nội dung phản hồi cho đánh giá này"
+            />
           </Form.Item>
         </Form>
       </Modal>
@@ -536,7 +539,9 @@ export const ReviewManagementPage = () => {
                 {
                   key: 'repliedAt',
                   label: 'Phản hồi lúc',
-                  children: detailReview.repliedAt ? formatDateTime(detailReview.repliedAt) : 'Chưa phản hồi',
+                  children: detailReview.repliedAt
+                    ? formatDateTime(detailReview.repliedAt)
+                    : 'Chưa phản hồi',
                 },
               ]}
             />

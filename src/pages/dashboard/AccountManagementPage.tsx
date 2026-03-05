@@ -1,4 +1,10 @@
-import { DeleteOutlined, EditOutlined, LockOutlined, PlusOutlined, UnlockOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  LockOutlined,
+  PlusOutlined,
+  UnlockOutlined,
+} from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Avatar,
@@ -43,7 +49,6 @@ interface CreateUserFormValues extends CreateAdminUserPayload {
 }
 
 interface EditUserFormValues {
-  username?: string
   fullName?: string
   phone?: string
   role: AdminUserItem['role']
@@ -173,13 +178,13 @@ export const AccountManagementPage = () => {
         title: 'Tài khoản',
         key: 'account',
         render: (_, record) => (
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex w-full items-center gap-3">
             <Avatar src={record.avatarUrl} size={40}>
               {record.email.slice(0, 1).toUpperCase()}
             </Avatar>
             <Space direction="vertical" size={0} className="min-w-0">
               <Typography.Text strong className="line-clamp-1">
-                {record.fullName || record.username || 'Chưa cập nhật'}
+                {record.fullName || 'Chưa cập nhật'}
               </Typography.Text>
               <Typography.Text type="secondary" className="text-xs line-clamp-1">
                 {record.email}
@@ -193,7 +198,9 @@ export const AccountManagementPage = () => {
         dataIndex: 'role',
         key: 'role',
         width: 120,
-        render: (value: AdminUserItem['role']) => <Tag color={ROLE_COLORS[value]}>{ROLE_LABELS[value]}</Tag>,
+        render: (value: AdminUserItem['role']) => (
+          <Tag color={ROLE_COLORS[value]}>{ROLE_LABELS[value]}</Tag>
+        ),
       },
       {
         title: 'Trạng thái',
@@ -249,7 +256,6 @@ export const AccountManagementPage = () => {
               onClick={() => {
                 setSelectedUser(record)
                 editForm.setFieldsValue({
-                  username: record.username,
                   fullName: record.fullName,
                   phone: record.phone,
                   role: record.role,
@@ -267,9 +273,7 @@ export const AccountManagementPage = () => {
                 })
                 setEditModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
 
             <Button
               icon={record.isActive ? <LockOutlined /> : <UnlockOutlined />}
@@ -283,7 +287,9 @@ export const AccountManagementPage = () => {
                     payload: { isActive: !record.isActive },
                   })
                   await invalidateUsers()
-                  void message.success(record.isActive ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản')
+                  void message.success(
+                    record.isActive ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản'
+                  )
                 } catch (error) {
                   void message.error((error as Error).message)
                 } finally {
@@ -292,16 +298,6 @@ export const AccountManagementPage = () => {
               }}
             >
               {record.isActive ? 'Khóa' : 'Mở'}
-            </Button>
-
-            <Button
-              onClick={() => {
-                setSelectedUser(record)
-                resetPasswordForm.resetFields()
-                setResetPasswordModalOpen(true)
-              }}
-            >
-              Reset mật khẩu
             </Button>
 
             <Popconfirm
@@ -325,9 +321,7 @@ export const AccountManagementPage = () => {
                 icon={<DeleteOutlined />}
                 loading={deleteUserMutation.isPending}
                 disabled={record.role === 'admin'}
-              >
-                Xóa
-              </Button>
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -349,7 +343,8 @@ export const AccountManagementPage = () => {
         Admin - Quản lý tài khoản
       </Typography.Title>
       <Typography.Paragraph className="!mb-0" type="secondary">
-        Quản lý thông tin người dùng, khóa/mở khóa tài khoản và reset mật khẩu nhanh cho customer/staff.
+        Quản lý thông tin người dùng, khóa/mở khóa tài khoản và reset mật khẩu nhanh cho
+        customer/staff.
       </Typography.Paragraph>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -378,7 +373,7 @@ export const AccountManagementPage = () => {
           <Input.Search
             allowClear
             className="w-full md:max-w-sm"
-            placeholder="Tìm theo email, username, fullName"
+            placeholder="Tìm theo email, fullName"
             value={searchValue}
             onChange={(event) => {
               setSearchValue(event.target.value)
@@ -487,10 +482,6 @@ export const AccountManagementPage = () => {
             <Input.Password placeholder="Tối thiểu 8 ký tự" />
           </Form.Item>
 
-          <Form.Item label="Username" name="username">
-            <Input placeholder="username" />
-          </Form.Item>
-
           <Form.Item label="Họ tên" name="fullName">
             <Input placeholder="Nguyễn Văn A" />
           </Form.Item>
@@ -499,8 +490,12 @@ export const AccountManagementPage = () => {
             <Input placeholder="09xxxxxxxx" />
           </Form.Item>
 
-          <Form.Item label="Role" name="role" rules={[{ required: true, message: 'Vui lòng chọn role' }]}>
-            <Select options={createRoleOptions} />
+          <Form.Item
+            label="Role"
+            name="role"
+            rules={[{ required: true, message: 'Vui lòng chọn role' }]}
+          >
+            <Select placeholder="Chọn role" options={createRoleOptions} />
           </Form.Item>
         </Form>
       </Modal>
@@ -529,7 +524,6 @@ export const AccountManagementPage = () => {
             }
 
             const payload: UpdateAdminUserPayload = {
-              username: values.username,
               fullName: values.fullName,
               phone: values.phone,
               avatarUrl: values.avatarUrl,
@@ -538,7 +532,10 @@ export const AccountManagementPage = () => {
               staffDepartment: values.staffDepartment,
             }
 
-            if (selectedUser.role !== 'admin' && (values.role === 'customer' || values.role === 'staff')) {
+            if (
+              selectedUser.role !== 'admin' &&
+              (values.role === 'customer' || values.role === 'staff')
+            ) {
               payload.role = values.role
               payload.isActive = values.isActive
             }
@@ -562,10 +559,6 @@ export const AccountManagementPage = () => {
             {selectedUser?.email}
           </Typography.Paragraph>
 
-          <Form.Item label="Username" name="username">
-            <Input placeholder="username" />
-          </Form.Item>
-
           <Form.Item label="Họ tên" name="fullName">
             <Input placeholder="Nguyễn Văn A" />
           </Form.Item>
@@ -574,27 +567,47 @@ export const AccountManagementPage = () => {
             <Input placeholder="09xxxxxxxx" />
           </Form.Item>
 
-          <Form.Item label="Avatar URL" name="avatarUrl" rules={[{ type: 'url', warningOnly: true }]}>
+          <Form.Item
+            label="Avatar URL"
+            name="avatarUrl"
+            rules={[{ type: 'url', warningOnly: true }]}
+          >
             <Input placeholder="https://..." />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Form.Item label="Role" name="role" rules={[{ required: true, message: 'Vui lòng chọn role' }]}>
-              <Select options={editRoleOptions} disabled={selectedUser?.role === 'admin'} />
+            <Form.Item
+              label="Role"
+              name="role"
+              rules={[{ required: true, message: 'Vui lòng chọn role' }]}
+            >
+              <Select
+                placeholder="Chọn role"
+                options={editRoleOptions}
+                disabled={selectedUser?.role === 'admin'}
+              />
             </Form.Item>
 
             <Form.Item label="Trạng thái" name="isActive" valuePropName="checked">
-              <Switch disabled={selectedUser?.role === 'admin'} checkedChildren="Hoạt động" unCheckedChildren="Khóa" />
+              <Switch
+                disabled={selectedUser?.role === 'admin'}
+                checkedChildren="Hoạt động"
+                unCheckedChildren="Khóa"
+              />
             </Form.Item>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Form.Item label="Loyalty points" name="loyaltyPoints">
-              <InputNumber className="w-full" min={0} />
+              <InputNumber className="w-full" min={0} placeholder="Nhập điểm tích lũy" />
             </Form.Item>
 
             <Form.Item label="Membership tier" name="membershipTier">
-              <Select allowClear options={membershipTierOptions} />
+              <Select
+                allowClear
+                placeholder="Chọn hạng thành viên"
+                options={membershipTierOptions}
+              />
             </Form.Item>
           </div>
 

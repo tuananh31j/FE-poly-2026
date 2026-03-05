@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Form, Input, message,Typography } from 'antd'
+import { Button, Card, Form, Input, message, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
 
 import { useAppDispatch } from '@/app/store/hooks'
@@ -52,7 +52,7 @@ export const ChangePasswordPage = () => {
           name="currentPassword"
           rules={[{ required: true, message: 'Vui lòng nhập mật khẩu hiện tại' }]}
         >
-          <Input.Password />
+          <Input.Password placeholder="Nhập mật khẩu hiện tại" />
         </Form.Item>
 
         <Form.Item
@@ -64,7 +64,7 @@ export const ChangePasswordPage = () => {
           ]}
           hasFeedback
         >
-          <Input.Password />
+          <Input.Password placeholder="Nhập mật khẩu mới" />
         </Form.Item>
 
         <Form.Item
@@ -85,7 +85,7 @@ export const ChangePasswordPage = () => {
             }),
           ]}
         >
-          <Input.Password />
+          <Input.Password placeholder="Nhập lại mật khẩu mới" />
         </Form.Item>
 
         <Button type="primary" htmlType="submit" loading={changePasswordMutation.isPending}>

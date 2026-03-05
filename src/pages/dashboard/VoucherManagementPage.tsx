@@ -51,6 +51,7 @@ interface VoucherFormValues {
   maxDiscountAmount?: number
   activeTime: [Dayjs, Dayjs]
   usageLimit: number
+  maxUsagePerUser: number
   isActive: boolean
 }
 
@@ -183,7 +184,9 @@ export const VoucherManagementPage = () => {
         width: 240,
         render: (_, record) => (
           <Space direction="vertical" size={0}>
-            <Typography.Text>Đơn tối thiểu: {formatVndCurrency(record.minOrderValue)}</Typography.Text>
+            <Typography.Text>
+              Đơn tối thiểu: {formatVndCurrency(record.minOrderValue)}
+            </Typography.Text>
             <Typography.Text type="secondary" className="text-xs">
               Giảm tối đa:{' '}
               {typeof record.maxDiscountAmount === 'number'
@@ -196,11 +199,16 @@ export const VoucherManagementPage = () => {
       {
         title: 'Lượt dùng',
         key: 'usage',
-        width: 150,
+        width: 220,
         render: (_, record) => (
-          <Typography.Text>
-            {record.usedCount}/{record.usageLimit}
-          </Typography.Text>
+          <Space direction="vertical" size={0}>
+            <Typography.Text>
+              {record.usedCount}/{record.usageLimit}
+            </Typography.Text>
+            <Typography.Text type="secondary" className="text-xs">
+              Tối đa / tài khoản: {record.maxUsagePerUser}
+            </Typography.Text>
+          </Space>
         ),
       },
       {
@@ -250,13 +258,12 @@ export const VoucherManagementPage = () => {
                   maxDiscountAmount: record.maxDiscountAmount,
                   activeTime: [dayjs(record.startDate), dayjs(record.expirationDate)],
                   usageLimit: record.usageLimit,
+                  maxUsagePerUser: record.maxUsagePerUser,
                   isActive: record.isActive,
                 })
                 setModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
 
             <Popconfirm
               title={`Xóa voucher "${record.code}"?`}
@@ -266,9 +273,7 @@ export const VoucherManagementPage = () => {
                 deleteMutation.mutate(record.id)
               }}
             >
-              <Button danger icon={<DeleteOutlined />} loading={deleteMutation.isPending}>
-                Xóa
-              </Button>
+              <Button danger icon={<DeleteOutlined />} loading={deleteMutation.isPending}></Button>
             </Popconfirm>
           </Space>
         ),
@@ -290,6 +295,7 @@ export const VoucherManagementPage = () => {
       maxDiscountAmount: undefined,
       activeTime: [dayjs(), dayjs().add(7, 'day')],
       usageLimit: 100,
+      maxUsagePerUser: 1,
       isActive: true,
     })
     setModalOpen(true)
@@ -306,6 +312,7 @@ export const VoucherManagementPage = () => {
       startDate: values.activeTime[0].toISOString(),
       expirationDate: values.activeTime[1].toISOString(),
       usageLimit: values.usageLimit,
+      maxUsagePerUser: values.maxUsagePerUser,
       isActive: values.isActive,
     }
 
@@ -436,6 +443,7 @@ export const VoucherManagementPage = () => {
               rules={[{ required: true, message: 'Vui lòng chọn loại giảm giá' }]}
             >
               <Select
+                placeholder="Chọn loại giảm giá"
                 options={[
                   { label: 'Phần trăm (%)', value: 'percentage' },
                   { label: 'Số tiền cố định (VND)', value: 'fixed_amount' },
@@ -467,9 +475,52 @@ export const VoucherManagementPage = () => {
             <Form.Item
               label="Lượt sử dụng tối đa"
               name="usageLimit"
-              rules={[{ required: true, message: 'Vui lòng nhập lượt sử dụng' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập lượt sử dụng' },
+                {
+                  validator: async (_, value) => {
+                    const maxUsagePerUser = form.getFieldValue('maxUsagePerUser')
+
+                    if (
+                      typeof value === 'number' &&
+                      typeof maxUsagePerUser === 'number' &&
+                      value <= maxUsagePerUser
+                    ) {
+                      throw new Error('Lượt sử dụng tối đa phải lớn hơn giới hạn theo tài khoản')
+                    }
+                  },
+                },
+              ]}
             >
-              <InputNumber min={1} className="!w-full" />
+              <InputNumber
+                min={1}
+                className="!w-full"
+                placeholder="Nhập tổng lượt sử dụng tối đa"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Lượt tối đa / tài khoản"
+              name="maxUsagePerUser"
+              dependencies={['usageLimit']}
+              rules={[
+                { required: true, message: 'Vui lòng nhập giới hạn theo tài khoản' },
+                {
+                  validator: async (_, value) => {
+                    const usageLimit = form.getFieldValue('usageLimit')
+
+                    if (
+                      typeof value === 'number' &&
+                      typeof usageLimit === 'number' &&
+                      value >= usageLimit
+                    ) {
+                      throw new Error('Giới hạn theo tài khoản phải nhỏ hơn lượt sử dụng tối đa')
+                    }
+                  },
+                },
+              ]}
+            >
+              <InputNumber min={1} className="!w-full" placeholder="Nhập giới hạn theo tài khoản" />
             </Form.Item>
 
             <Form.Item label="Kích hoạt" name="isActive" valuePropName="checked">
@@ -482,11 +533,14 @@ export const VoucherManagementPage = () => {
             name="activeTime"
             rules={[{ required: true, message: 'Vui lòng chọn thời gian hiệu lực' }]}
           >
-            <DatePicker.RangePicker showTime className="!w-full" />
+            <DatePicker.RangePicker
+              showTime
+              className="!w-full"
+              placeholder={['Bắt đầu', 'Kết thúc']}
+            />
           </Form.Item>
         </Form>
       </Modal>
     </div>
   )
 }
-

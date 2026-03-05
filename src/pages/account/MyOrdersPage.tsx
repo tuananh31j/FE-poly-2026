@@ -1,9 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, List, message, Popconfirm, Select, Space, Spin, Table, Tag, Typography } from 'antd'
+import {
+  Button,
+  Card,
+  List,
+  message,
+  Popconfirm,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
 
-import { cancelMyOrder, listMyOrders, retryMyVnpayPayment } from '@/features/account/api/account.api'
+import {
+  cancelMyOrder,
+  listMyOrders,
+  retryMyVnpayPayment,
+} from '@/features/account/api/account.api'
 import type { MyOrderItem, OrderStatus } from '@/features/account/model/account.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { formatVndCurrency } from '@/shared/utils/currency'
@@ -69,6 +85,7 @@ export const MyOrdersPage = () => {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
+  const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([])
 
   const ordersQuery = useQuery({
     queryKey: queryKeys.account.orders({
@@ -116,6 +133,16 @@ export const MyOrdersPage = () => {
     },
   })
 
+  const toggleOrderDetails = (orderId: string) => {
+    setExpandedOrderIds((current) => {
+      if (current.includes(orderId)) {
+        return current.filter((id) => id !== orderId)
+      }
+
+      return [...current, orderId]
+    })
+  }
+
   const columns: ColumnsType<MyOrderItem> = useMemo(
     () => [
       {
@@ -130,7 +157,9 @@ export const MyOrdersPage = () => {
         dataIndex: 'createdAt',
         key: 'createdAt',
         width: 180,
-        render: (value: string) => <Typography.Text type="secondary">{formatDateTime(value)}</Typography.Text>,
+        render: (value: string) => (
+          <Typography.Text type="secondary">{formatDateTime(value)}</Typography.Text>
+        ),
       },
       {
         title: 'Thanh toán',
@@ -152,29 +181,39 @@ export const MyOrdersPage = () => {
         dataIndex: 'totalAmount',
         key: 'totalAmount',
         width: 160,
-        render: (value: number) => <Typography.Text strong>{formatVndCurrency(value)}</Typography.Text>,
+        render: (value: number) => (
+          <Typography.Text strong>{formatVndCurrency(value)}</Typography.Text>
+        ),
       },
       {
         title: 'Trạng thái',
         dataIndex: 'status',
         key: 'status',
         width: 150,
-        render: (value: OrderStatus) => <Tag color={ORDER_STATUS_COLOR[value]}>{ORDER_STATUS_LABEL[value]}</Tag>,
+        render: (value: OrderStatus) => (
+          <Tag color={ORDER_STATUS_COLOR[value]}>{ORDER_STATUS_LABEL[value]}</Tag>
+        ),
       },
       {
         title: 'Hành động',
         key: 'actions',
-        width: 230,
+        width: 330,
         render: (_, record) => {
           const allowCancel = canCancelOrder(record.status)
           const allowRetryVnpay = canRetryVnpay(record)
-
-          if (!allowCancel && !allowRetryVnpay) {
-            return <Typography.Text type="secondary">-</Typography.Text>
-          }
+          const isExpanded = expandedOrderIds.includes(record.id)
 
           return (
-            <Space>
+            <Space wrap>
+              <Button
+                size="small"
+                onClick={() => {
+                  toggleOrderDetails(record.id)
+                }}
+              >
+                {isExpanded ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+              </Button>
+
               {allowRetryVnpay ? (
                 <Button
                   size="small"
@@ -207,7 +246,7 @@ export const MyOrdersPage = () => {
         },
       },
     ],
-    [cancelOrderMutation, repayOrderMutation]
+    [cancelOrderMutation, expandedOrderIds, repayOrderMutation]
   )
 
   return (
@@ -248,7 +287,6 @@ export const MyOrdersPage = () => {
         </div>
       ) : null}
 
-
       <Table
         rowKey="id"
         size="middle"
@@ -265,6 +303,20 @@ export const MyOrdersPage = () => {
           },
         }}
         expandable={{
+          expandedRowKeys: expandedOrderIds,
+          onExpand: (expanded, record) => {
+            setExpandedOrderIds((current) => {
+              if (expanded) {
+                if (current.includes(record.id)) {
+                  return current
+                }
+
+                return [...current, record.id]
+              }
+
+              return current.filter((id) => id !== record.id)
+            })
+          },
           expandedRowRender: (record) => (
             <List
               size="small"
