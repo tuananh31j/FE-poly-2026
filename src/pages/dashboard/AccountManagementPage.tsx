@@ -179,7 +179,7 @@ export const AccountManagementPage = () => {
         key: 'account',
         render: (_, record) => (
           <div className="flex w-full items-center gap-3">
-            <Avatar src={record.avatarUrl} size={40}>
+            <Avatar src={record.avatarUrl} size={40} className="shrink-0">
               {record.email.slice(0, 1).toUpperCase()}
             </Avatar>
             <Space direction="vertical" size={0} className="min-w-0">
