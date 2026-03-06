@@ -82,13 +82,6 @@ const topProductColumns: ColumnsType<DashboardTopProductItem> = [
     width: 110,
   },
   {
-    title: 'Điểm TB',
-    dataIndex: 'averageRating',
-    key: 'averageRating',
-    width: 110,
-    render: (value: number) => value.toFixed(1),
-  },
-  {
     title: 'Trạng thái',
     key: 'isAvailable',
     width: 130,
