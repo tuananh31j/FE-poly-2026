@@ -511,6 +511,23 @@ export const ProductManagementPage = () => {
         render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
       },
       {
+        title: 'Ảnh',
+        key: 'image',
+        width: 96,
+        align: 'center',
+        render: (_, record) => (
+          <Image
+            src={record.images[0] ?? PRODUCT_PLACEHOLDER}
+            alt={`Ảnh biến thể ${record.sku}`}
+            width={48}
+            height={48}
+            className="rounded-md object-cover"
+            fallback={PRODUCT_PLACEHOLDER}
+            preview={false}
+          />
+        ),
+      },
+      {
         title: 'Màu',
         key: 'color',
         width: 180,
@@ -926,7 +943,7 @@ export const ProductManagementPage = () => {
       </Modal>
 
       <Drawer
-        title={`Variants - ${activeProductForVariants?.name ?? ''}`}
+        title={`Biến thể - ${activeProductForVariants?.name ?? ''}`}
         open={variantDrawerOpen}
         width={980}
         onClose={() => {
