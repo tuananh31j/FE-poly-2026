@@ -70,4 +70,5 @@ export interface DashboardStatisticsResponse {
   trends: DashboardTrends
   breakdowns: DashboardBreakdowns
   topProducts: DashboardTopProductItem[]
+  bottomProducts: DashboardTopProductItem[]
 }

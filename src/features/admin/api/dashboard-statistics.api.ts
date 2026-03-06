@@ -129,12 +129,17 @@ const normalizeDashboardStatistics = (value: Record<string, unknown>): Dashboard
   const trendsRecord = toRecord(value.trends)
   const breakdownsRecord = toRecord(value.breakdowns)
   const rawTopProducts = Array.isArray(value.topProducts) ? value.topProducts : []
+  const rawBottomProducts = Array.isArray(value.bottomProducts) ? value.bottomProducts : []
 
   return {
     summary: normalizeSummary(summaryRecord ?? {}),
     trends: normalizeTrends(trendsRecord ?? {}),
     breakdowns: normalizeBreakdowns(breakdownsRecord ?? {}),
     topProducts: rawTopProducts
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeTopProduct(item)),
+    bottomProducts: rawBottomProducts
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeTopProduct(item)),

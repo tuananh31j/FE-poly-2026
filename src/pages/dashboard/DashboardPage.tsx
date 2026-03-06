@@ -162,6 +162,53 @@ const useRevenueChartOptions = (stats?: DashboardStatisticsResponse) => {
   }, [stats])
 }
 
+const useFulfillmentRateChartOptions = (stats?: DashboardStatisticsResponse) => {
+  return useMemo(() => {
+    const data = stats?.trends.dailyRevenue ?? []
+    const categories = data.map((item) => dayjs(item.date).format('DD/MM'))
+    const fulfillmentRateData = data.map((item) =>
+      item.orders > 0 ? Number(((item.deliveredOrders / item.orders) * 100).toFixed(2)) : 0
+    )
+
+    return {
+      series: [
+        {
+          name: 'Tỷ lệ giao thành công',
+          data: fulfillmentRateData,
+        },
+      ],
+      options: {
+        chart: {
+          toolbar: { show: false },
+        },
+        stroke: {
+          width: 3,
+          curve: 'smooth' as const,
+        },
+        dataLabels: {
+          enabled: false,
+        },
+        xaxis: {
+          categories,
+        },
+        yaxis: {
+          min: 0,
+          max: 100,
+          labels: {
+            formatter: (value: number) => `${Math.round(value)}%`,
+          },
+        },
+        colors: ['#10b981'],
+        tooltip: {
+          y: {
+            formatter: (value: number) => `${value.toFixed(2)}%`,
+          },
+        },
+      },
+    }
+  }, [stats])
+}
+
 // worklog: 2026-03-04 14:47:25 | ducanh | fix | DashboardPage
 // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | DashboardPage
 export const DashboardPage = () => {
@@ -176,10 +223,12 @@ export const DashboardPage = () => {
   const summary = stats?.summary
 
   const revenueChart = useRevenueChartOptions(stats)
+  const fulfillmentRateChart = useFulfillmentRateChartOptions(stats)
 
   const statusSeries = stats?.breakdowns.byStatus.map((item) => item.count) ?? []
   const statusLabels = stats?.breakdowns.byStatus.map((item) => ORDER_STATUS_LABELS[item.status]) ?? []
   const hasStatusData = statusSeries.some((value) => value > 0)
+  const hasFulfillmentData = (stats?.trends.dailyRevenue.length ?? 0) > 0
 
   return (
     <div className="space-y-6">
@@ -265,7 +314,7 @@ export const DashboardPage = () => {
       </Card>
 
       <Row gutter={[16, 16]}>
-        <Col xs={24}>
+        <Col xs={24} lg={12}>
           <Card title="Cơ cấu trạng thái đơn hàng" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
             {hasStatusData ? (
               <Chart
@@ -292,19 +341,55 @@ export const DashboardPage = () => {
             )}
           </Card>
         </Col>
+
+        <Col xs={24} lg={12}>
+          <Card
+            title="Tỷ lệ giao thành công theo ngày"
+            loading={statisticsQuery.isLoading || statisticsQuery.isFetching}
+          >
+            {hasFulfillmentData ? (
+              <Chart
+                type="line"
+                height={320}
+                series={fulfillmentRateChart.series}
+                options={fulfillmentRateChart.options}
+              />
+            ) : (
+              <Empty description="Chưa có dữ liệu tỷ lệ giao thành công" />
+            )}
+          </Card>
+        </Col>
       </Row>
 
-      <Card title="Top sản phẩm bán chạy" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-        <Table
-          rowKey="productId"
-          columns={topProductColumns}
-          dataSource={stats?.topProducts ?? []}
-          pagination={false}
-          locale={{
-            emptyText: <Empty description="Chưa có dữ liệu sản phẩm bán chạy" />,
-          }}
-        />
-      </Card>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} xl={12}>
+          <Card title="Top sản phẩm bán chạy" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+            <Table
+              rowKey="productId"
+              columns={topProductColumns}
+              dataSource={stats?.topProducts ?? []}
+              pagination={false}
+              locale={{
+                emptyText: <Empty description="Chưa có dữ liệu sản phẩm bán chạy" />,
+              }}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} xl={12}>
+          <Card title="Top sản phẩm bán chậm" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+            <Table
+              rowKey="productId"
+              columns={topProductColumns}
+              dataSource={stats?.bottomProducts ?? []}
+              pagination={false}
+              locale={{
+                emptyText: <Empty description="Chưa có dữ liệu sản phẩm bán chậm" />,
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
     </div>
   )
 }
