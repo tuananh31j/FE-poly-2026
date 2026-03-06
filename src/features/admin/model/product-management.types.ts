@@ -113,7 +113,7 @@ export interface ListAdminProductVariantsParams {
 }
 
 export interface UpsertAdminProductVariantPayload {
-  sku: string
+  sku?: string
   colorId?: string | null
   sizeId?: string | null
   size?: string
