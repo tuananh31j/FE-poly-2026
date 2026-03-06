@@ -12,7 +12,6 @@ import {
   StarOutlined,
   TagsOutlined,
   TeamOutlined,
-  UserSwitchOutlined,
 } from '@ant-design/icons'
 import { Card, Col, Row, Space, Typography } from 'antd'
 import type { ReactNode } from 'react'
@@ -161,7 +160,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
   {
     key: 'system',
     title: 'Hệ thống',
-    description: 'Các màn hình quản trị tài khoản và phân quyền.',
+    description: 'Các màn hình quản trị tài khoản hệ thống.',
     icon: <SettingOutlined />,
     items: [
       {
@@ -181,16 +180,6 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
         icon: <TeamOutlined />,
         iconBackground: '#f1f5f9',
         iconColor: '#334155',
-        adminOnly: true,
-      },
-      {
-        key: 'roles',
-        title: 'Phân quyền',
-        description: 'Cấp quyền admin/staff theo nghiệp vụ.',
-        to: ROUTE_PATHS.DASHBOARD_USERS,
-        icon: <UserSwitchOutlined />,
-        iconBackground: '#fff7ed',
-        iconColor: '#c2410c',
         adminOnly: true,
       },
     ],

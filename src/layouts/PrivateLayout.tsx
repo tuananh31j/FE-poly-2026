@@ -8,7 +8,6 @@ import {
   MessageOutlined,
   OrderedListOutlined,
   PlusSquareOutlined,
-  SafetyCertificateOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
   ShoppingOutlined,
@@ -51,7 +50,6 @@ const MENU_KEYS = {
   ATTRIBUTE_COLORS: 'dashboard-attribute-colors',
   ATTRIBUTE_SIZES: 'dashboard-attribute-sizes',
   ACCOUNTS: 'dashboard-accounts',
-  ROLES: 'dashboard-roles',
 } as const
 
 const SUBMENU_KEYS = {
@@ -132,7 +130,7 @@ export const PrivateLayout = () => {
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_USERS)) {
-      return MENU_KEYS.ROLES
+      return MENU_KEYS.ACCOUNTS
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD)) {
@@ -168,8 +166,7 @@ export const PrivateLayout = () => {
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_BRANDS ||
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_COLORS ||
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_SIZES
-    const shouldOpenSystem =
-      selectedMenuKey === MENU_KEYS.ACCOUNTS || selectedMenuKey === MENU_KEYS.ROLES
+    const shouldOpenSystem = selectedMenuKey === MENU_KEYS.ACCOUNTS
 
     if (shouldOpenOverview) {
       next.add(SUBMENU_KEYS.OVERVIEW)
@@ -342,11 +339,6 @@ export const PrivateLayout = () => {
                         key: MENU_KEYS.ACCOUNTS,
                         icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
-                      },
-                      {
-                        key: MENU_KEYS.ROLES,
-                        icon: <SafetyCertificateOutlined />,
-                        label: <Link to={ROUTE_PATHS.DASHBOARD_USERS}>Phân quyền</Link>,
                       },
                     ],
                   },

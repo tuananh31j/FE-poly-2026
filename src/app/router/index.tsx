@@ -23,7 +23,6 @@ import { OrderManagementPage } from '@/pages/dashboard/OrderManagementPage'
 import { ProductCreatePage } from '@/pages/dashboard/ProductCreatePage'
 import { ProductManagementPage } from '@/pages/dashboard/ProductManagementPage'
 import { ReviewManagementPage } from '@/pages/dashboard/ReviewManagementPage'
-import { UserRoleManagementPage } from '@/pages/dashboard/UserRoleManagementPage'
 import { VoucherManagementPage } from '@/pages/dashboard/VoucherManagementPage'
 import { HomePage } from '@/pages/home/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -188,7 +187,7 @@ export const router = createBrowserRouter([
         path: 'users',
         element: (
           <RequireAdmin>
-            <UserRoleManagementPage />
+            <Navigate to={ROUTE_PATHS.DASHBOARD_ACCOUNTS} replace />
           </RequireAdmin>
         ),
       },
