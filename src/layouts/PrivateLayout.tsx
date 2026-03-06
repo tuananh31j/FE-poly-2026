@@ -37,6 +37,7 @@ import {
 import { clearRefreshTokenCookie, getRefreshTokenCookie } from '@/shared/utils/cookie'
 
 const { Header, Content, Sider } = Layout
+const SIDER_WIDTH = 240
 
 const MENU_KEYS = {
   CENTER: 'dashboard-center',
@@ -156,6 +157,7 @@ export const PrivateLayout = () => {
   }, [location.pathname, location.search])
 
   const selectedKeys = useMemo(() => [selectedMenuKey], [selectedMenuKey])
+  const [isSiderCollapsed, setIsSiderCollapsed] = useState(false)
   const [manualOpenKeys, setManualOpenKeys] = useState<string[]>([])
   const openKeys = useMemo(() => {
     const next = new Set(manualOpenKeys)
@@ -302,7 +304,23 @@ export const PrivateLayout = () => {
 
   return (
     <Layout className="min-h-screen">
-      <Sider breakpoint="lg" collapsedWidth="0" theme="light" width={240}>
+      <Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        theme="light"
+        width={SIDER_WIDTH}
+        onBreakpoint={(broken) => setIsSiderCollapsed(broken)}
+        onCollapse={(collapsed) => setIsSiderCollapsed(collapsed)}
+        style={{
+          position: 'fixed',
+          insetInlineStart: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          zIndex: 100,
+          overflow: 'auto',
+        }}
+      >
         <div className="border-b border-slate-200 px-5 py-4">
           <Link to="/">
             <Typography.Title level={4} className="!mb-0 !text-blue-700">
@@ -441,7 +459,12 @@ export const PrivateLayout = () => {
         />
       </Sider>
 
-      <Layout>
+      <Layout
+        style={{
+          marginLeft: isSiderCollapsed ? 0 : SIDER_WIDTH,
+          transition: 'margin-left 0.2s ease',
+        }}
+      >
         <Header className="flex items-center justify-between border-b border-slate-200 bg-white px-6">
           <Typography.Text strong>
             Xin chào, {user?.fullName || user?.email || 'Authenticated user'}
