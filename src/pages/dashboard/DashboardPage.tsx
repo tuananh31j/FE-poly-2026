@@ -162,28 +162,32 @@ const useRevenueChartOptions = (stats?: DashboardStatisticsResponse) => {
   }, [stats])
 }
 
-const useFulfillmentRateChartOptions = (stats?: DashboardStatisticsResponse) => {
+const useCategoryOrderChartOptions = (stats?: DashboardStatisticsResponse) => {
   return useMemo(() => {
-    const data = stats?.trends.dailyRevenue ?? []
-    const categories = data.map((item) => dayjs(item.date).format('DD/MM'))
-    const fulfillmentRateData = data.map((item) =>
-      item.orders > 0 ? Number(((item.deliveredOrders / item.orders) * 100).toFixed(2)) : 0
-    )
+    const data = stats?.breakdowns.byCategory ?? []
+    const categories = data.map((item) => item.categoryName)
 
     return {
       series: [
         {
-          name: 'Tỷ lệ giao thành công',
-          data: fulfillmentRateData,
+          name: 'Tổng đơn',
+          data: data.map((item) => item.orders),
+        },
+        {
+          name: 'Đơn đã giao',
+          data: data.map((item) => item.deliveredOrders),
         },
       ],
       options: {
         chart: {
           toolbar: { show: false },
         },
-        stroke: {
-          width: 3,
-          curve: 'smooth' as const,
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            borderRadius: 4,
+            barHeight: '60%',
+          },
         },
         dataLabels: {
           enabled: false,
@@ -191,18 +195,13 @@ const useFulfillmentRateChartOptions = (stats?: DashboardStatisticsResponse) => 
         xaxis: {
           categories,
         },
-        yaxis: {
-          min: 0,
-          max: 100,
-          labels: {
-            formatter: (value: number) => `${Math.round(value)}%`,
-          },
+        yaxis: {},
+        colors: ['#2563eb', '#16a34a'],
+        legend: {
+          position: 'top' as const,
         },
-        colors: ['#10b981'],
         tooltip: {
-          y: {
-            formatter: (value: number) => `${value.toFixed(2)}%`,
-          },
+          shared: true,
         },
       },
     }
@@ -223,12 +222,12 @@ export const DashboardPage = () => {
   const summary = stats?.summary
 
   const revenueChart = useRevenueChartOptions(stats)
-  const fulfillmentRateChart = useFulfillmentRateChartOptions(stats)
+  const categoryOrderChart = useCategoryOrderChartOptions(stats)
 
   const statusSeries = stats?.breakdowns.byStatus.map((item) => item.count) ?? []
   const statusLabels = stats?.breakdowns.byStatus.map((item) => ORDER_STATUS_LABELS[item.status]) ?? []
   const hasStatusData = statusSeries.some((value) => value > 0)
-  const hasFulfillmentData = (stats?.trends.dailyRevenue.length ?? 0) > 0
+  const hasCategoryData = (stats?.breakdowns.byCategory.length ?? 0) > 0
 
   return (
     <div className="space-y-6">
@@ -343,19 +342,16 @@ export const DashboardPage = () => {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card
-            title="Tỷ lệ giao thành công theo ngày"
-            loading={statisticsQuery.isLoading || statisticsQuery.isFetching}
-          >
-            {hasFulfillmentData ? (
+          <Card title="Thống kê đơn hàng theo danh mục" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+            {hasCategoryData ? (
               <Chart
-                type="line"
+                type="bar"
                 height={320}
-                series={fulfillmentRateChart.series}
-                options={fulfillmentRateChart.options}
+                series={categoryOrderChart.series}
+                options={categoryOrderChart.options}
               />
             ) : (
-              <Empty description="Chưa có dữ liệu tỷ lệ giao thành công" />
+              <Empty description="Chưa có dữ liệu đơn hàng theo danh mục" />
             )}
           </Card>
         </Col>

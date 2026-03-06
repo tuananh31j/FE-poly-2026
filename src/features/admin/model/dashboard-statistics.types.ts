@@ -49,9 +49,19 @@ export interface DashboardPaymentMethodBreakdownItem {
   revenue: number
 }
 
+export interface DashboardCategoryBreakdownItem {
+  categoryId: string | null
+  categoryName: string
+  orders: number
+  deliveredOrders: number
+  items: number
+  revenue: number
+}
+
 export interface DashboardBreakdowns {
   byStatus: DashboardStatusBreakdownItem[]
   byPaymentMethod: DashboardPaymentMethodBreakdownItem[]
+  byCategory: DashboardCategoryBreakdownItem[]
 }
 
 export interface DashboardTopProductItem {

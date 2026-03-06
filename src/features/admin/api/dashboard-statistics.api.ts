@@ -90,6 +90,7 @@ const normalizeTrends = (value: Record<string, unknown>): DashboardTrends => {
 const normalizeBreakdowns = (value: Record<string, unknown>): DashboardBreakdowns => {
   const rawByStatus = Array.isArray(value.byStatus) ? value.byStatus : []
   const rawByPaymentMethod = Array.isArray(value.byPaymentMethod) ? value.byPaymentMethod : []
+  const rawByCategory = Array.isArray(value.byCategory) ? value.byCategory : []
 
   return {
     byStatus: rawByStatus
@@ -106,6 +107,17 @@ const normalizeBreakdowns = (value: Record<string, unknown>): DashboardBreakdown
       .map((item) => ({
         paymentMethod: normalizePaymentMethod(item.paymentMethod),
         count: Number(item.count ?? 0),
+        revenue: Number(item.revenue ?? 0),
+      })),
+    byCategory: rawByCategory
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => ({
+        categoryId: item.categoryId ? toId(item.categoryId) : null,
+        categoryName: String(item.categoryName ?? 'Không xác định'),
+        orders: Number(item.orders ?? 0),
+        deliveredOrders: Number(item.deliveredOrders ?? 0),
+        items: Number(item.items ?? 0),
         revenue: Number(item.revenue ?? 0),
       })),
   }
