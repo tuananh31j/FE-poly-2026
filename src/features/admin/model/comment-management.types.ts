@@ -1,4 +1,4 @@
-export type CommentTargetModel = 'product' | 'lesson'
+export type CommentTargetModel = 'product'
 
 export interface AdminCommentUserProfile {
   id: string

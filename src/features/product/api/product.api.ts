@@ -123,14 +123,12 @@ const normalizeReviewItem = (item: Record<string, unknown>): ReviewListItem => {
 }
 
 const normalizeCommentItem = (item: Record<string, unknown>): CommentListItem => {
-  const targetModel = item.targetModel === 'lesson' ? 'lesson' : 'product'
-
   return {
     ...item,
     id: toId(item.id ?? item._id),
     _id: typeof item._id === 'string' ? item._id : undefined,
     targetId: toId(item.targetId),
-    targetModel,
+    targetModel: 'product',
     userId: toId(item.userId),
     content: String(item.content ?? ''),
     parentId: item.parentId ? toId(item.parentId) : undefined,

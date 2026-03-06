@@ -86,7 +86,7 @@ export interface CommentListItem {
   id: string
   _id?: string
   targetId: string
-  targetModel: 'product' | 'lesson'
+  targetModel: 'product'
   userId: string
   content: string
   parentId?: string

@@ -24,9 +24,7 @@ const toRecord = (value: unknown): Record<string, unknown> | undefined => {
   return value as Record<string, unknown>
 }
 
-const normalizeTargetModel = (value: unknown): CommentTargetModel => {
-  return value === 'lesson' ? 'lesson' : 'product'
-}
+const normalizeTargetModel = (_value: unknown): CommentTargetModel => 'product'
 
 const normalizeUserProfile = (value: unknown): AdminCommentUserProfile | undefined => {
   const data = toRecord(value)
