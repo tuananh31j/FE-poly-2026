@@ -44,13 +44,6 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   returned: 'Trả hàng',
 }
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cod: 'COD',
-  banking: 'Chuyển khoản',
-  momo: 'MoMo',
-  vnpay: 'VNPay',
-}
-
 const STATUS_COLORS: Record<string, string> = {
   pending: 'default',
   confirmed: 'blue',
@@ -188,11 +181,6 @@ export const DashboardPage = () => {
   const statusLabels = stats?.breakdowns.byStatus.map((item) => ORDER_STATUS_LABELS[item.status]) ?? []
   const hasStatusData = statusSeries.some((value) => value > 0)
 
-  const paymentSeries = stats?.breakdowns.byPaymentMethod.map((item) => item.count) ?? []
-  const paymentLabels =
-    stats?.breakdowns.byPaymentMethod.map((item) => PAYMENT_METHOD_LABELS[item.paymentMethod]) ?? []
-  const hasPaymentData = paymentSeries.some((value) => value > 0)
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -277,7 +265,7 @@ export const DashboardPage = () => {
       </Card>
 
       <Row gutter={[16, 16]}>
-        <Col xs={24} lg={12}>
+        <Col xs={24}>
           <Card title="Cơ cấu trạng thái đơn hàng" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
             {hasStatusData ? (
               <Chart
@@ -301,25 +289,6 @@ export const DashboardPage = () => {
               />
             ) : (
               <Empty description="Chưa có dữ liệu trạng thái đơn hàng" />
-            )}
-          </Card>
-        </Col>
-
-        <Col xs={24} lg={12}>
-          <Card title="Cơ cấu phương thức thanh toán" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            {hasPaymentData ? (
-              <Chart
-                type="donut"
-                height={320}
-                series={paymentSeries}
-                options={{
-                  labels: paymentLabels,
-                  legend: { position: 'bottom' as const },
-                  colors: ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b'],
-                }}
-              />
-            ) : (
-              <Empty description="Chưa có dữ liệu phương thức thanh toán" />
             )}
           </Card>
         </Col>
