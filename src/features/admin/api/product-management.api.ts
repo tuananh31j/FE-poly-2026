@@ -58,8 +58,6 @@ const normalizeAdminProduct = (value: Record<string, unknown>): AdminProductItem
         : undefined,
     images: toStringArray(value.images),
     isAvailable: Boolean(value.isAvailable),
-    metaTitle: typeof value.metaTitle === 'string' ? value.metaTitle : undefined,
-    metaDescription: typeof value.metaDescription === 'string' ? value.metaDescription : undefined,
     averageRating: Number(value.averageRating ?? 0),
     reviewCount: Number(value.reviewCount ?? 0),
     soldCount: Number(value.soldCount ?? 0),

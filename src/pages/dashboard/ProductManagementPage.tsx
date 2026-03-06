@@ -95,8 +95,6 @@ interface ProductFormValues {
   description?: string
   images?: string[]
   isAvailable: boolean
-  metaTitle?: string
-  metaDescription?: string
 }
 
 interface VariantFormValues {
@@ -476,8 +474,6 @@ export const ProductManagementPage = () => {
                   description: record.description,
                   images: record.images,
                   isAvailable: record.isAvailable,
-                  metaTitle: record.metaTitle,
-                  metaDescription: record.metaDescription,
                 })
                 setProductModalOpen(true)
               }}
@@ -626,8 +622,6 @@ export const ProductManagementPage = () => {
       description: normalizeRichTextValue(values.description),
       images: normalizeStringArray(values.images),
       isAvailable: values.isAvailable,
-      metaTitle: values.metaTitle?.trim() || undefined,
-      metaDescription: values.metaDescription?.trim() || undefined,
     }
 
     updateProductMutation.mutate({
@@ -906,15 +900,6 @@ export const ProductManagementPage = () => {
           <Form.Item name="images" hidden>
             <Input placeholder="Danh sách URL ảnh sản phẩm" />
           </Form.Item>
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Form.Item name="metaTitle" label="Meta title">
-              <Input placeholder="Nhập tiêu đề SEO" />
-            </Form.Item>
-            <Form.Item name="metaDescription" label="Meta description">
-              <Input placeholder="Nhập mô tả SEO ngắn" />
-            </Form.Item>
-          </div>
 
           <Form.Item name="isAvailable" label="Trạng thái bán" valuePropName="checked">
             <Switch checkedChildren="Đang bán" unCheckedChildren="Ngừng bán" />

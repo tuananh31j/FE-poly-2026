@@ -54,8 +54,6 @@ export interface ProductDetailResponse {
   attributes?: Record<string, unknown>
   images: string[]
   isAvailable: boolean
-  metaTitle?: string
-  metaDescription?: string
   averageRating: number
   reviewCount: number
   soldCount: number

@@ -265,8 +265,6 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
           : undefined,
       images: toStringArray(data.images),
       isAvailable: Boolean(data.isAvailable),
-      metaTitle: typeof data.metaTitle === 'string' ? data.metaTitle : undefined,
-      metaDescription: typeof data.metaDescription === 'string' ? data.metaDescription : undefined,
       averageRating: Number(data.averageRating ?? 0),
       reviewCount: Number(data.reviewCount ?? 0),
       soldCount: Number(data.soldCount ?? 0),
