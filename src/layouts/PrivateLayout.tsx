@@ -1,4 +1,5 @@
 import {
+  BellOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   BgColorsOutlined,
@@ -19,7 +20,7 @@ import {
   UnorderedListOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Layout, Menu, message, Typography } from 'antd'
+import { Badge, Button, Empty, Layout, List, Menu, message, Popover, Space, Tag, Typography } from 'antd'
 import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -27,6 +28,7 @@ import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
 import { logout } from '@/features/auth/api/auth.api'
 import { useMeQuery } from '@/features/auth/hooks/useMeQuery'
 import { clearAuth } from '@/features/auth/store/auth.slice'
+import { useBackofficeRealtimeNotifications } from '@/features/notifications/hooks/useBackofficeRealtimeNotifications'
 import {
   buildDashboardMasterDataPath,
   buildDashboardProductsPath,
@@ -68,9 +70,22 @@ export const PrivateLayout = () => {
   const queryClient = useQueryClient()
 
   const cachedUser = useAppSelector((state) => state.auth.user)
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
   const { data: meData } = useMeQuery()
 
   const user = meData ?? cachedUser
+  const {
+    items: notificationItems,
+    unreadCount,
+    isConnected: isNotificationConnected,
+    permission: notificationPermission,
+    requestPermission: requestNotificationPermission,
+    markAsRead: markNotificationAsRead,
+    markAllAsRead: markAllNotificationsAsRead,
+  } = useBackofficeRealtimeNotifications({
+    accessToken,
+    role: user?.role,
+  })
 
   const selectedMenuKey = useMemo(() => {
     const params = new URLSearchParams(location.search)
@@ -209,6 +224,82 @@ export const PrivateLayout = () => {
     navigate(ROUTE_PATHS.LOGIN, { replace: true })
   }
 
+  const notificationListContent = (
+    <div className="w-[360px]">
+      <div className="mb-3 flex items-center justify-between">
+        <Typography.Text strong>Thông báo realtime</Typography.Text>
+        <Space size={8}>
+          <Tag color={isNotificationConnected ? 'green' : 'orange'}>
+            {isNotificationConnected ? 'Socket: Online' : 'Socket: Reconnecting'}
+          </Tag>
+          <Button
+            size="small"
+            type="link"
+            className="!px-0"
+            onClick={() => markAllNotificationsAsRead()}
+          >
+            Đánh dấu đã đọc
+          </Button>
+        </Space>
+      </div>
+
+      {notificationPermission === 'default' && (
+        <Button
+          size="small"
+          className="mb-3"
+          onClick={() => {
+            void requestNotificationPermission()
+          }}
+        >
+          Bật thông báo trình duyệt
+        </Button>
+      )}
+
+      {notificationPermission === 'denied' && (
+        <Typography.Text type="secondary" className="mb-3 block text-xs">
+          Bạn đã chặn quyền Notification. Hãy bật lại trong cài đặt trình duyệt để nhận thông báo
+          service worker khi tab đang ẩn/offline.
+        </Typography.Text>
+      )}
+
+      <List
+        size="small"
+        locale={{
+          emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có thông báo" />,
+        }}
+        dataSource={notificationItems.slice(0, 15)}
+        renderItem={(item) => (
+          <List.Item
+            className="cursor-pointer"
+            onClick={() => {
+              markNotificationAsRead(item.id)
+              navigate(item.url)
+            }}
+          >
+            <List.Item.Meta
+              title={
+                <Space size={8}>
+                  <Typography.Text strong={!item.isRead}>{item.title}</Typography.Text>
+                  {!item.isRead && <Tag color="blue">Mới</Tag>}
+                </Space>
+              }
+              description={
+                <Space direction="vertical" size={2} className="w-full">
+                  <Typography.Text type="secondary" className="text-xs">
+                    {item.body}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" className="text-[11px]">
+                    {new Date(item.createdAt).toLocaleString('vi-VN', { hour12: false })}
+                  </Typography.Text>
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  )
+
   return (
     <Layout className="min-h-screen">
       <Sider breakpoint="lg" collapsedWidth="0" theme="light" width={240}>
@@ -231,11 +322,7 @@ export const PrivateLayout = () => {
               icon: <DashboardOutlined />,
               label: <Link to={ROUTE_PATHS.DASHBOARD_CENTER}>Trung tâm</Link>,
             },
-            {
-              key: MENU_KEYS.STATISTICS,
-              icon: <BarChartOutlined />,
-              label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
-            },
+
             {
               key: SUBMENU_KEYS.SALES,
               icon: <ShoppingCartOutlined />,
@@ -340,6 +427,11 @@ export const PrivateLayout = () => {
                         icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
                       },
+                      {
+                        key: MENU_KEYS.STATISTICS,
+                        icon: <BarChartOutlined />,
+                        label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
+                      },
                     ],
                   },
                 ]
@@ -352,11 +444,25 @@ export const PrivateLayout = () => {
       <Layout>
         <Header className="flex items-center justify-between border-b border-slate-200 bg-white px-6">
           <Typography.Text strong>
-            {user?.fullName || user?.email || 'Authenticated user'}
+            Xin chào, {user?.fullName || user?.email || 'Authenticated user'}
           </Typography.Text>
-          <Button type="default" onClick={handleLogout}>
-            Đăng xuất
-          </Button>
+          <Space size={12}>
+            {(user?.role === 'staff' || user?.role === 'admin') && (
+              <Popover
+                placement="bottomRight"
+                trigger="click"
+                content={notificationListContent}
+                overlayClassName="max-w-[90vw]"
+              >
+                <Badge count={unreadCount} size="small" overflowCount={99}>
+                  <Button icon={<BellOutlined />} />
+                </Badge>
+              </Popover>
+            )}
+            <Button type="default" onClick={handleLogout}>
+              Đăng xuất
+            </Button>
+          </Space>
         </Header>
 
         <Content className="p-6">
