@@ -108,8 +108,6 @@ export type NewestResponse = ProductCardItem[]
 export interface ProductFilterCategory {
   id: string
   name: string
-  slug: string
-  image?: string
 }
 
 export interface ProductFiltersResponse {

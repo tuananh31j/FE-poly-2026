@@ -159,8 +159,6 @@ const normalizeFilterCategory = (item: Record<string, unknown>): ProductFilterCa
   return {
     id: toId(item.id ?? item._id),
     name: String(item.name ?? 'Danh mục'),
-    slug: String(item.slug ?? ''),
-    image: typeof item.image === 'string' ? item.image : undefined,
   }
 }
 

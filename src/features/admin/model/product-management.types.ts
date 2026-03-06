@@ -53,21 +53,18 @@ export type AdminProductVariantListResponse = PaginatedResponse<AdminProductVari
 export interface AdminCategoryOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 
 export interface AdminBrandOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 
 export interface AdminColorOption {
   id: string
   name: string
-  slug: string
   hexCode?: string
   isActive?: boolean
 }
@@ -75,7 +72,6 @@ export interface AdminColorOption {
 export interface AdminSizeOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 

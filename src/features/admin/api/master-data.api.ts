@@ -37,10 +37,7 @@ const normalizeCategory = (value: Record<string, unknown>): MasterCategoryItem =
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     description: typeof value.description === 'string' ? value.description : undefined,
-    parentId: value.parentId ? toId(value.parentId) : undefined,
-    image: typeof value.image === 'string' ? value.image : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
@@ -51,7 +48,6 @@ const normalizeBrand = (value: Record<string, unknown>): MasterBrandItem => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     description: typeof value.description === 'string' ? value.description : undefined,
     logoUrl: typeof value.logoUrl === 'string' ? value.logoUrl : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
@@ -64,7 +60,6 @@ const normalizeColor = (value: Record<string, unknown>): MasterColorItem => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     hexCode: typeof value.hexCode === 'string' ? value.hexCode : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     createdAt: String(value.createdAt ?? ''),
@@ -76,7 +71,6 @@ const normalizeSize = (value: Record<string, unknown>): MasterSizeItem => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
