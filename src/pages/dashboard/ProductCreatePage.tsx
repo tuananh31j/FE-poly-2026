@@ -1,12 +1,8 @@
 import {
   ArrowLeftOutlined,
-  BoldOutlined,
   DeleteOutlined,
-  ItalicOutlined,
-  OrderedListOutlined,
   PlusOutlined,
   UploadOutlined,
-  UnorderedListOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
@@ -25,8 +21,7 @@ import {
   Typography,
   Upload,
 } from 'antd'
-import type { TextAreaRef } from 'antd/es/input/TextArea'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -44,6 +39,8 @@ import type {
 import { queryKeys } from '@/shared/api/queryKeys'
 import { uploadImage } from '@/shared/api/upload.api'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
+import { RichTextEditor } from '@/shared/ui/RichTextEditor'
+import { normalizeRichTextValue } from '@/shared/utils/rich-text'
 
 const createSlugFromName = (value: string) => {
   return value
@@ -116,8 +113,6 @@ export const ProductCreatePage = () => {
   const navigate = useNavigate()
   const [form] = Form.useForm<ProductCreateFormValues>()
   const [uploadingCount, setUploadingCount] = useState(0)
-  const descriptionEditorRef = useRef<TextAreaRef>(null)
-  const descriptionValue = Form.useWatch('description', form) ?? ''
   const productImages = normalizeStringArray(Form.useWatch('images', form))
   const variantValues = Form.useWatch('variants', form) ?? []
 
@@ -190,12 +185,19 @@ export const ProductCreatePage = () => {
   }
 
   const appendVariantImage = (variantIndex: number, url: string) => {
-    const currentImages = normalizeStringArray(form.getFieldValue(['variants', variantIndex, 'images']))
-    form.setFieldValue(['variants', variantIndex, 'images'], mergeUniqueStringArray(currentImages, url))
+    const currentImages = normalizeStringArray(
+      form.getFieldValue(['variants', variantIndex, 'images'])
+    )
+    form.setFieldValue(
+      ['variants', variantIndex, 'images'],
+      mergeUniqueStringArray(currentImages, url)
+    )
   }
 
   const removeVariantImage = (variantIndex: number, url: string) => {
-    const currentImages = normalizeStringArray(form.getFieldValue(['variants', variantIndex, 'images']))
+    const currentImages = normalizeStringArray(
+      form.getFieldValue(['variants', variantIndex, 'images'])
+    )
     form.setFieldValue(
       ['variants', variantIndex, 'images'],
       currentImages.filter((value) => value !== url)
@@ -211,29 +213,6 @@ export const ProductCreatePage = () => {
       return Upload.LIST_IGNORE
     }
 
-  const insertDescriptionText = (prefix: string, suffix = '', fallbackText = 'nội dung') => {
-    const textarea = descriptionEditorRef.current?.resizableTextArea?.textArea
-    const current = form.getFieldValue('description') ?? ''
-
-    if (!textarea) {
-      form.setFieldValue('description', `${current}${prefix}${fallbackText}${suffix}`)
-      return
-    }
-
-    const start = textarea.selectionStart ?? current.length
-    const end = textarea.selectionEnd ?? current.length
-    const selectedText = current.slice(start, end) || fallbackText
-    const nextValue = `${current.slice(0, start)}${prefix}${selectedText}${suffix}${current.slice(end)}`
-
-    form.setFieldValue('description', nextValue)
-
-    requestAnimationFrame(() => {
-      textarea.focus()
-      const cursor = start + prefix.length + selectedText.length + suffix.length
-      textarea.setSelectionRange(cursor, cursor)
-    })
-  }
-
   const createProductMutation = useMutation({
     mutationFn: async (values: ProductCreateFormValues) => {
       const slug = createSlugFromName(values.name)
@@ -247,14 +226,14 @@ export const ProductCreatePage = () => {
         slug,
         categoryId: values.categoryId,
         brandId: values.brandId.trim(),
-        description: values.description?.trim() || undefined,
+        description: normalizeRichTextValue(values.description),
         images: normalizeStringArray(values.images),
         isAvailable: values.isAvailable,
         metaTitle: values.metaTitle?.trim() || undefined,
         metaDescription: values.metaDescription?.trim() || undefined,
       }
 
-      let createdProduct = await createAdminProduct(payload)
+      const createdProduct = await createAdminProduct(payload)
 
       for (let index = 0; index < values.variants.length; index += 1) {
         const variantPayload = toVariantPayload(values.variants[index])
@@ -366,63 +345,13 @@ export const ProductCreatePage = () => {
             />
           </Form.Item>
 
-          <Form.Item label="Mô tả (Editor)">
-            <Card size="small" className="!border-slate-200 !bg-slate-50">
-              <Space wrap className="mb-3">
-                <Button
-                  icon={<BoldOutlined />}
-                  onClick={() => {
-                    insertDescriptionText('**', '**', 'in đậm')
-                  }}
-                >
-                  Đậm
-                </Button>
-                <Button
-                  icon={<ItalicOutlined />}
-                  onClick={() => {
-                    insertDescriptionText('_', '_', 'in nghiêng')
-                  }}
-                >
-                  Nghiêng
-                </Button>
-                <Button
-                  icon={<UnorderedListOutlined />}
-                  onClick={() => {
-                    insertDescriptionText('\n- ', '', 'mục')
-                  }}
-                >
-                  Danh sách
-                </Button>
-                <Button
-                  icon={<OrderedListOutlined />}
-                  onClick={() => {
-                    insertDescriptionText('\n1. ', '', 'mục')
-                  }}
-                >
-                  Đánh số
-                </Button>
-              </Space>
-
-              <Form.Item name="description" noStyle>
-                <Input.TextArea
-                  ref={descriptionEditorRef}
-                  rows={8}
-                  placeholder="Nhập mô tả sản phẩm..."
-                />
-              </Form.Item>
-
-              <div className="mt-3 rounded-md border border-slate-200 bg-white p-3">
-                <Typography.Text type="secondary" className="text-xs">
-                  Xem trước
-                </Typography.Text>
-                <Typography.Paragraph className="!mb-0 !mt-2 whitespace-pre-wrap">
-                  {descriptionValue.trim() || 'Nội dung mô tả sẽ hiển thị tại đây.'}
-                </Typography.Paragraph>
-              </div>
-            </Card>
+          <Form.Item label="Mô tả">
+            <Form.Item name="description" noStyle>
+              <RichTextEditor placeholder="Nhập mô tả sản phẩm..." minHeight={260} />
+            </Form.Item>
           </Form.Item>
 
-          <Form.Item label="Danh sách ảnh (upload file)">
+          <Form.Item label="Danh sách ảnh">
             <Space direction="vertical" size={10} className="w-full">
               <Upload
                 multiple
@@ -491,7 +420,7 @@ export const ProductCreatePage = () => {
 
           <Divider />
 
-          <Typography.Title level={5}>Biến thể (Form động)</Typography.Title>
+          <Typography.Title level={5}>Thông tin bán hàng</Typography.Title>
           <Form.List
             name="variants"
             rules={[
@@ -531,120 +460,120 @@ export const ProductCreatePage = () => {
                         ) : null
                       }
                     >
-                    <Form.Item label="SKU">
-                      <Input disabled placeholder="SKU sẽ được hệ thống tự động tạo" />
-                    </Form.Item>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <Form.Item name={[field.name, 'colorId']} label="Màu sắc (tùy chọn)">
-                        <Select
-                          allowClear
-                          showSearch
-                          optionFilterProp="label"
-                          placeholder="Không chọn màu cũng được"
-                          options={(colorsQuery.data ?? []).map((item) => ({
-                            label: item.name,
-                            value: item.id,
-                          }))}
-                        />
+                      <Form.Item label="SKU">
+                        <Input disabled placeholder="SKU sẽ được hệ thống tự động tạo" />
                       </Form.Item>
 
-                      <Form.Item name={[field.name, 'sizeId']} label="Size (tùy chọn)">
-                        <Select
-                          allowClear
-                          showSearch
-                          optionFilterProp="label"
-                          placeholder="Không chọn size cũng được"
-                          options={(sizesQuery.data ?? []).map((item) => ({
-                            label: item.name,
-                            value: item.id,
-                          }))}
-                        />
-                      </Form.Item>
-                    </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <Form.Item name={[field.name, 'colorId']} label="Màu sắc (tùy chọn)">
+                          <Select
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            placeholder="Không chọn màu cũng được"
+                            options={(colorsQuery.data ?? []).map((item) => ({
+                              label: item.name,
+                              value: item.id,
+                            }))}
+                          />
+                        </Form.Item>
 
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <Form.Item
-                        name={[field.name, 'price']}
-                        label="Giá bán"
-                        rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
-                      >
-                        <InputNumber min={0} className="w-full" placeholder="Nhập giá bán" />
-                      </Form.Item>
+                        <Form.Item name={[field.name, 'sizeId']} label="Size (tùy chọn)">
+                          <Select
+                            allowClear
+                            showSearch
+                            optionFilterProp="label"
+                            placeholder="Không chọn size cũng được"
+                            options={(sizesQuery.data ?? []).map((item) => ({
+                              label: item.name,
+                              value: item.id,
+                            }))}
+                          />
+                        </Form.Item>
+                      </div>
 
-                      <Form.Item name={[field.name, 'originalPrice']} label="Giá gốc">
-                        <InputNumber
-                          min={0}
-                          className="w-full"
-                          placeholder="Nhập giá gốc (nếu có)"
-                        />
-                      </Form.Item>
-
-                      <Form.Item
-                        name={[field.name, 'stockQuantity']}
-                        label="Tồn kho"
-                        rules={[{ required: true, message: 'Vui lòng nhập tồn kho' }]}
-                      >
-                        <InputNumber min={0} className="w-full" placeholder="Nhập số lượng tồn" />
-                      </Form.Item>
-                    </div>
-
-                    <Form.Item label="Ảnh variant (upload file)">
-                      <Space direction="vertical" size={10} className="w-full">
-                        <Upload
-                          multiple
-                          accept="image/*"
-                          showUploadList={false}
-                          beforeUpload={createVariantImageBeforeUpload(Number(field.name))}
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <Form.Item
+                          name={[field.name, 'price']}
+                          label="Giá bán"
+                          rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
                         >
-                          <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
-                            Tải ảnh variant
-                          </Button>
-                        </Upload>
+                          <InputNumber min={0} className="w-full" placeholder="Nhập giá bán" />
+                        </Form.Item>
 
-                        {variantImages.length > 0 ? (
-                          <div className="flex flex-wrap gap-3">
-                            {variantImages.map((imageUrl) => (
-                              <div
-                                key={`${field.key}-${imageUrl}`}
-                                className="w-[110px] rounded-md border border-slate-200 p-2"
-                              >
-                                <Image
-                                  src={imageUrl}
-                                  alt="Ảnh variant"
-                                  className="h-[70px] w-full rounded object-cover"
-                                  fallback="/images/product-placeholder.svg"
-                                />
-                                <Button
-                                  danger
-                                  type="text"
-                                  size="small"
-                                  icon={<DeleteOutlined />}
-                                  onClick={() => {
-                                    removeVariantImage(variantIndex, imageUrl)
-                                  }}
+                        <Form.Item name={[field.name, 'originalPrice']} label="Giá gốc">
+                          <InputNumber
+                            min={0}
+                            className="w-full"
+                            placeholder="Nhập giá gốc (nếu có)"
+                          />
+                        </Form.Item>
+
+                        <Form.Item
+                          name={[field.name, 'stockQuantity']}
+                          label="Tồn kho"
+                          rules={[{ required: true, message: 'Vui lòng nhập tồn kho' }]}
+                        >
+                          <InputNumber min={0} className="w-full" placeholder="Nhập số lượng tồn" />
+                        </Form.Item>
+                      </div>
+
+                      <Form.Item label="Ảnh variant (upload file)">
+                        <Space direction="vertical" size={10} className="w-full">
+                          <Upload
+                            multiple
+                            accept="image/*"
+                            showUploadList={false}
+                            beforeUpload={createVariantImageBeforeUpload(Number(field.name))}
+                          >
+                            <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
+                              Tải ảnh variant
+                            </Button>
+                          </Upload>
+
+                          {variantImages.length > 0 ? (
+                            <div className="flex flex-wrap gap-3">
+                              {variantImages.map((imageUrl) => (
+                                <div
+                                  key={`${field.key}-${imageUrl}`}
+                                  className="w-[110px] rounded-md border border-slate-200 p-2"
                                 >
-                                  Xóa
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <Typography.Text type="secondary">Chưa có ảnh variant.</Typography.Text>
-                        )}
-                      </Space>
-                    </Form.Item>
-                    <Form.Item name={[field.name, 'images']} hidden>
-                      <Input placeholder="Danh sách URL ảnh variant" />
-                    </Form.Item>
+                                  <Image
+                                    src={imageUrl}
+                                    alt="Ảnh variant"
+                                    className="h-[70px] w-full rounded object-cover"
+                                    fallback="/images/product-placeholder.svg"
+                                  />
+                                  <Button
+                                    danger
+                                    type="text"
+                                    size="small"
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => {
+                                      removeVariantImage(variantIndex, imageUrl)
+                                    }}
+                                  >
+                                    Xóa
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <Typography.Text type="secondary">Chưa có ảnh variant.</Typography.Text>
+                          )}
+                        </Space>
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'images']} hidden>
+                        <Input placeholder="Danh sách URL ảnh variant" />
+                      </Form.Item>
 
-                    <Form.Item
-                      name={[field.name, 'isAvailable']}
-                      label="Trạng thái"
-                      valuePropName="checked"
-                    >
-                      <Switch checkedChildren="Còn hàng" unCheckedChildren="Hết hàng" />
-                    </Form.Item>
+                      <Form.Item
+                        name={[field.name, 'isAvailable']}
+                        label="Trạng thái"
+                        valuePropName="checked"
+                      >
+                        <Switch checkedChildren="Còn hàng" unCheckedChildren="Hết hàng" />
+                      </Form.Item>
                     </Card>
                   )
                 })}

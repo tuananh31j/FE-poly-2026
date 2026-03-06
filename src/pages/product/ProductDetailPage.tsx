@@ -21,6 +21,7 @@ import {
   Typography,
 } from 'antd'
 import type { CarouselRef } from 'antd/es/carousel'
+import DOMPurify from 'dompurify'
 import { chunk } from 'lodash'
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -45,6 +46,7 @@ import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
+import { hasRichTextMarkup } from '@/shared/utils/rich-text'
 
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
 
@@ -156,6 +158,15 @@ export const ProductDetailPage = () => {
   })
 
   const product = productDetailQuery.data
+  const normalizedDescription = product?.description?.trim() ?? ''
+  const hasMarkupDescription = hasRichTextMarkup(normalizedDescription)
+  const sanitizedDescriptionHtml = useMemo(() => {
+    if (!normalizedDescription) {
+      return ''
+    }
+
+    return DOMPurify.sanitize(normalizedDescription)
+  }, [normalizedDescription])
 
   const gallery = useMemo(() => {
     if (!product) {
@@ -593,9 +604,24 @@ export const ProductDetailPage = () => {
       </Row>
 
       <Card title="Mô tả sản phẩm">
-        <Typography.Paragraph className="!mb-0 whitespace-pre-line">
-          {product.description || 'Sản phẩm chưa có mô tả chi tiết.'}
-        </Typography.Paragraph>
+        {normalizedDescription ? (
+          hasMarkupDescription ? (
+            <div
+              className="rich-text-render text-slate-700"
+              dangerouslySetInnerHTML={{
+                __html: sanitizedDescriptionHtml,
+              }}
+            />
+          ) : (
+            <Typography.Paragraph className="!mb-0 whitespace-pre-line">
+              {normalizedDescription}
+            </Typography.Paragraph>
+          )
+        ) : (
+          <Typography.Paragraph className="!mb-0" type="secondary">
+            Sản phẩm chưa có mô tả chi tiết.
+          </Typography.Paragraph>
+        )}
       </Card>
 
       <Card title="Đánh giá khách hàng">
