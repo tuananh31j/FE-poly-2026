@@ -149,6 +149,7 @@ const useRevenueChartOptions = (stats?: DashboardStatisticsResponse) => {
         },
         tooltip: {
           shared: true,
+          intersect: false,
         },
       },
     }
@@ -195,6 +196,7 @@ const useCategoryOrderChartOptions = (stats?: DashboardStatisticsResponse) => {
         },
         tooltip: {
           shared: true,
+          intersect: false,
         },
       },
     }
