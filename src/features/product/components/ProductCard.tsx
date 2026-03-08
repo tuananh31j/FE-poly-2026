@@ -1,4 +1,4 @@
-import { Card, Rate, Tag, Typography } from 'antd'
+import { Card, Rate, Tag, Tooltip, Typography } from 'antd'
 import Highlighter from 'react-highlight-words'
 import { Link } from 'react-router-dom'
 
@@ -50,18 +50,20 @@ export const ProductCard = ({ product, compact = false, highlightText }: Product
         }
       >
         <div className="space-y-2">
-          <Typography.Title level={5} className="!mb-0 line-clamp-2 !text-base">
-            {searchWords.length > 0 ? (
-              <Highlighter
-                autoEscape
-                searchWords={searchWords}
-                textToHighlight={product.name}
-                highlightStyle={{ backgroundColor: '#FFF3A3', padding: 0 }}
-              />
-            ) : (
-              product.name
-            )}
-          </Typography.Title>
+          <Tooltip title={product.name}>
+            <Typography.Title level={5} className="!mb-0 line-clamp-1 !text-base">
+              {searchWords.length > 0 ? (
+                <Highlighter
+                  autoEscape
+                  searchWords={searchWords}
+                  textToHighlight={product.name}
+                  highlightStyle={{ backgroundColor: '#FFF3A3', padding: 0 }}
+                />
+              ) : (
+                product.name
+              )}
+            </Typography.Title>
+          </Tooltip>
 
           <Typography.Text type="secondary" className="line-clamp-1 text-xs uppercase">
             {product.brand}

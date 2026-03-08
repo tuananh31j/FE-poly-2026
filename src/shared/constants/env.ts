@@ -6,5 +6,5 @@ const getEnvValue = (value: string | undefined, fallback: string) => {
 
 export const env = {
   appName: getEnvValue(import.meta.env.VITE_APP_NAME, 'golden-billiards-fe'),
-  apiBaseUrl: getEnvValue(import.meta.env.VITE_API_BASE_URL, 'http://localhost:8080/api/v1'),
+  apiBaseUrl: getEnvValue(import.meta.env.VITE_API_BASE_URL, 'http://192.168.1.187:8080/api/v1'),
 }
