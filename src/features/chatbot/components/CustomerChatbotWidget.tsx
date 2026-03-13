@@ -1,9 +1,13 @@
 import {
   CloseOutlined,
+  GiftOutlined,
   MessageOutlined,
+  OrderedListOutlined,
   ReloadOutlined,
   RobotOutlined,
   SendOutlined,
+  ShoppingCartOutlined,
+  ShoppingOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { useMutation } from '@tanstack/react-query'
@@ -13,7 +17,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { askChatbot } from '@/features/chatbot/api/chatbot.api'
 import type { ChatbotUiMessage } from '@/features/chatbot/model/chatbot.types'
-import { buildProductDetailPath } from '@/shared/constants/routes'
+import { buildProductDetailPath, ROUTE_PATHS } from '@/shared/constants/routes'
 
 const { TextArea } = Input
 
@@ -24,6 +28,28 @@ const QUICK_PROMPTS = [
   'Có phương thức thanh toán nào?',
   'Làm sao theo dõi đơn hàng?',
   'Chính sách đổi trả như thế nào?',
+]
+const QUICK_ACTIONS = [
+  {
+    label: 'Xem sản phẩm',
+    icon: <ShoppingOutlined />,
+    url: ROUTE_PATHS.PRODUCTS,
+  },
+  {
+    label: 'Xem giỏ hàng',
+    icon: <ShoppingCartOutlined />,
+    url: ROUTE_PATHS.CHECKOUT,
+  },
+  {
+    label: 'Theo dõi đơn hàng',
+    icon: <OrderedListOutlined />,
+    url: ROUTE_PATHS.ACCOUNT_ORDERS,
+  },
+  {
+    label: 'Ưu đãi hôm nay',
+    icon: <GiftOutlined />,
+    question: 'Có chương trình ưu đãi nào hôm nay không?',
+  },
 ]
 
 const formatVndCurrency = (value: number) => {
@@ -86,6 +112,7 @@ export const CustomerChatbotWidget = () => {
   })
 
   const isWaitingAnswer = askMutation.isPending
+  const statusText = isWaitingAnswer ? 'Đang phản hồi...' : 'Sẵn sàng hỗ trợ'
 
   const appendMessage = (nextMessage: ChatbotUiMessage) => {
     setMessagesState((prev) => [...prev, nextMessage].slice(-MAX_HISTORY_MESSAGES))
@@ -254,7 +281,7 @@ export const CustomerChatbotWidget = () => {
             <Space direction="vertical" size={0}>
               <Typography.Text strong>Chatbot hỗ trợ khách hàng</Typography.Text>
               <Typography.Text type="secondary" className="text-xs">
-                Trợ lý mua hàng tự động
+                {statusText}
               </Typography.Text>
             </Space>
           </Space>
@@ -314,14 +341,38 @@ export const CustomerChatbotWidget = () => {
           {shouldShowQuickPromptPanel && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
               <Typography.Text strong className="block">
-                Hỏi nhanh
+                Bắt đầu nhanh
               </Typography.Text>
-              <Typography.Text type="secondary" className="mb-2 block text-xs">
-                Chọn một gợi ý để bắt đầu.
+              <Typography.Text type="secondary" className="mb-3 block text-xs">
+                Chọn nhanh để khám phá sản phẩm hoặc hỏi trợ lý.
               </Typography.Text>
+              <Space wrap size={[6, 6]} className="mb-3">
+                {QUICK_ACTIONS.map((action) => (
+                  <Button
+                    key={action.label}
+                    size="small"
+                    icon={action.icon}
+                    onClick={() => {
+                      if (action.url) {
+                        handleNavigate(action.url)
+                      } else if (action.question) {
+                        sendQuestion(action.question)
+                      }
+                    }}
+                  >
+                    {action.label}
+                  </Button>
+                ))}
+              </Space>
+              <Divider className="!my-2" />
               <Space wrap size={[6, 6]}>
                 {QUICK_PROMPTS.map((question) => (
-                  <Button key={`prompt-${question}`} size="small" onClick={() => sendQuestion(question)}>
+                  <Button
+                    key={`prompt-${question}`}
+                    size="small"
+                    type="dashed"
+                    onClick={() => sendQuestion(question)}
+                  >
                     {question}
                   </Button>
                 ))}
@@ -351,7 +402,9 @@ export const CustomerChatbotWidget = () => {
                         className={isAssistant ? '' : '!bg-blue-700'}
                       />
                       <div>
-                        <Typography.Paragraph className={`!mb-1 ${isAssistant ? '' : '!text-white'}`}>
+                        <Typography.Paragraph
+                          className={`!mb-1 whitespace-pre-wrap ${isAssistant ? '' : '!text-white'}`}
+                        >
                           {item.content}
                         </Typography.Paragraph>
                         <Typography.Text className={`text-[11px] ${isAssistant ? 'text-slate-500' : '!text-blue-100'}`}>
