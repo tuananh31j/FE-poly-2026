@@ -21,7 +21,7 @@ import {
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, Empty, Layout, List, Menu, message, Popover, Space, Tag, Typography } from 'antd'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
@@ -155,6 +155,17 @@ export const PrivateLayout = () => {
 
     return MENU_KEYS.CENTER
   }, [location.pathname, location.search])
+
+  useEffect(() => {
+    const state = location.state as { authSuccess?: 'login' | 'register' } | null
+    if (!state?.authSuccess) {
+      return
+    }
+
+    const content = state.authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
+    void message.success(content)
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, location.state, navigate])
 
   const selectedKeys = useMemo(() => [selectedMenuKey], [selectedMenuKey])
   const [isSiderCollapsed, setIsSiderCollapsed] = useState(false)
