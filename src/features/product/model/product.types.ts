@@ -47,6 +47,7 @@ export interface ProductDetailResponse {
   _id?: string
   name: string
   categoryId: string
+  brandId?: string
   brand: string
   description?: string
   attributes?: Record<string, unknown>

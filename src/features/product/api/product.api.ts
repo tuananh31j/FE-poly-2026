@@ -274,6 +274,7 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
       _id: typeof data._id === 'string' ? data._id : undefined,
       name: String(data.name ?? ''),
       categoryId: toId(data.categoryId),
+      brandId: data.brandId ? toId(data.brandId) : undefined,
       brand: typeof data.brand === 'string' ? data.brand : 'Generic',
       description: typeof data.description === 'string' ? data.description : undefined,
       attributes:

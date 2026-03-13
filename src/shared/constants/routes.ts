@@ -20,6 +20,7 @@ export const ROUTE_PATHS = {
   DASHBOARD_REVIEWS: '/dashboard/reviews',
   DASHBOARD_COMMENTS: '/dashboard/comments',
   DASHBOARD_PRODUCTS: '/dashboard/products',
+  DASHBOARD_PRODUCTS_EDIT: '/dashboard/products/:productId/edit',
   DASHBOARD_PRODUCTS_CREATE: '/dashboard/products/create',
   DASHBOARD_VOUCHERS: '/dashboard/vouchers',
   DASHBOARD_USERS: '/dashboard/users',
@@ -48,6 +49,10 @@ export type ProductManagementMode = 'list' | 'create'
 
 export const buildDashboardProductsPath = (mode: ProductManagementMode = 'list') => {
   return mode === 'create' ? ROUTE_PATHS.DASHBOARD_PRODUCTS_CREATE : ROUTE_PATHS.DASHBOARD_PRODUCTS
+}
+
+export const buildDashboardProductEditPath = (productId: string) => {
+  return ROUTE_PATHS.DASHBOARD_PRODUCTS_EDIT.replace(':productId', productId)
 }
 
 export type MasterDataTabKey = 'categories' | 'brands' | 'colors' | 'sizes'

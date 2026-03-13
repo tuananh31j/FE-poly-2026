@@ -22,6 +22,7 @@ import { MasterDataManagementPage } from '@/pages/dashboard/MasterDataManagement
 import { OrderManagementPage } from '@/pages/dashboard/OrderManagementPage'
 import { ProductCreatePage } from '@/pages/dashboard/ProductCreatePage'
 import { ProductManagementPage } from '@/pages/dashboard/ProductManagementPage'
+import { ProductUpdatePage } from '@/pages/dashboard/ProductUpdatePage'
 import { ReviewManagementPage } from '@/pages/dashboard/ReviewManagementPage'
 import { VoucherManagementPage } from '@/pages/dashboard/VoucherManagementPage'
 import { HomePage } from '@/pages/home/HomePage'
@@ -156,6 +157,14 @@ export const router = createBrowserRouter([
         element: (
           <RequireAdmin>
             <ProductCreatePage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'products/:productId/edit',
+        element: (
+          <RequireAdmin>
+            <ProductUpdatePage />
           </RequireAdmin>
         ),
       },
