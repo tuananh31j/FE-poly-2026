@@ -11,7 +11,6 @@ export interface AdminCommentTargetProfile {
   id: string
   targetModel: CommentTargetModel
   name?: string
-  slug?: string
   thumbnailUrl?: string
 }
 

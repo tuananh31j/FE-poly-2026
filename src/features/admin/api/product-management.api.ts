@@ -47,7 +47,6 @@ const normalizeAdminProduct = (value: Record<string, unknown>): AdminProductItem
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     categoryId: toId(value.categoryId),
     brandId: value.brandId ? toId(value.brandId) : undefined,
     brand: typeof value.brand === 'string' ? value.brand : 'Generic',

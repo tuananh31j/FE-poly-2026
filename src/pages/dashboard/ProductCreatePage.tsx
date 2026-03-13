@@ -42,16 +42,6 @@ import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { RichTextEditor } from '@/shared/ui/RichTextEditor'
 import { normalizeRichTextValue } from '@/shared/utils/rich-text'
 
-const createSlugFromName = (value: string) => {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
 const normalizeStringArray = (value: unknown) => {
   if (!Array.isArray(value)) {
     return []
@@ -213,15 +203,8 @@ export const ProductCreatePage = () => {
 
   const createProductMutation = useMutation({
     mutationFn: async (values: ProductCreateFormValues) => {
-      const slug = createSlugFromName(values.name)
-
-      if (!slug) {
-        throw new Error('Tên sản phẩm không hợp lệ để tạo slug')
-      }
-
       const payload: CreateAdminProductPayload = {
         name: values.name.trim(),
-        slug,
         categoryId: values.categoryId,
         brandId: values.brandId.trim(),
         description: normalizeRichTextValue(values.description),

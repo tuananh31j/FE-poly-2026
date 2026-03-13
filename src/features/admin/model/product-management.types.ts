@@ -9,7 +9,6 @@ export interface PaginatedResponse<T> {
 export interface AdminProductItem {
   id: string
   name: string
-  slug: string
   categoryId: string
   brandId?: string
   brand: string
@@ -87,7 +86,6 @@ export interface ListAdminProductsParams {
 
 export interface CreateAdminProductPayload {
   name: string
-  slug: string
   categoryId: string
   brandId?: string
   brand?: string
