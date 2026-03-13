@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
+  Avatar,
   Card,
   Col,
   Empty,
@@ -21,11 +22,14 @@ import { getAdminDashboardStatistics } from '@/features/admin/api/dashboard-stat
 import type {
   DashboardStatisticsResponse,
   DashboardTopProductItem,
+  DashboardTopVariantItem,
 } from '@/features/admin/model/dashboard-statistics.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { buildProductDetailPath } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
+
+const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
 
 const DAYS_OPTIONS = [
   { label: '7 ngày', value: 7 },
@@ -87,6 +91,65 @@ const topProductColumns: ColumnsType<DashboardTopProductItem> = [
     width: 130,
     render: (_, record) => (
       <Tag color={record.isAvailable ? 'green' : 'default'}>{record.isAvailable ? 'Đang bán' : 'Ngừng bán'}</Tag>
+    ),
+  },
+]
+
+const topVariantColumns: ColumnsType<DashboardTopVariantItem> = [
+  {
+    title: 'Biến thể',
+    key: 'variant',
+    render: (_, record) => (
+      <Space size={10} align="center">
+        <Avatar
+          shape="square"
+          size={42}
+          src={record.thumbnailUrl ?? PRODUCT_PLACEHOLDER}
+        />
+        <Space direction="vertical" size={0} className="min-w-0">
+          <Typography.Text strong className="line-clamp-1">
+            {record.variantSku || 'SKU'}
+          </Typography.Text>
+          <Link
+            to={buildProductDetailPath(record.productId)}
+            className="text-xs text-blue-600 hover:text-blue-700"
+          >
+            {record.productName}
+          </Link>
+          <Typography.Text type="secondary" className="text-xs">
+            {record.variantColor || 'Không chọn'} · {record.size}
+          </Typography.Text>
+        </Space>
+      </Space>
+    ),
+  },
+  {
+    title: 'Đã bán',
+    dataIndex: 'soldCount',
+    key: 'soldCount',
+    width: 110,
+  },
+  {
+    title: 'Doanh thu',
+    dataIndex: 'revenue',
+    key: 'revenue',
+    width: 150,
+    render: (value: number) => formatVndCurrency(value),
+  },
+  {
+    title: 'Tồn kho',
+    dataIndex: 'stockQuantity',
+    key: 'stockQuantity',
+    width: 110,
+  },
+  {
+    title: 'Trạng thái',
+    key: 'isAvailable',
+    width: 130,
+    render: (_, record) => (
+      <Tag color={record.isAvailable ? 'green' : 'default'}>
+        {record.isAvailable ? 'Còn hàng' : 'Hết hàng'}
+      </Tag>
     ),
   },
 ]
@@ -376,6 +439,36 @@ export const DashboardPage = () => {
               pagination={false}
               locale={{
                 emptyText: <Empty description="Chưa có dữ liệu sản phẩm bán chậm" />,
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
+        <Col xs={24} xl={12}>
+          <Card title="Top biến thể bán chạy" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+            <Table
+              rowKey="variantId"
+              columns={topVariantColumns}
+              dataSource={stats?.topVariants ?? []}
+              pagination={false}
+              locale={{
+                emptyText: <Empty description="Chưa có dữ liệu biến thể bán chạy" />,
+              }}
+            />
+          </Card>
+        </Col>
+
+        <Col xs={24} xl={12}>
+          <Card title="Top biến thể bán chậm" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+            <Table
+              rowKey="variantId"
+              columns={topVariantColumns}
+              dataSource={stats?.bottomVariants ?? []}
+              pagination={false}
+              locale={{
+                emptyText: <Empty description="Chưa có dữ liệu biến thể bán chậm" />,
               }}
             />
           </Card>

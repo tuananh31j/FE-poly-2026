@@ -8,6 +8,7 @@ import type {
   DashboardStatisticsResponse,
   DashboardSummary,
   DashboardTopProductItem,
+  DashboardTopVariantItem,
   DashboardTrends,
 } from '../model/dashboard-statistics.types'
 import type { AdminOrderStatus, AdminPaymentMethod } from '../model/order-management.types'
@@ -136,12 +137,30 @@ const normalizeTopProduct = (value: Record<string, unknown>): DashboardTopProduc
   }
 }
 
+const normalizeTopVariant = (value: Record<string, unknown>): DashboardTopVariantItem => {
+  return {
+    variantId: toId(value.variantId ?? value.id ?? value._id),
+    productId: toId(value.productId),
+    productName: String(value.productName ?? ''),
+    variantSku: String(value.variantSku ?? ''),
+    variantColor: String(value.variantColor ?? ''),
+    size: String(value.size ?? 'Standard'),
+    soldCount: Number(value.soldCount ?? 0),
+    revenue: Number(value.revenue ?? 0),
+    stockQuantity: Number(value.stockQuantity ?? 0),
+    isAvailable: Boolean(value.isAvailable),
+    thumbnailUrl: typeof value.thumbnailUrl === 'string' ? value.thumbnailUrl : null,
+  }
+}
+
 const normalizeDashboardStatistics = (value: Record<string, unknown>): DashboardStatisticsResponse => {
   const summaryRecord = toRecord(value.summary)
   const trendsRecord = toRecord(value.trends)
   const breakdownsRecord = toRecord(value.breakdowns)
   const rawTopProducts = Array.isArray(value.topProducts) ? value.topProducts : []
   const rawBottomProducts = Array.isArray(value.bottomProducts) ? value.bottomProducts : []
+  const rawTopVariants = Array.isArray(value.topVariants) ? value.topVariants : []
+  const rawBottomVariants = Array.isArray(value.bottomVariants) ? value.bottomVariants : []
 
   return {
     summary: normalizeSummary(summaryRecord ?? {}),
@@ -155,6 +174,14 @@ const normalizeDashboardStatistics = (value: Record<string, unknown>): Dashboard
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeTopProduct(item)),
+    topVariants: rawTopVariants
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeTopVariant(item)),
+    bottomVariants: rawBottomVariants
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeTopVariant(item)),
   }
 }
 
