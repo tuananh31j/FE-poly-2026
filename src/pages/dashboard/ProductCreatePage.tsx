@@ -395,6 +395,40 @@ export const ProductCreatePage = () => {
             rules={[
               {
                 validator: async (_, value) => {
+                  if (!Array.isArray(value)) {
+                    throw new Error('Vui lòng thêm ít nhất 1 biến thể')
+                  }
+
+                  const normalizedVariants = value as ProductVariantFormValues[]
+                  const seenKeys = new Map<string, number>()
+                  const duplicateErrors: string[] = []
+                  const missingImageErrors: string[] = []
+
+                  normalizedVariants.forEach((variant, index) => {
+                    const colorId = variant?.colorId?.trim() || 'none'
+                    const sizeId = variant?.sizeId?.trim() || 'none'
+                    const key = `${colorId}::${sizeId}`
+                    const existingIndex = seenKeys.get(key)
+
+                    if (existingIndex !== undefined) {
+                      duplicateErrors.push(
+                        `Biến thể #${index + 1} bị trùng màu/size với biến thể #${existingIndex + 1}`
+                      )
+                    } else {
+                      seenKeys.set(key, index)
+                    }
+
+                    const images = normalizeStringArray(variant?.images)
+                    if (images.length === 0) {
+                      missingImageErrors.push(`Biến thể #${index + 1} chưa có ảnh`)
+                    }
+                  })
+
+                  const errors = [...duplicateErrors, ...missingImageErrors]
+                  if (errors.length > 0) {
+                    throw new Error(errors.join('. '))
+                  }
+
                   if (Array.isArray(value) && value.length > 0) {
                     return
                   }
