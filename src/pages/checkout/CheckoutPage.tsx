@@ -418,8 +418,14 @@ export const CheckoutPage = () => {
                           </Button>
                           <Space size={6} wrap>
                             <Tag className="!m-0 text-xs">SKU: {item.variant?.sku ?? 'N/A'}</Tag>
-                            <Tag className="!m-0 text-xs">Màu: {item.variant?.color ?? 'N/A'}</Tag>
-                            <Tag className="!m-0 text-xs">Size: {item.variant?.size ?? 'N/A'}</Tag>
+                            {item.variant?.color?.trim() ? (
+                              <Tag className="!m-0 text-xs">Màu: {item.variant.color.trim()}</Tag>
+                            ) : null}
+                            {item.variant?.size &&
+                            item.variant.size.trim() &&
+                            !['standard', 'n/a'].includes(item.variant.size.trim().toLowerCase()) ? (
+                              <Tag className="!m-0 text-xs">Size: {item.variant.size.trim()}</Tag>
+                            ) : null}
                           </Space>
                         </div>
 

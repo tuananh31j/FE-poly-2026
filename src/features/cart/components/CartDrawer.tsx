@@ -41,7 +41,21 @@ const resolveDisplayColor = (item: CartItem) => {
     return selectedColor.trim()
   }
 
-  return item.variant?.color ?? 'N/A'
+  return item.variant?.color?.trim() || undefined
+}
+
+const resolveDisplaySize = (item: CartItem) => {
+  const size = item.variant?.size?.trim()
+
+  if (!size) {
+    return undefined
+  }
+
+  if (size.toLowerCase() === 'standard' || size.toLowerCase() === 'n/a') {
+    return undefined
+  }
+
+  return size
 }
 
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
@@ -283,8 +297,12 @@ export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
 
                         <Space size={6} wrap>
                           <Tag className="!m-0">SKU: {item.variant?.sku ?? 'N/A'}</Tag>
-                          <Tag className="!m-0">Màu: {resolveDisplayColor(item)}</Tag>
-                          <Tag className="!m-0">Size: {item.variant?.size ?? 'N/A'}</Tag>
+                          {resolveDisplayColor(item) ? (
+                            <Tag className="!m-0">Màu: {resolveDisplayColor(item)}</Tag>
+                          ) : null}
+                          {resolveDisplaySize(item) ? (
+                            <Tag className="!m-0">Size: {resolveDisplaySize(item)}</Tag>
+                          ) : null}
                         </Space>
 
                         <Typography.Text strong className="block !text-blue-700">
