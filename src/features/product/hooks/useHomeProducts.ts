@@ -18,12 +18,12 @@ const HOME_PAGE_SIZE = 12
 export const useHomeProducts = ({ search, categoryId, brand }: UseHomeProductsOptions) => {
   const topSellingQuery = useQuery({
     queryKey: queryKeys.products.topSelling,
-    queryFn: () => getTopSellingProducts(10),
+    queryFn: () => getTopSellingProducts(8),
   })
 
   const newestQuery = useQuery({
     queryKey: queryKeys.products.newest,
-    queryFn: () => getNewestProducts(10),
+    queryFn: () => getNewestProducts(8),
   })
 
   const allProductsQuery = useInfiniteQuery({
