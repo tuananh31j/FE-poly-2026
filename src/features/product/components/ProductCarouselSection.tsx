@@ -1,7 +1,4 @@
-import { LeftOutlined, RightOutlined } from '@ant-design/icons'
-import { Button, Carousel, Empty, Grid, Skeleton, Space, Typography } from 'antd'
-import type { CarouselRef } from 'antd/es/carousel'
-import { useRef } from 'react'
+import { Empty, Grid, Skeleton, Typography } from 'antd'
 
 import type { ProductCardItem } from '@/features/product/model/product.types'
 
@@ -19,10 +16,8 @@ export const ProductCarouselSection = ({
   loading = false,
 }: ProductCarouselSectionProps) => {
   const screens = Grid.useBreakpoint()
-  const carouselRef = useRef<CarouselRef>(null)
 
   const cardsPerSlide = screens.lg ? 4 : screens.md ? 3 : screens.sm ? 2 : 1
-  const hasMultipleSlides = products.length > cardsPerSlide
 
   return (
     <section className="space-y-4">
@@ -30,20 +25,6 @@ export const ProductCarouselSection = ({
         <Typography.Title level={3} className="!mb-0 !text-slate-900">
           {title}
         </Typography.Title>
-        {hasMultipleSlides ? (
-          <Space size={8}>
-            <Button
-              aria-label={`Trượt về trước danh sách ${title}`}
-              icon={<LeftOutlined />}
-              onClick={() => carouselRef.current?.prev()}
-            />
-            <Button
-              aria-label={`Trượt tới danh sách ${title}`}
-              icon={<RightOutlined />}
-              onClick={() => carouselRef.current?.next()}
-            />
-          </Space>
-        ) : null}
       </div>
 
       {loading ? (
@@ -57,24 +38,11 @@ export const ProductCarouselSection = ({
       {!loading && products.length === 0 ? <Empty description="Chưa có sản phẩm" /> : null}
 
       {!loading && products.length > 0 ? (
-        <Carousel
-          ref={carouselRef}
-          className="home-product-carousel"
-          draggable
-          dots={hasMultipleSlides}
-          infinite={hasMultipleSlides}
-          slidesToShow={Math.min(cardsPerSlide, products.length)}
-          slidesToScroll={1}
-          speed={420}
-        >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
-            <div key={product.id}>
-              <div className="pb-2">
-                <ProductCard product={product} compact />
-              </div>
-            </div>
+            <ProductCard key={product.id} product={product} compact />
           ))}
-        </Carousel>
+        </div>
       ) : null}
     </section>
   )
