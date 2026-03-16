@@ -53,6 +53,7 @@ const PAYMENT_METHOD_LABEL: Record<MyOrderItem['paymentMethod'], string> = {
   banking: 'Chuyển khoản',
   momo: 'MoMo',
   vnpay: 'VNPay',
+  zalopay: 'ZaloPay',
 }
 
 const PAYMENT_STATUS_LABEL: Record<MyOrderItem['paymentStatus'], string> = {
@@ -71,7 +72,7 @@ const canCancelOrder = (status: OrderStatus) => {
 
 const canRetryVnpay = (order: MyOrderItem) => {
   return (
-    order.paymentMethod === 'vnpay' &&
+    (order.paymentMethod === 'vnpay' || order.paymentMethod === 'zalopay') &&
     order.status === 'pending' &&
     (order.paymentStatus === 'pending' || order.paymentStatus === 'failed')
   )
