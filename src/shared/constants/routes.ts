@@ -26,6 +26,7 @@ export const ROUTE_PATHS = {
   DASHBOARD_USERS: '/dashboard/users',
   DASHBOARD_ACCOUNTS: '/dashboard/accounts',
   DASHBOARD_MASTER_DATA: '/dashboard/master-data',
+  DASHBOARD_SUPPORT_CHAT: '/dashboard/support-chat',
   PRODUCT_DETAIL: '/products/:productId',
 } as const
 

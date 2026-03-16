@@ -24,6 +24,7 @@ import { ProductCreatePage } from '@/pages/dashboard/ProductCreatePage'
 import { ProductManagementPage } from '@/pages/dashboard/ProductManagementPage'
 import { ProductUpdatePage } from '@/pages/dashboard/ProductUpdatePage'
 import { ReviewManagementPage } from '@/pages/dashboard/ReviewManagementPage'
+import { SupportChatPage } from '@/pages/dashboard/SupportChatPage'
 import { VoucherManagementPage } from '@/pages/dashboard/VoucherManagementPage'
 import { HomePage } from '@/pages/home/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -143,6 +144,10 @@ export const router = createBrowserRouter([
       {
         path: 'orders',
         element: <OrderManagementPage />,
+      },
+      {
+        path: 'support-chat',
+        element: <SupportChatPage />,
       },
       {
         path: 'reviews',
