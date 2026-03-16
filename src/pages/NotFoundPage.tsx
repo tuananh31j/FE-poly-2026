@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 
-export const PageNotFound = () => {
-
+export const NotFoundPage = () => {
   const navigate = useNavigate()
 
   return (
@@ -12,7 +11,7 @@ export const PageNotFound = () => {
       <Result
         status="404"
         title="404"
-        subTitle="Page not found"
+        subTitle="Trang bạn truy cập không tồn tại."
         extra={
           <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ROOT)}>
             Về trang chủ
