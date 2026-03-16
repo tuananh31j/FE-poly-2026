@@ -46,7 +46,7 @@ export type OrderStatus =
   | 'cancelled'
   | 'returned'
 
-export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 
 export interface OrderItemSnapshot {
@@ -127,23 +127,6 @@ export interface VerifyVnpayReturnPayload {
 }
 
 export interface VerifyVnpayReturnResponse {
-  order: MyOrderItem
-  isSuccess: boolean
-  responseCode: string
-}
-
-export interface VerifyZalopayRedirectPayload {
-  appid: string
-  apptransid: string
-  pmcid?: string
-  bankcode?: string
-  amount?: string | number
-  discountamount?: string | number
-  status?: string | number
-  checksum: string
-}
-
-export interface VerifyZalopayRedirectResponse {
   order: MyOrderItem
   isSuccess: boolean
   responseCode: string

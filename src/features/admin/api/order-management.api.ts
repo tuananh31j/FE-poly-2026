@@ -78,8 +78,7 @@ const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
     paymentMethod:
       value.paymentMethod === 'banking' ||
       value.paymentMethod === 'momo' ||
-      value.paymentMethod === 'vnpay' ||
-      value.paymentMethod === 'zalopay'
+      value.paymentMethod === 'vnpay'
         ? value.paymentMethod
         : 'cod',
     paymentStatus:

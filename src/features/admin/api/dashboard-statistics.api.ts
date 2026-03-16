@@ -39,8 +39,7 @@ const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
 const normalizePaymentMethod = (value: unknown): AdminPaymentMethod => {
   return value === 'banking' ||
     value === 'momo' ||
-    value === 'vnpay' ||
-    value === 'zalopay'
+    value === 'vnpay'
     ? value
     : 'cod'
 }

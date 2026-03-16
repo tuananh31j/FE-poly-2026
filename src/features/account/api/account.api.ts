@@ -19,8 +19,6 @@ import type {
   UpsertAddressPayload,
   VerifyVnpayReturnPayload,
   VerifyVnpayReturnResponse,
-  VerifyZalopayRedirectPayload,
-  VerifyZalopayRedirectResponse,
 } from '../model/account.types'
 
 // worklog: 2026-03-04 22:03:47 | trantu | fix | toId
@@ -166,8 +164,7 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     paymentMethod:
       value.paymentMethod === 'banking' ||
       value.paymentMethod === 'momo' ||
-      value.paymentMethod === 'vnpay' ||
-      value.paymentMethod === 'zalopay'
+      value.paymentMethod === 'vnpay'
         ? value.paymentMethod
         : 'cod',
     paymentStatus:
@@ -383,35 +380,6 @@ export const verifyVnpayReturn = async (payload: VerifyVnpayReturnPayload) => {
     )
 
     return normalizeVerifyVnpayReturnResponse(extractApiData(response))
-  } catch (error) {
-    throw toApiClientError(error)
-  }
-}
-
-const normalizeVerifyZalopayRedirectResponse = (
-  value: Record<string, unknown>
-): VerifyZalopayRedirectResponse => {
-  const orderRecord = toRecord(value.order)
-
-  if (!orderRecord) {
-    throw new Error('Invalid order response')
-  }
-
-  return {
-    order: normalizeOrder(orderRecord),
-    isSuccess: Boolean(value.isSuccess),
-    responseCode: String(value.responseCode ?? ''),
-  }
-}
-
-export const verifyZalopayRedirect = async (payload: VerifyZalopayRedirectPayload) => {
-  try {
-    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
-      '/orders/zalopay/verify-redirect',
-      payload
-    )
-
-    return normalizeVerifyZalopayRedirectResponse(extractApiData(response))
   } catch (error) {
     throw toApiClientError(error)
   }
