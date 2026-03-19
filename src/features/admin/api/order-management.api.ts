@@ -8,6 +8,12 @@ import type {
   AdminOrdersResponse,
   AdminOrderStatus,
   AdminOrderStatusHistoryItem,
+  AdminOrderUser,
+  AdminReturnRequest,
+  AdminReturnRequestItem,
+  AdminReturnRequestStatus,
+  AdminRefundMethod,
+  AdminUserRole,
   ListAdminOrdersParams,
   UpdateAdminOrderStatusPayload,
 } from '../model/order-management.types'
@@ -24,15 +30,32 @@ const toRecord = (value: unknown): Record<string, unknown> | undefined => {
   return value as Record<string, unknown>
 }
 
+const toStringArray = (value: unknown): string[] => {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
 const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
   return value === 'confirmed' ||
-    value === 'preparing' ||
     value === 'shipping' ||
     value === 'delivered' ||
+    value === 'completed' ||
     value === 'cancelled' ||
     value === 'returned'
     ? value
     : 'pending'
+}
+
+const normalizeUserRole = (value: unknown): AdminUserRole => {
+  return value === 'admin' || value === 'staff' ? value : 'customer'
+}
+
+const normalizeOrderUser = (value: Record<string, unknown>): AdminOrderUser => {
+  return {
+    id: toId(value.id ?? value._id),
+    fullName: typeof value.fullName === 'string' ? value.fullName : undefined,
+    email: typeof value.email === 'string' ? value.email : undefined,
+    role: normalizeUserRole(value.role),
+  }
 }
 
 const normalizeOrderSnapshot = (value: Record<string, unknown>): AdminOrderItemSnapshot => {
@@ -46,6 +69,47 @@ const normalizeOrderSnapshot = (value: Record<string, unknown>): AdminOrderItemS
     quantity: Number(value.quantity ?? 0),
     price: Number(value.price ?? 0),
     total: Number(value.total ?? 0),
+  }
+}
+
+const normalizeReturnStatus = (value: unknown): AdminReturnRequestStatus => {
+  return value === 'approved' || value === 'rejected' || value === 'refunded' ? value : 'pending'
+}
+
+const normalizeRefundMethod = (value: unknown): AdminRefundMethod => {
+  return value === 'wallet' ? value : 'bank_transfer'
+}
+
+const normalizeReturnItem = (value: Record<string, unknown>): AdminReturnRequestItem => {
+  return {
+    productId: toId(value.productId),
+    productName: String(value.productName ?? ''),
+    variantId: toId(value.variantId),
+    variantSku: String(value.variantSku ?? ''),
+    quantity: Number(value.quantity ?? 0),
+    price: Number(value.price ?? 0),
+    total: Number(value.total ?? 0),
+  }
+}
+
+const normalizeReturnRequest = (value: Record<string, unknown>): AdminReturnRequest => {
+  const rawItems = Array.isArray(value.items) ? value.items : []
+
+  return {
+    id: toId(value.id ?? value._id),
+    requestedBy: toId(value.requestedBy),
+    status: normalizeReturnStatus(value.status),
+    refundMethod: normalizeRefundMethod(value.refundMethod),
+    refundAmount: Number(value.refundAmount ?? 0),
+    reason: typeof value.reason === 'string' ? value.reason : undefined,
+    note: typeof value.note === 'string' ? value.note : undefined,
+    refundEvidenceImages: toStringArray(value.refundEvidenceImages),
+    items: rawItems
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnItem(item)),
+    createdAt: String(value.createdAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
   }
 }
 
@@ -63,11 +127,14 @@ const normalizeOrderStatusHistory = (
 const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
   const rawItems = Array.isArray(value.items) ? value.items : []
   const rawStatusHistory = Array.isArray(value.statusHistory) ? value.statusHistory : []
+  const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
+  const rawUser = toRecord(value.user)
 
   return {
     id: toId(value.id ?? value._id),
     orderCode: String(value.orderCode ?? ''),
     userId: toId(value.userId),
+    user: rawUser ? normalizeOrderUser(rawUser) : undefined,
     shippingRecipientName: String(value.shippingRecipientName ?? ''),
     shippingPhone: String(value.shippingPhone ?? ''),
     shippingAddress: String(value.shippingAddress ?? ''),
@@ -98,6 +165,10 @@ const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeOrderStatusHistory(item)),
+    returnRequests: rawReturnRequests
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnRequest(item)),
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
   }
@@ -139,6 +210,28 @@ export const updateAdminOrderStatus = async (
   try {
     const response = await httpClient.patch<ApiSuccess<Record<string, unknown>>>(
       `/orders/${orderId}/status`,
+      payload
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const updateAdminReturnRequest = async (
+  orderId: string,
+  returnRequestId: string,
+  payload: {
+    status: AdminReturnRequestStatus
+    refundMethod?: AdminRefundMethod
+    note?: string
+    refundEvidenceImages?: string[]
+  }
+): Promise<AdminOrderItem> => {
+  try {
+    const response = await httpClient.patch<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/return/${returnRequestId}`,
       payload
     )
 
