@@ -40,14 +40,16 @@ export type UpdateAddressPayload = Partial<UpsertAddressPayload>
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
-  | 'preparing'
   | 'shipping'
   | 'delivered'
+  | 'completed'
   | 'cancelled'
   | 'returned'
 
 export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type RefundMethod = 'bank_transfer' | 'wallet'
 
 export interface OrderItemSnapshot {
   productId: string
@@ -66,6 +68,30 @@ export interface OrderStatusHistoryItem {
   changedBy: string
   note?: string
   changedAt: string
+}
+
+export interface ReturnRequestItem {
+  productId: string
+  productName: string
+  variantId: string
+  variantSku: string
+  quantity: number
+  price: number
+  total: number
+}
+
+export interface ReturnRequest {
+  id: string
+  requestedBy: string
+  status: ReturnRequestStatus
+  refundMethod: RefundMethod
+  refundAmount: number
+  reason?: string
+  note?: string
+  refundEvidenceImages?: string[]
+  items: ReturnRequestItem[]
+  createdAt: string
+  updatedAt: string
 }
 
 export interface MyOrderItem {
@@ -91,6 +117,7 @@ export interface MyOrderItem {
   status: OrderStatus
   items: OrderItemSnapshot[]
   statusHistory: OrderStatusHistoryItem[]
+  returnRequests?: ReturnRequest[]
   createdAt: string
   updatedAt: string
 }
@@ -120,6 +147,15 @@ export interface CreateOrderPayload {
   voucherCode?: string
   paymentMethod?: PaymentMethod
   selectedVariantIds?: string[]
+}
+
+export interface CreateReturnRequestPayload {
+  items: Array<{
+    variantId: string
+    quantity: number
+  }>
+  reason?: string
+  refundMethod?: RefundMethod
 }
 
 export interface VerifyVnpayReturnPayload {
