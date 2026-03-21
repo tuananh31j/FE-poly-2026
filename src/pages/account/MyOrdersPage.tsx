@@ -361,6 +361,11 @@ export const MyOrdersPage = () => {
               {allowCancel ? (
                 <Popconfirm
                   title="Bạn muốn hủy đơn hàng này?"
+                  description={
+                    record.paymentStatus === 'paid' && record.paymentMethod !== 'cod'
+                      ? 'Đơn đã thanh toán sẽ được ghi nhận hoàn tiền tự động.'
+                      : undefined
+                  }
                   okText="Hủy đơn"
                   cancelText="Đóng"
                   onConfirm={() => {
@@ -454,38 +459,60 @@ export const MyOrdersPage = () => {
             })
           },
           expandedRowRender: (record) => (
-            <List
-              size="small"
-              dataSource={record.items}
-              locale={{
-                emptyText: 'Không có sản phẩm trong đơn',
-              }}
-              renderItem={(item) => (
-                <List.Item>
-                  <div className="flex w-full items-center gap-3">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
-                      <img
-                        src={item.productImage ?? ITEM_PLACEHOLDER}
-                        alt={item.productName}
-                        className="h-full w-full object-cover"
-                      />
+            <div className="space-y-4">
+              <List
+                size="small"
+                dataSource={record.items}
+                locale={{
+                  emptyText: 'Không có sản phẩm trong đơn',
+                }}
+                renderItem={(item) => (
+                  <List.Item>
+                    <div className="flex w-full items-center gap-3">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+                        <img
+                          src={item.productImage ?? ITEM_PLACEHOLDER}
+                          alt={item.productName}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Typography.Text strong className="block line-clamp-1">
+                          {item.productName}
+                        </Typography.Text>
+                        <Typography.Text type="secondary" className="text-xs">
+                          SKU: {item.variantSku} · Màu: {item.variantColor}
+                        </Typography.Text>
+                      </div>
+                      <Space direction="vertical" size={0} align="end">
+                        <Typography.Text>Số lượng: {item.quantity}</Typography.Text>
+                        <Typography.Text strong>{formatVndCurrency(item.total)}</Typography.Text>
+                      </Space>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <Typography.Text strong className="block line-clamp-1">
-                        {item.productName}
-                      </Typography.Text>
-                      <Typography.Text type="secondary" className="text-xs">
-                        SKU: {item.variantSku} · Màu: {item.variantColor}
-                      </Typography.Text>
-                    </div>
-                    <Space direction="vertical" size={0} align="end">
-                      <Typography.Text>Số lượng: {item.quantity}</Typography.Text>
-                      <Typography.Text strong>{formatVndCurrency(item.total)}</Typography.Text>
-                    </Space>
-                  </div>
-                </List.Item>
-              )}
-            />
+                  </List.Item>
+                )}
+              />
+
+              {record.paymentStatus === 'refunded' ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <Typography.Text strong className="block text-emerald-700">
+                    Hoàn tiền đơn hàng
+                  </Typography.Text>
+                  <Typography.Text className="mt-1 block text-sm text-slate-700">
+                    Số tiền hoàn: {formatVndCurrency(record.totalAmount)}
+                  </Typography.Text>
+                  <Typography.Text className="block text-sm text-slate-700">
+                    Thời gian ghi nhận:{' '}
+                    {record.refundedAt ? formatDateTime(record.refundedAt) : formatDateTime(record.updatedAt)}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" className="mt-1 block text-xs">
+                    {record.status === 'cancelled'
+                      ? 'Đơn đã thanh toán và được hệ thống ghi nhận hoàn tiền do khách hàng hủy.'
+                      : 'Hệ thống đã ghi nhận hoàn tiền cho đơn hàng này.'}
+                  </Typography.Text>
+                </div>
+              ) : null}
+            </div>
           ),
         }}
       />
