@@ -71,7 +71,7 @@ const normalizeConversationResponse = (value: Record<string, unknown>): StaffCon
   }
 }
 
-const normalizeMessagesResponse = (value: Record<string, unknown>): StaffConversationListResponse['items'] => {
+const normalizeMessagesResponse = (value: Record<string, unknown>): ChatMessage[] => {
   const rawItems = Array.isArray(value.items) ? value.items : []
 
   return rawItems

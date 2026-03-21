@@ -15,6 +15,7 @@ import {
 } from '@ant-design/icons'
 import { Card, Col, Row, Space, Typography } from 'antd'
 import { useQuery } from '@tanstack/react-query'
+import type { ApexOptions } from 'apexcharts'
 import Chart from 'react-apexcharts'
 import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -215,7 +216,7 @@ export const DashboardCenterPage = () => {
   }, [statisticsQuery.data?.trends.dailyRevenue])
 
   const revenueOptions = useMemo(
-    () => ({
+    (): ApexOptions => ({
       chart: {
         height: 260,
         type: 'area',

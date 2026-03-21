@@ -96,17 +96,19 @@ export const useStaffSupportChat = () => {
     socket.emit('room:join', { roomId: `conversation:${conversationId}` })
 
     const handleMessage = (payload: { conversationId?: string; message?: ChatMessage }) => {
-      if (payload?.conversationId !== conversationId || !payload.message) {
+      const nextMessage = payload?.message
+
+      if (payload?.conversationId !== conversationId || !nextMessage) {
         return
       }
 
       setMessages((prev) => {
-        const exists = prev.some((item) => item.id === payload.message?.id)
+        const exists = prev.some((item) => item.id === nextMessage.id)
         if (exists) {
           return prev
         }
 
-        return [...prev, payload.message].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        return [...prev, nextMessage].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       })
     }
 
