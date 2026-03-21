@@ -1,17 +1,17 @@
 import { DeleteOutlined, MinusOutlined, PlusOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import{
-    Button,
-    Checkbox,
-    Drawer,
-    Empty,
-    List,
-    message,
-    Space,
-    Spin,
-    Tag,
-    Typography,
-}from 'antd'
+import {
+  Button,
+  Checkbox,
+  Drawer,
+  Empty,
+  List,
+  message,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd'
 import { sumBy } from 'lodash'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -21,169 +21,169 @@ import { clearMyCart, getMyCart, removeCartItem, upsertCartItem } from '@/featur
 import type { CartItem } from '@/features/cart/model/cart.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import {
-    buildCheckoutPath,
-    buildProductDetailPath,
-    ROUTE_PATHS,
+  buildCheckoutPath,
+  buildProductDetailPath,
+  ROUTE_PATHS,
 } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
 
 interface CartDrawerProps {
-    open: boolean
-    onClose: () => void
+  open: boolean
+  onClose: () => void
 }
 
 const resolveDisplayColor = (item: CartItem) => {
-    const selectedColor = item.selectedAttributes?.color
+  const selectedColor = item.selectedAttributes?.color
 
-    if (typeof selectedColor === 'string' && selectedColor.trim()) {
-        return selectedColor.trim()
-    }
+  if (typeof selectedColor === 'string' && selectedColor.trim()) {
+    return selectedColor.trim()
+  }
 
-    return item.variant?.color ?? 'N/A'
+  return item.variant?.color ?? 'N/A'
 }
 
 export const CartDrawer = ({ open, onClose }: CartDrawerProps) => {
-    const navigate = useNavigate()
-    const queryClient = useQueryClient()
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
 
-    const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([])
-    const [hasUserSelection, setHasUserSelection] = useState(false)
+  const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([])
+  const [hasUserSelection, setHasUserSelection] = useState(false)
 
-    const cartQuery = useQuery({
+  const cartQuery = useQuery({
+    queryKey: queryKeys.cart.me,
+    queryFn: getMyCart,
+    enabled: open && Boolean(accessToken),
+  })
+
+  const upsertMutation = useMutation({
+    mutationFn: upsertCartItem,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.cart.me,
-        queryFn: getMyCart,
-        enabled: open && Boolean(accessToken),
-    })
+      })
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
-    const upsertMutation = useMutation({
-        mutationFn: upsertCartItem,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.cart.me,
-            })
-        },
-        onError: (error) => {
-            void message.error(error.message)
-        },
-    })
+  const removeMutation = useMutation({
+    mutationFn: removeCartItem,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.cart.me,
+      })
+      void message.success('Đã xóa sản phẩm khỏi giỏ hàng')
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
-    const removeMutation = useMutation({
-        mutationFn: removeCartItem,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.cart.me,
-            })
-            void message.success('Đã xóa sản phẩm khỏi giỏ hàng')
-        },
-        onError: (error) => {
-            void message.error(error.message)
-        },
-    })
+  const clearMutation = useMutation({
+    mutationFn: clearMyCart,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.cart.me,
+      })
+      setSelectedVariantIds([])
+      setHasUserSelection(false)
+      void message.success('Đã xóa toàn bộ giỏ hàng')
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
-    const clearMutation = useMutation({
-        mutationFn: clearMyCart,
-        onSuccess: async () => {
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.cart.me,
-            })
-            setSelectedVariantIds([])
-            setHasUserSelection(false)
-            void message.success('Đã xóa toàn bộ giỏ hàng')
-        },
-        onError: (error) => {
-            void message.error(error.message)
-        },
-    })
-
-    const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items])
-    const availableVariantIds = useMemo(() => cartItems.map((item) => item.variantId), [cartItems])
-    const effectiveSelectedVariantIds = useMemo(() => {
-        if (!hasUserSelection) {
-            return availableVariantIds
-        }
-
-        const availableVariantSet = new Set(availableVariantIds)
-        return selectedVariantIds.filter((variantId) => availableVariantSet.has(variantId))
-    }, [availableVariantIds, hasUserSelection, selectedVariantIds])
-    const totalQuantity = sumBy(cartItems, (item) => item.quantity)
-    const selectedCartItems = useMemo(() => {
-        const selectedSet = new Set(effectiveSelectedVariantIds)
-        return cartItems.filter((item) => selectedSet.has(item.variantId))
-    },[cartItems, effectiveSelectedVariantIds])
-    const selectedItemCount = selectedCartItems.length
-    const selectedSubtotal = sumBy(
-        selectedCartItems,
-        (item) => (item.variant?.price ?? 0) * item.quantity
-    )
-
-    const isMutating = upsertMutation.isPending || removeMutation.isPending || clearMutation.isPending
-
-    const isAllSelected =
-        cartItems.length > 0 && effectiveSelectedVariantIds.length === cartItems.length
-    const isIndeterminate = effectiveSelectedVariantIds.length > 0 && !isAllSelected
-
-    const handleChangeQuantity = (item: CartItem, nextQuantity: number) => {
-        if (nextQuantity < 1) {
-            return
-        }
-
-        const maxQuantity = item.variant?.stockQuantity ?? nextQuantity
-        const normalizedQuantity = Math.min(nextQuantity, Math.max(1, maxQuantity))
-
-        if (normalizedQuantity !== nextQuantity) {
-            void message.warning('Số lượng vượt quá tồn kho')
-        }
-
-        upsertMutation.mutate({
-            productId: item.productId,
-            variantId: item.variantId,
-            quantity: normalizedQuantity,
-            selectedAttributes: item.selectedAttributes,
-        })
+  const cartItems = useMemo(() => cartQuery.data?.items ?? [], [cartQuery.data?.items])
+  const availableVariantIds = useMemo(() => cartItems.map((item) => item.variantId), [cartItems])
+  const effectiveSelectedVariantIds = useMemo(() => {
+    if (!hasUserSelection) {
+      return availableVariantIds
     }
 
-    const toggleItemSelection = (variantId: string, checked: boolean) => {
-        setHasUserSelection(true)
-        setSelectedVariantIds((previous) => {
-            if (checked) {
-                if (previous.includes(variantId)) {
-                    return previous
-                }
+    const availableVariantSet = new Set(availableVariantIds)
+    return selectedVariantIds.filter((variantId) => availableVariantSet.has(variantId))
+  }, [availableVariantIds, hasUserSelection, selectedVariantIds])
+  const totalQuantity = sumBy(cartItems, (item) => item.quantity)
+  const selectedCartItems = useMemo(() => {
+    const selectedSet = new Set(effectiveSelectedVariantIds)
+    return cartItems.filter((item) => selectedSet.has(item.variantId))
+  }, [cartItems, effectiveSelectedVariantIds])
+  const selectedItemCount = selectedCartItems.length
+  const selectedSubtotal = sumBy(
+    selectedCartItems,
+    (item) => (item.variant?.price ?? 0) * item.quantity
+  )
 
-            return [...previous, variantId]
-        }
+  const isMutating = upsertMutation.isPending || removeMutation.isPending || clearMutation.isPending
 
-        return previous.filter((id) => id !== variantId)
-        })
+  const isAllSelected =
+    cartItems.length > 0 && effectiveSelectedVariantIds.length === cartItems.length
+  const isIndeterminate = effectiveSelectedVariantIds.length > 0 && !isAllSelected
+
+  const handleChangeQuantity = (item: CartItem, nextQuantity: number) => {
+    if (nextQuantity < 1) {
+      return
     }
 
-    const handleToggleSelectAll = (checked: boolean) => {
-        setHasUserSelection(true)
-        if (checked) {
-            setSelectedVariantIds(cartItems.map((item) => item.variantId))
-            return
-        }
+    const maxQuantity = item.variant?.stockQuantity ?? nextQuantity
+    const normalizedQuantity = Math.min(nextQuantity, Math.max(1, maxQuantity))
 
-        setSelectedVariantIds([])
+    if (normalizedQuantity !== nextQuantity) {
+      void message.warning('Số lượng vượt quá tồn kho')
     }
 
-    const handleOpenCheckout = () => {
-        if (selectedCartItems.length === 0) {
-            void message.warning('Vui lòng chọn ít nhất 1 sản phẩm để thanh toán')
-            return
+    upsertMutation.mutate({
+      productId: item.productId,
+      variantId: item.variantId,
+      quantity: normalizedQuantity,
+      selectedAttributes: item.selectedAttributes,
+    })
+  }
+
+  const toggleItemSelection = (variantId: string, checked: boolean) => {
+    setHasUserSelection(true)
+    setSelectedVariantIds((previous) => {
+      if (checked) {
+        if (previous.includes(variantId)) {
+          return previous
         }
 
-        const selectedIdsForCheckout =
-            selectedItemCount >= cartItems.length ? [] : effectiveSelectedVariantIds
+        return [...previous, variantId]
+      }
 
-        onClose()
-        navigate(buildCheckoutPath(selectedIdsForCheckout))
+      return previous.filter((id) => id !== variantId)
+    })
+  }
+
+  const handleToggleSelectAll = (checked: boolean) => {
+    setHasUserSelection(true)
+    if (checked) {
+      setSelectedVariantIds(cartItems.map((item) => item.variantId))
+      return
     }
 
-    return (
+    setSelectedVariantIds([])
+  }
+
+  const handleOpenCheckout = () => {
+    if (selectedCartItems.length === 0) {
+      void message.warning('Vui lòng chọn ít nhất 1 sản phẩm để thanh toán')
+      return
+    }
+
+    const selectedIdsForCheckout =
+      selectedItemCount >= cartItems.length ? [] : effectiveSelectedVariantIds
+
+    onClose()
+    navigate(buildCheckoutPath(selectedIdsForCheckout))
+  }
+
+  return (
     <>
       <Drawer
         title={

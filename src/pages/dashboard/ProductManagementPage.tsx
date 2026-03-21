@@ -1,6 +1,5 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, TagsOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, PlusOutlined, TagsOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { UploadProps } from 'antd'
 import {
   Button,
   Card,
@@ -18,7 +17,6 @@ import {
   Table,
   Tag,
   Typography,
-  Upload,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useMemo, useState } from 'react'
@@ -34,22 +32,33 @@ import {
   listAdminProducts,
   listAdminProductVariants,
   listAdminSizes,
+  updateAdminProduct,
   updateAdminProductVariant,
 } from '@/features/admin/api/product-management.api'
 import type {
   AdminProductItem,
   AdminProductVariantItem,
   UpdateAdminProductPayload,
+  UpsertAdminProductVariantPayload,
 } from '@/features/admin/model/product-management.types'
 import { queryKeys } from '@/shared/api/queryKeys'
-import { uploadImage } from '@/shared/api/upload.api'
-import { buildDashboardProductEditPath, ROUTE_PATHS } from '@/shared/constants/routes'
+import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
 const PAGE_SIZE = 10
 const VARIANT_PAGE_SIZE = 20
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
+
+const parseAttributesInput = (value?: string) => {
+  const normalizedValue = value?.trim()
+
+  if (!normalizedValue) {
+    return undefined
+  }
+
+  return JSON.parse(normalizedValue) as Record<string, unknown>
+}
 
 const normalizeStringArray = (value: unknown) => {
   if (!Array.isArray(value)) {
@@ -60,14 +69,6 @@ const normalizeStringArray = (value: unknown) => {
     .filter((item): item is string => typeof item === 'string')
     .map((item) => item.trim())
     .filter(Boolean)
-}
-
-const mergeUniqueStringArray = (current: string[], nextValue: string) => {
-  if (current.includes(nextValue)) {
-    return current
-  }
-
-  return [...current, nextValue]
 }
 
 const formatPriceRange = (product: AdminProductItem) => {
@@ -84,8 +85,20 @@ const formatPriceRange = (product: AdminProductItem) => {
 
 type ProductAvailabilityFilter = 'all' | 'available' | 'unavailable'
 
+interface ProductFormValues {
+  name: string
+  categoryId: string
+  brandId?: string
+  description?: string
+  images?: string[]
+  isAvailable: boolean
+  metaTitle?: string
+  metaDescription?: string
+  attributesJson?: string
+}
 
 interface VariantFormValues {
+  sku: string
   colorId?: string
   sizeId?: string
   price: number
@@ -98,6 +111,7 @@ interface VariantFormValues {
 export const ProductManagementPage = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [productForm] = Form.useForm<ProductFormValues>()
   const [variantForm] = Form.useForm<VariantFormValues>()
 
   const [page, setPage] = useState(1)
@@ -107,6 +121,8 @@ export const ProductManagementPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [brandFilter, setBrandFilter] = useState<string>('all')
 
+  const [productModalOpen, setProductModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<AdminProductItem | null>(null)
   const [variantDrawerOpen, setVariantDrawerOpen] = useState(false)
   const [activeProductForVariants, setActiveProductForVariants] = useState<AdminProductItem | null>(
     null
@@ -114,58 +130,6 @@ export const ProductManagementPage = () => {
   const [variantModalOpen, setVariantModalOpen] = useState(false)
   const [editingVariant, setEditingVariant] = useState<AdminProductVariantItem | null>(null)
   const [variantPage, setVariantPage] = useState(1)
-  const [uploadingCount, setUploadingCount] = useState(0)
-  const variantFormImages = normalizeStringArray(Form.useWatch('images', variantForm))
-
-  const validateImageFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      void message.error('Chỉ chấp nhận file ảnh')
-      return false
-    }
-
-    if (file.size / 1024 / 1024 > 5) {
-      void message.error('Kích thước ảnh tối đa là 5MB')
-      return false
-    }
-
-    return true
-  }
-
-  const uploadProductImageFile = async (file: File, onSuccess: (url: string) => void) => {
-    if (!validateImageFile(file)) {
-      return
-    }
-
-    setUploadingCount((value) => value + 1)
-
-    try {
-      const uploaded = await uploadImage(file, 'products')
-      onSuccess(uploaded.url)
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload ảnh thất bại'
-      void message.error(errorMessage)
-    } finally {
-      setUploadingCount((value) => Math.max(0, value - 1))
-    }
-  }
-
-
-
-  const appendVariantFormImage = (url: string) => {
-    variantForm.setFieldValue('images', mergeUniqueStringArray(variantFormImages, url))
-  }
-
-  const removeVariantFormImage = (url: string) => {
-    variantForm.setFieldValue(
-      'images',
-      variantFormImages.filter((value) => value !== url)
-    )
-  }
-
-  const variantFormImageBeforeUpload: UploadProps['beforeUpload'] = (file) => {
-    void uploadProductImageFile(file as File, appendVariantFormImage)
-    return Upload.LIST_IGNORE
-  }
 
   const categoriesQuery = useQuery({
     queryKey: queryKeys.admin.productMeta.categories,
@@ -237,6 +201,25 @@ export const ProductManagementPage = () => {
     ])
   }
 
+  const updateProductMutation = useMutation({
+    mutationFn: ({
+      productId,
+      payload,
+    }: {
+      productId: string
+      payload: UpdateAdminProductPayload
+    }) => updateAdminProduct(productId, payload),
+    onSuccess: async () => {
+      await invalidateProductData()
+      void message.success('Cập nhật sản phẩm thành công')
+      setProductModalOpen(false)
+      setEditingProduct(null)
+      productForm.resetFields()
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
   const deleteProductMutation = useMutation({
     mutationFn: deleteAdminProduct,
@@ -406,7 +389,7 @@ export const ProductManagementPage = () => {
         render: (_, record) => (
           <Space wrap>
             <Button
-              icon={<TagsOutli  ed />}
+              icon={<TagsOutlined />}
               onClick={() => {
                 setActiveProductForVariants(record)
                 setVariantPage(1)
@@ -417,7 +400,21 @@ export const ProductManagementPage = () => {
             <Button
               icon={<EditOutlined />}
               onClick={() => {
-                navigate(buildDashboardProductEditPath(record.id))
+                setEditingProduct(record)
+                productForm.setFieldsValue({
+                  name: record.name,
+                  categoryId: record.categoryId,
+                  brandId: record.brandId,
+                  description: record.description,
+                  images: record.images,
+                  isAvailable: record.isAvailable,
+                  metaTitle: record.metaTitle,
+                  metaDescription: record.metaDescription,
+                  attributesJson: record.attributes
+                    ? JSON.stringify(record.attributes, null, 2)
+                    : undefined,
+                })
+                setProductModalOpen(true)
               }}
             ></Button>
 
@@ -427,7 +424,7 @@ export const ProductManagementPage = () => {
               okText="Xóa"
               cancelText="Hủy"
               onConfirm={() => {
-                // deleteProductMutation.mutate(record.id)
+                deleteProductMutation.mutate(record.id)
               }}
             >
               <Button
@@ -440,7 +437,7 @@ export const ProductManagementPage = () => {
         ),
       },
     ],
-    [categoriesById, deleteProductMutation, navigate]
+    [categoriesById, deleteProductMutation, productForm]
   )
 
   const variantColumns: ColumnsType<AdminProductVariantItem> = useMemo(
@@ -451,23 +448,6 @@ export const ProductManagementPage = () => {
         key: 'sku',
         width: 180,
         render: (value: string) => <Typography.Text strong>{value}</Typography.Text>,
-      },
-      {
-        title: 'Ảnh',
-        key: 'image',
-        width: 96,
-        align: 'center',
-        render: (_, record) => (
-          <Image
-            src={record.images[0] ?? PRODUCT_PLACEHOLDER}
-            alt={`Ảnh biến thể ${record.sku}`}
-            width={48}
-            height={48}
-            className="rounded-md object-cover"
-            fallback={PRODUCT_PLACEHOLDER}
-            preview={false}
-          />
-        ),
       },
       {
         title: 'Màu',
@@ -526,6 +506,7 @@ export const ProductManagementPage = () => {
               onClick={() => {
                 setEditingVariant(record)
                 variantForm.setFieldsValue({
+                  sku: record.sku,
                   colorId: record.colorId,
                   sizeId: record.sizeId,
                   price: record.price,
@@ -566,7 +547,35 @@ export const ProductManagementPage = () => {
     [activeProductForVariants, deleteVariantMutation, variantForm]
   )
 
- 
+  const submitProductForm = (values: ProductFormValues) => {
+    if (!editingProduct) {
+      void message.error('Không tìm thấy sản phẩm để cập nhật')
+      return
+    }
+
+    try {
+      const parsedAttributes = parseAttributesInput(values.attributesJson)
+      const normalizedBrandId = values.brandId?.trim()
+
+      const payload: UpdateAdminProductPayload = {
+        name: values.name.trim(),
+        categoryId: values.categoryId,
+        brandId: normalizedBrandId || undefined,
+        description: values.description?.trim() || undefined,
+        attributes: parsedAttributes,
+        images: normalizeStringArray(values.images),
+        isAvailable: values.isAvailable,
+        metaTitle: values.metaTitle?.trim() || undefined,
+        metaDescription: values.metaDescription?.trim() || undefined,
+      }
+      updateProductMutation.mutate({
+        productId: editingProduct.id,
+        payload,
+      })
+    } catch {
+      void message.error('Trường attributes phải là JSON hợp lệ')
+    }
+  }
 
   const submitVariantForm = (values: VariantFormValues) => {
     if (!activeProductForVariants) {
@@ -577,6 +586,7 @@ export const ProductManagementPage = () => {
     const normalizedSizeId = values.sizeId?.trim()
 
     const payload: UpsertAdminProductVariantPayload = {
+      sku: values.sku.trim(),
       colorId: normalizedColorId || undefined,
       sizeId: normalizedSizeId || undefined,
       price: Number(values.price),
@@ -616,7 +626,7 @@ export const ProductManagementPage = () => {
   return (
     <div className="space-y-5">
       <Typography.Title level={3} className="!mb-0">
-        Quản lý sản phẩm
+        Admin - Quản lý sản phẩm
       </Typography.Title>
       <Typography.Paragraph className="!mb-0" type="secondary">
         CRUD sản phẩm và variants. Ở form variant, `color` và `size` là tùy chọn.
@@ -717,9 +727,118 @@ export const ProductManagementPage = () => {
         />
       </Card>
 
+      <Modal
+        title="Cập nhật sản phẩm"
+        open={productModalOpen}
+        onCancel={() => {
+          setProductModalOpen(false)
+          setEditingProduct(null)
+          productForm.resetFields()
+          productForm.setFieldsValue({
+            isAvailable: true,
+          })
+        }}
+        width={840}
+        footer={null}
+        destroyOnHidden
+      >
+        <Form<ProductFormValues>
+          form={productForm}
+          layout="vertical"
+          initialValues={{
+            isAvailable: true,
+          }}
+          onFinish={submitProductForm}
+        >
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Form.Item
+              name="name"
+              label="Tên sản phẩm"
+              rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
+            >
+              <Input placeholder="Ví dụ: Cơ Predator P3" />
+            </Form.Item>
+
+            <Form.Item
+              name="categoryId"
+              label="Danh mục"
+              rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
+            >
+              <Select
+                showSearch
+                placeholder="Chọn danh mục"
+                optionFilterProp="label"
+                options={(categoriesQuery.data ?? []).map((item) => ({
+                  label: item.name,
+                  value: item.id,
+                }))}
+              />
+            </Form.Item>
+          </div>
+
+          <Form.Item
+            name="brandId"
+            label="Brand"
+            rules={[{ required: true, message: 'Vui lòng chọn thương hiệu' }]}
+          >
+            <Select
+              showSearch
+              optionFilterProp="label"
+              placeholder="Chọn brand đã có"
+              options={(brandsQuery.data ?? []).map((item) => ({
+                label: item.name,
+                value: item.id,
+              }))}
+            />
+          </Form.Item>
+
+          <Form.Item name="description" label="Mô tả">
+            <Input.TextArea rows={6} placeholder="Nhập mô tả sản phẩm" />
+          </Form.Item>
+
+          <Form.Item name="images" label="Danh sách ảnh (nhập URL, Enter để thêm)">
+            <Select mode="tags" tokenSeparators={[',']} placeholder="https://..." />
+          </Form.Item>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Form.Item name="metaTitle" label="Meta title">
+              <Input placeholder="Nhập tiêu đề SEO" />
+            </Form.Item>
+            <Form.Item name="metaDescription" label="Meta description">
+              <Input placeholder="Nhập mô tả SEO ngắn" />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="attributesJson" label="Attributes JSON (tùy chọn)">
+            <Input.TextArea rows={4} placeholder='{"weight":"19oz","material":"Maple"}' />
+          </Form.Item>
+
+          <Form.Item name="isAvailable" label="Trạng thái bán" valuePropName="checked">
+            <Switch checkedChildren="Đang bán" unCheckedChildren="Ngừng bán" />
+          </Form.Item>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              onClick={() => {
+                setProductModalOpen(false)
+                setEditingProduct(null)
+                productForm.resetFields()
+                productForm.setFieldsValue({
+                  isAvailable: true,
+                })
+              }}
+            >
+              Hủy
+            </Button>
+            <Button type="primary" htmlType="submit" loading={updateProductMutation.isPending}>
+              Lưu thay đổi
+            </Button>
+          </div>
+        </Form>
+      </Modal>
 
       <Drawer
-        title={`Biến thể - ${activeProductForVariants?.name ?? ''}`}
+        title={`Variants - ${activeProductForVariants?.name ?? ''}`}
         open={variantDrawerOpen}
         width={980}
         onClose={() => {
@@ -790,12 +909,12 @@ export const ProductManagementPage = () => {
           }}
           onFinish={submitVariantForm}
         >
-          <Form.Item label="SKU">
-            <Input
-              disabled
-              value={editingVariant?.sku}
-              placeholder="SKU sẽ được hệ thống tự động tạo"
-            />
+          <Form.Item
+            name="sku"
+            label="SKU"
+            rules={[{ required: true, message: 'Vui lòng nhập SKU' }]}
+          >
+            <Input placeholder="Ví dụ: SKU-P3-BLACK-13" />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -848,53 +967,8 @@ export const ProductManagementPage = () => {
             <InputNumber min={0} className="w-full" placeholder="Nhập số lượng tồn" />
           </Form.Item>
 
-          <Form.Item label="Danh sách ảnh variant (upload file)">
-            <Space direction="vertical" size={10} className="w-full">
-              <Upload
-                multiple
-                accept="image/*"
-                showUploadList={false}
-                beforeUpload={variantFormImageBeforeUpload}
-              >
-                <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
-                  Tải ảnh variant
-                </Button>
-              </Upload>
-
-              {variantFormImages.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {variantFormImages.map((imageUrl) => (
-                    <div
-                      key={imageUrl}
-                      className="w-[110px] rounded-md border border-slate-200 p-2"
-                    >
-                      <Image
-                        src={imageUrl}
-                        alt="Ảnh variant"
-                        className="h-[70px] w-full rounded object-cover"
-                        fallback={PRODUCT_PLACEHOLDER}
-                      />
-                      <Button
-                        danger
-                        type="text"
-                        size="small"
-                        icon={<DeleteOutlined />}
-                        onClick={() => {
-                          removeVariantFormImage(imageUrl)
-                        }}
-                      >
-                        Xóa
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <Typography.Text type="secondary">Chưa có ảnh variant.</Typography.Text>
-              )}
-            </Space>
-          </Form.Item>
-          <Form.Item name="images" hidden>
-            <Input placeholder="Danh sách URL ảnh variant" />
+          <Form.Item name="images" label="Danh sách ảnh variant (URL)">
+            <Select mode="tags" tokenSeparators={[',']} placeholder="https://..." />
           </Form.Item>
 
           <Form.Item name="isAvailable" label="Trạng thái" valuePropName="checked">

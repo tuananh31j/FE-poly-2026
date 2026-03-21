@@ -31,7 +31,6 @@ const normalizeUserItem = (value: Record<string, unknown>): AdminUserItem => {
   return {
     id: toId(value.id ?? value._id),
     email: String(value.email ?? ''),
-    username: typeof value.username === 'string' ? value.username : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     fullName: typeof value.fullName === 'string' ? value.fullName : undefined,
     phone: typeof value.phone === 'string' ? value.phone : undefined,

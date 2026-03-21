@@ -1,7 +1,6 @@
 import type { AuthUser } from '@/features/auth/model/auth.types'
 
 export interface UpdateMyProfilePayload {
-  username?: string
   fullName?: string
   phone?: string
   avatarUrl?: string
@@ -148,9 +147,12 @@ export interface CheckoutVoucherItem {
   startDate: string
   expirationDate: string
   usageLimit: number
+  maxUsagePerUser: number
   usedCount: number
   isActive: boolean
   remainingUsage: number
+  usedCountByCurrentUser: number
+  remainingUsagePerUser: number
   isEligible: boolean
   estimatedDiscount: number
 }

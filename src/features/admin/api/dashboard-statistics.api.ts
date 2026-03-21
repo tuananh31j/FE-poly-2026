@@ -1,4 +1,3 @@
-@@ -0,0 +1,159 @@
 import { httpClient } from '@/shared/api/httpClient'
 import { extractApiData, toApiClientError } from '@/shared/api/response'
 import type { ApiSuccess } from '@/shared/types/api.types'

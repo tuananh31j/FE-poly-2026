@@ -3,7 +3,6 @@ import { httpClient } from '@/shared/api/httpClient'
 import { extractApiData, toApiClientError } from '@/shared/api/response'
 import type { ApiSuccess } from '@/shared/types/api.types'
 
-
 import type {
   AddressItem,
   ChangePasswordPayload,
@@ -53,7 +52,6 @@ const normalizeAuthUser = (value: Record<string, unknown>): AuthUser => {
   return {
     id: toId(value.id ?? value._id),
     email: String(value.email ?? ''),
-    username: typeof value.username === 'string' ? value.username : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : true,
     fullName: typeof value.fullName === 'string' ? value.fullName : undefined,
     phone: typeof value.phone === 'string' ? value.phone : undefined,
@@ -88,6 +86,12 @@ const normalizeAddress = (value: Record<string, unknown>): AddressItem => {
 }
 
 const normalizeCheckoutVoucher = (value: Record<string, unknown>): CheckoutVoucherItem => {
+  const usageLimit = Number(value.usageLimit ?? 0)
+  const normalizedMaxUsagePerUserRaw = Number(value.maxUsagePerUser)
+  const maxUsagePerUser = Number.isFinite(normalizedMaxUsagePerUserRaw)
+    ? normalizedMaxUsagePerUserRaw
+    : Math.max(1, usageLimit - 1)
+
   return {
     id: toId(value.id ?? value._id),
     code: String(value.code ?? ''),
@@ -99,10 +103,13 @@ const normalizeCheckoutVoucher = (value: Record<string, unknown>): CheckoutVouch
       typeof value.maxDiscountAmount === 'number' ? value.maxDiscountAmount : undefined,
     startDate: String(value.startDate ?? ''),
     expirationDate: String(value.expirationDate ?? ''),
-    usageLimit: Number(value.usageLimit ?? 0),
+    usageLimit,
+    maxUsagePerUser,
     usedCount: Number(value.usedCount ?? 0),
     isActive: Boolean(value.isActive),
     remainingUsage: Number(value.remainingUsage ?? 0),
+    usedCountByCurrentUser: Number(value.usedCountByCurrentUser ?? 0),
+    remainingUsagePerUser: Number(value.remainingUsagePerUser ?? 0),
     isEligible: Boolean(value.isEligible),
     estimatedDiscount: Number(value.estimatedDiscount ?? 0),
   }
@@ -198,6 +205,7 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     updatedAt: String(value.updatedAt ?? ''),
   }
 }
+
 const normalizeOrdersResponse = (value: Record<string, unknown>): MyOrdersResponse => {
   const rawItems = Array.isArray(value.items) ? value.items : []
 
@@ -312,7 +320,8 @@ export const createOrder = async (payload: CreateOrderPayload) => {
   } catch (error) {
     throw toApiClientError(error)
   }
-}   
+}
+
 // worklog: 2026-03-04 20:51:53 | ducanh | feature | listAvailableCheckoutVouchers
 // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | listAvailableCheckoutVouchers
 // worklog: 2026-03-04 18:01:37 | trantu | cleanup | listAvailableCheckoutVouchers

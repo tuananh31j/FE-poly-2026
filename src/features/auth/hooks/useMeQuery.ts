@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
+
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
 import { me } from '@/features/auth/api/auth.api'
 import { clearAuth, setUser } from '@/features/auth/store/auth.slice'

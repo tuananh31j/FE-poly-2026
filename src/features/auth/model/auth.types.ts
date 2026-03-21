@@ -1,7 +1,6 @@
 export interface AuthUser {
   id: string
   email: string
-  username?: string
   isActive: boolean
   fullName?: string
   phone?: string
@@ -42,7 +41,6 @@ export interface ResetPasswordPayload {
 export interface RegisterPayload {
   email: string
   password: string
-  username?: string
   fullName?: string
   phone?: string
 }

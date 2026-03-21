@@ -2,10 +2,13 @@ import {
   AppstoreOutlined,
   BgColorsOutlined,
   CommentOutlined,
+  DatabaseOutlined,
   GiftOutlined,
   OrderedListOutlined,
   PlusCircleOutlined,
+  SettingOutlined,
   ShopOutlined,
+  ShoppingCartOutlined,
   StarOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -37,6 +40,7 @@ interface CenterMenuGroup {
   key: string
   title: string
   description: string
+  icon?: ReactNode
   items: CenterMenuItem[]
 }
 
@@ -45,6 +49,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
     key: 'orders',
     title: 'Bán hàng',
     description: 'Theo dõi luồng đơn và phản hồi khách hàng.',
+    icon: <ShoppingCartOutlined />,
     items: [
       {
         key: 'orders',
@@ -89,6 +94,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
     key: 'catalog',
     title: 'Catalog',
     description: 'Quản lý danh mục sản phẩm và thuộc tính hiển thị.',
+    icon: <DatabaseOutlined />,
     items: [
       {
         key: 'products-list',
@@ -103,7 +109,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
       {
         key: 'products-create',
         title: 'Thêm sản phẩm',
-        description: 'Tạo mới sản phẩm/variant ngay từ form quản lý.',
+        description: 'Tạo mới sản phẩm trên page riêng với form động cho biến thể.',
         to: buildDashboardProductsPath('create'),
         icon: <PlusCircleOutlined />,
         iconBackground: '#dbeafe',
@@ -156,6 +162,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
     key: 'system',
     title: 'Hệ thống',
     description: 'Các màn hình quản trị tài khoản và phân quyền.',
+    icon: <SettingOutlined />,
     items: [
       {
         key: 'statistics',
@@ -218,8 +225,9 @@ export const DashboardCenterPage = () => {
               <Card>
                 <Space direction="vertical" size={14} className="w-full">
                   <div>
-                    <Typography.Title level={4} className="!mb-1">
-                      {group.title}
+                    <Typography.Title level={4} className="!mb-1 flex items-center gap-2">
+                      {group.icon}
+                      <span>{group.title}</span>
                     </Typography.Title>
                     <Typography.Text type="secondary">{group.description}</Typography.Text>
                   </div>

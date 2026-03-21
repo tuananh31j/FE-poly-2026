@@ -19,6 +19,7 @@ export interface AdminVoucherItem {
   startDate: string
   expirationDate: string
   usageLimit: number
+  maxUsagePerUser: number
   usedCount: number
   isActive: boolean
   createdAt: string
@@ -44,6 +45,7 @@ export interface CreateAdminVoucherPayload {
   startDate: string
   expirationDate: string
   usageLimit: number
+  maxUsagePerUser: number
   isActive?: boolean
 }
 
@@ -56,5 +58,6 @@ export interface UpdateAdminVoucherPayload {
   startDate?: string
   expirationDate?: string
   usageLimit?: number
+  maxUsagePerUser?: number
   isActive?: boolean
 }
