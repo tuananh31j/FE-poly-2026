@@ -464,9 +464,7 @@ export const MasterDataManagementPage = () => {
                 })
                 setCategoryModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
             <Popconfirm
               title={`Xóa danh mục "${record.name}"?`}
               okText="Xóa"
@@ -479,9 +477,7 @@ export const MasterDataManagementPage = () => {
                 danger
                 icon={<DeleteOutlined />}
                 loading={deleteCategoryMutation.isPending}
-              >
-                Xóa
-              </Button>
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -555,9 +551,7 @@ export const MasterDataManagementPage = () => {
                 })
                 setBrandModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
             <Popconfirm
               title={`Xóa thương hiệu "${record.name}"?`}
               okText="Xóa"
@@ -566,9 +560,11 @@ export const MasterDataManagementPage = () => {
                 deleteBrandMutation.mutate(record.id)
               }}
             >
-              <Button danger icon={<DeleteOutlined />} loading={deleteBrandMutation.isPending}>
-                Xóa
-              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleteBrandMutation.isPending}
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -642,9 +638,7 @@ export const MasterDataManagementPage = () => {
                 })
                 setColorModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
             <Popconfirm
               title={`Xóa màu "${record.name}"?`}
               okText="Xóa"
@@ -653,9 +647,11 @@ export const MasterDataManagementPage = () => {
                 deleteColorMutation.mutate(record.id)
               }}
             >
-              <Button danger icon={<DeleteOutlined />} loading={deleteColorMutation.isPending}>
-                Xóa
-              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleteColorMutation.isPending}
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -713,9 +709,7 @@ export const MasterDataManagementPage = () => {
                 })
                 setSizeModalOpen(true)
               }}
-            >
-              Sửa
-            </Button>
+            ></Button>
             <Popconfirm
               title={`Xóa size "${record.name}"?`}
               okText="Xóa"
@@ -724,9 +718,11 @@ export const MasterDataManagementPage = () => {
                 deleteSizeMutation.mutate(record.id)
               }}
             >
-              <Button danger icon={<DeleteOutlined />} loading={deleteSizeMutation.isPending}>
-                Xóa
-              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleteSizeMutation.isPending}
+              ></Button>
             </Popconfirm>
           </Space>
         ),
@@ -747,7 +743,8 @@ export const MasterDataManagementPage = () => {
         Admin - Quản lý danh mục, thương hiệu, màu sắc, size
       </Typography.Title>
       <Typography.Paragraph className="!mb-0" type="secondary">
-        Quản lý dữ liệu nền cho catalog sản phẩm. Dữ liệu này dùng cho form tạo sản phẩm và variants.
+        Quản lý dữ liệu nền cho catalog sản phẩm. Dữ liệu này dùng cho form tạo sản phẩm và
+        variants.
       </Typography.Paragraph>
 
       <Card>
@@ -1058,11 +1055,20 @@ export const MasterDataManagementPage = () => {
             createCategoryMutation.mutate(payload)
           }}
         >
-          <Form.Item name="name" label="Tên danh mục" rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
-            <Input />
+          <Form.Item
+            name="name"
+            label="Tên danh mục"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+          >
+            <Input placeholder="Ví dụ: Cơ bida" />
           </Form.Item>
-          <Form.Item name="slug" label="Slug" rules={[{ required: true, message: 'Vui lòng nhập slug' }]}>
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
+          >
             <Input
+              placeholder="ví-dụ-slug"
               addonAfter={
                 <Button
                   type="link"
@@ -1082,6 +1088,7 @@ export const MasterDataManagementPage = () => {
             <Select
               allowClear
               showSearch
+              placeholder="Chọn danh mục cha (nếu có)"
               optionFilterProp="label"
               options={(activeCategoriesQuery.data ?? [])
                 .filter((item) => item.id !== editingCategory?.id)
@@ -1092,10 +1099,10 @@ export const MasterDataManagementPage = () => {
             />
           </Form.Item>
           <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={3} placeholder="Nhập mô tả danh mục" />
           </Form.Item>
           <Form.Item name="image" label="Ảnh danh mục (URL)">
-            <Input />
+            <Input placeholder="https://..." />
           </Form.Item>
           <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
             <Switch checkedChildren="Đang dùng" unCheckedChildren="Ngừng dùng" />
@@ -1156,11 +1163,20 @@ export const MasterDataManagementPage = () => {
             createBrandMutation.mutate(payload)
           }}
         >
-          <Form.Item name="name" label="Tên thương hiệu" rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
-            <Input />
+          <Form.Item
+            name="name"
+            label="Tên thương hiệu"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+          >
+            <Input placeholder="Ví dụ: Predator" />
           </Form.Item>
-          <Form.Item name="slug" label="Slug" rules={[{ required: true, message: 'Vui lòng nhập slug' }]}>
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
+          >
             <Input
+              placeholder="ví-dụ-slug"
               addonAfter={
                 <Button
                   type="link"
@@ -1177,10 +1193,10 @@ export const MasterDataManagementPage = () => {
             />
           </Form.Item>
           <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={3} placeholder="Nhập mô tả thương hiệu" />
           </Form.Item>
           <Form.Item name="logoUrl" label="Logo URL">
-            <Input />
+            <Input placeholder="https://..." />
           </Form.Item>
           <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
             <Switch checkedChildren="Đang dùng" unCheckedChildren="Ngừng dùng" />
@@ -1240,11 +1256,20 @@ export const MasterDataManagementPage = () => {
             createColorMutation.mutate(payload)
           }}
         >
-          <Form.Item name="name" label="Tên màu" rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
-            <Input />
+          <Form.Item
+            name="name"
+            label="Tên màu"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+          >
+            <Input placeholder="Ví dụ: Đỏ ruby" />
           </Form.Item>
-          <Form.Item name="slug" label="Slug" rules={[{ required: true, message: 'Vui lòng nhập slug' }]}>
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
+          >
             <Input
+              placeholder="ví-dụ-slug"
               addonAfter={
                 <Button
                   type="link"
@@ -1261,7 +1286,7 @@ export const MasterDataManagementPage = () => {
             />
           </Form.Item>
           <Form.Item name="hexCode" label="Mã HEX (vd: #1D4ED8)">
-            <Input />
+            <Input placeholder="#1D4ED8" />
           </Form.Item>
           <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
             <Switch checkedChildren="Đang dùng" unCheckedChildren="Ngừng dùng" />
@@ -1320,11 +1345,20 @@ export const MasterDataManagementPage = () => {
             createSizeMutation.mutate(payload)
           }}
         >
-          <Form.Item name="name" label="Tên size" rules={[{ required: true, message: 'Vui lòng nhập tên' }]}>
-            <Input />
+          <Form.Item
+            name="name"
+            label="Tên size"
+            rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
+          >
+            <Input placeholder="Ví dụ: 13mm" />
           </Form.Item>
-          <Form.Item name="slug" label="Slug" rules={[{ required: true, message: 'Vui lòng nhập slug' }]}>
+          <Form.Item
+            name="slug"
+            label="Slug"
+            rules={[{ required: true, message: 'Vui lòng nhập slug' }]}
+          >
             <Input
+              placeholder="ví-dụ-slug"
               addonAfter={
                 <Button
                   type="link"

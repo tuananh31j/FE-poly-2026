@@ -50,7 +50,6 @@ const normalizeProductCardItem = (item: Record<string, unknown>): ProductCardIte
     name: String(item.name ?? ''),
     slug: String(item.slug ?? ''),
     categoryId: toId(item.categoryId),
-    brandId: data.brandId ? toId(data.brandId) : undefined,
     brand: typeof item.brand === 'string' ? item.brand : 'Generic',
     description: typeof item.description === 'string' ? item.description : undefined,
     images: toStringArray(item.images),
@@ -124,12 +123,14 @@ const normalizeReviewItem = (item: Record<string, unknown>): ReviewListItem => {
 }
 
 const normalizeCommentItem = (item: Record<string, unknown>): CommentListItem => {
+  const targetModel = item.targetModel === 'lesson' ? 'lesson' : 'product'
+
   return {
     ...item,
     id: toId(item.id ?? item._id),
     _id: typeof item._id === 'string' ? item._id : undefined,
     targetId: toId(item.targetId),
-    targetModel: 'product',
+    targetModel,
     userId: toId(item.userId),
     content: String(item.content ?? ''),
     parentId: item.parentId ? toId(item.parentId) : undefined,
@@ -160,6 +161,8 @@ const normalizeFilterCategory = (item: Record<string, unknown>): ProductFilterCa
   return {
     id: toId(item.id ?? item._id),
     name: String(item.name ?? 'Danh mục'),
+    slug: String(item.slug ?? ''),
+    image: typeof item.image === 'string' ? item.image : undefined,
   }
 }
 
@@ -264,6 +267,8 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
           : undefined,
       images: toStringArray(data.images),
       isAvailable: Boolean(data.isAvailable),
+      metaTitle: typeof data.metaTitle === 'string' ? data.metaTitle : undefined,
+      metaDescription: typeof data.metaDescription === 'string' ? data.metaDescription : undefined,
       averageRating: Number(data.averageRating ?? 0),
       reviewCount: Number(data.reviewCount ?? 0),
       soldCount: Number(data.soldCount ?? 0),

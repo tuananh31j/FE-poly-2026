@@ -201,7 +201,6 @@ export const CommentManagementPage = () => {
               setDetailComment(record)
             }}
           >
-            Chi tiết
           </Button>
 
           <Button
