@@ -1,3 +1,4 @@
+@@ -0,0 +1,159 @@
 import { httpClient } from '@/shared/api/httpClient'
 import { extractApiData, toApiClientError } from '@/shared/api/response'
 import type { ApiSuccess } from '@/shared/types/api.types'
@@ -63,6 +64,16 @@ const normalizeSummary = (value: Record<string, unknown>): DashboardSummary => {
     totalComments: Number(value.totalComments ?? 0),
   }
 }
+
+const normalizeDailyRevenue = (value: Record<string, unknown>): DashboardDailyRevenueItem => {
+  return {
+    date: String(value.date ?? ''),
+    revenue: Number(value.revenue ?? 0),
+    orders: Number(value.orders ?? 0),
+    deliveredOrders: Number(value.deliveredOrders ?? 0),
+  }
+}
+
 const normalizeTrends = (value: Record<string, unknown>): DashboardTrends => {
   const rawDailyRevenue = Array.isArray(value.dailyRevenue) ? value.dailyRevenue : []
 
@@ -77,21 +88,9 @@ const normalizeTrends = (value: Record<string, unknown>): DashboardTrends => {
   }
 }
 
-const normalizeDailyRevenue = (value: Record<string, unknown>): DashboardDailyRevenueItem => {
-  return {
-    date: String(value.date ?? ''),
-    revenue: Number(value.revenue ?? 0),
-    orders: Number(value.orders ?? 0),
-    deliveredOrders: Number(value.deliveredOrders ?? 0),
-  }
-}
-
-
-
 const normalizeBreakdowns = (value: Record<string, unknown>): DashboardBreakdowns => {
   const rawByStatus = Array.isArray(value.byStatus) ? value.byStatus : []
   const rawByPaymentMethod = Array.isArray(value.byPaymentMethod) ? value.byPaymentMethod : []
-  const rawByCategory = Array.isArray(value.byCategory) ? value.byCategory : []
 
   return {
     byStatus: rawByStatus
@@ -110,38 +109,6 @@ const normalizeBreakdowns = (value: Record<string, unknown>): DashboardBreakdown
         count: Number(item.count ?? 0),
         revenue: Number(item.revenue ?? 0),
       })),
-    byCategory: rawByCategory
-      .map((item) => toRecord(item))
-      .filter((item): item is Record<string, unknown> => Boolean(item))
-      .map((item) => ({
-        categoryId: item.categoryId ? toId(item.categoryId) : null,
-        categoryName: String(item.categoryName ?? 'Không xác định'),
-        orders: Number(item.orders ?? 0),
-        deliveredOrders: Number(item.deliveredOrders ?? 0),
-        items: Number(item.items ?? 0),
-        revenue: Number(item.revenue ?? 0),
-      })),
-  }
-}
-const normalizeDashboardStatistics = (value: Record<string, unknown>): DashboardStatisticsResponse => {
-  const summaryRecord = toRecord(value.summary)
-  const trendsRecord = toRecord(value.trends)
-  const breakdownsRecord = toRecord(value.breakdowns)
-  const rawTopProducts = Array.isArray(value.topProducts) ? value.topProducts : []
-  const rawBottomProducts = Array.isArray(value.bottomProducts) ? value.bottomProducts : []
-
-  return {
-    summary: normalizeSummary(summaryRecord ?? {}),
-    trends: normalizeTrends(trendsRecord ?? {}),
-    breakdowns: normalizeBreakdowns(breakdownsRecord ?? {}),
-    topProducts: rawTopProducts
-      .map((item) => toRecord(item))
-      .filter((item): item is Record<string, unknown> => Boolean(item))
-      .map((item) => normalizeTopProduct(item)),
-    bottomProducts: rawBottomProducts
-      .map((item) => toRecord(item))
-      .filter((item): item is Record<string, unknown> => Boolean(item))
-      .map((item) => normalizeTopProduct(item)),
   }
 }
 
@@ -158,7 +125,22 @@ const normalizeTopProduct = (value: Record<string, unknown>): DashboardTopProduc
   }
 }
 
+const normalizeDashboardStatistics = (value: Record<string, unknown>): DashboardStatisticsResponse => {
+  const summaryRecord = toRecord(value.summary)
+  const trendsRecord = toRecord(value.trends)
+  const breakdownsRecord = toRecord(value.breakdowns)
+  const rawTopProducts = Array.isArray(value.topProducts) ? value.topProducts : []
 
+  return {
+    summary: normalizeSummary(summaryRecord ?? {}),
+    trends: normalizeTrends(trendsRecord ?? {}),
+    breakdowns: normalizeBreakdowns(breakdownsRecord ?? {}),
+    topProducts: rawTopProducts
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeTopProduct(item)),
+  }
+}
 
 export const getAdminDashboardStatistics = async (days = 7): Promise<DashboardStatisticsResponse> => {
   try {
