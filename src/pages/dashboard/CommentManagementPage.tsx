@@ -122,9 +122,7 @@ export const CommentManagementPage = () => {
       render: (_, record) => (
         <Space direction="vertical" size={1}>
           <Space size={6}>
-            <Tag color={record.targetModel === 'product' ? 'blue' : 'purple'}>
-              {record.targetModel === 'product' ? 'Product' : 'Lesson'}
-            </Tag>
+            <Tag color="blue">Product</Tag>
             <Typography.Text strong className="line-clamp-1">
               {record.target?.name || 'N/A'}
             </Typography.Text>
@@ -244,7 +242,7 @@ export const CommentManagementPage = () => {
           Quản lý bình luận
         </Typography.Title>
         <Typography.Text type="secondary">
-          Kiểm duyệt, lọc và xử lý toàn bộ bình luận sản phẩm/bài học.
+          Kiểm duyệt, lọc và xử lý toàn bộ bình luận sản phẩm.
         </Typography.Text>
       </div>
 
@@ -322,7 +320,6 @@ export const CommentManagementPage = () => {
             options={[
               { label: 'Tất cả mục tiêu', value: 'all' },
               { label: 'Product', value: 'product' },
-              { label: 'Lesson', value: 'lesson' },
             ]}
             onChange={(value) => {
               setPage(1)
@@ -393,7 +390,7 @@ export const CommentManagementPage = () => {
                 {
                   key: 'targetModel',
                   label: 'Loại mục tiêu',
-                  children: detailComment.targetModel === 'product' ? 'Product' : 'Lesson',
+                  children: 'Product',
                 },
                 {
                   key: 'target',
