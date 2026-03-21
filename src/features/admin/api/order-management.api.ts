@@ -156,7 +156,10 @@ const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
         ? value.paymentStatus
         : 'pending',
     zalopayChannel:
-      value.zalopayChannel === 'bank_card' || value.zalopayChannel === 'wallet'
+      value.zalopayChannel === 'gateway' ||
+      value.zalopayChannel === 'wallet' ||
+      value.zalopayChannel === 'bank_card' ||
+      value.zalopayChannel === 'atm'
         ? value.zalopayChannel
         : undefined,
     voucherId: value.voucherId ? toId(value.voucherId) : undefined,

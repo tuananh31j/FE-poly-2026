@@ -47,7 +47,7 @@ export type OrderStatus =
   | 'returned'
 
 export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
-export type ZalopayChannel = 'wallet' | 'bank_card'
+export type ZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
 export type RefundMethod = 'bank_transfer' | 'wallet'
