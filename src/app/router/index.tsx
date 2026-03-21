@@ -1,5 +1,5 @@
-
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+
 import { AccountLayout } from '@/layouts/AccountLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { PrivateLayout } from '@/layouts/PrivateLayout'
@@ -14,15 +14,12 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { CheckoutPage } from '@/pages/checkout/CheckoutPage'
-import { AccountManagementPage } from '@/pages/dashboard/AccountManagementPage'
-import { CommentManagementPage } from '@/pages/dashboard/CommentManagementPage'
 import { DashboardCenterPage } from '@/pages/dashboard/DashboardCenterPage'
-import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { MasterDataManagementPage } from '@/pages/dashboard/MasterDataManagementPage'
 import { OrderManagementPage } from '@/pages/dashboard/OrderManagementPage'
+import { ProductCreatePage } from '@/pages/dashboard/ProductCreatePage'
 import { ProductManagementPage } from '@/pages/dashboard/ProductManagementPage'
-import { ReviewManagementPage } from '@/pages/dashboard/ReviewManagementPage'
-import { UserRoleManagementPage } from '@/pages/dashboard/UserRoleManagementPage'
+import { ProductUpdatePage } from '@/pages/dashboard/ProductUpdatePage'
 import { VoucherManagementPage } from '@/pages/dashboard/VoucherManagementPage'
 import { HomePage } from '@/pages/home/HomePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -31,7 +28,6 @@ import { ProductDetailPage } from '@/pages/product/ProductDetailPage'
 import { ProductsPage } from '@/pages/product/ProductsPage'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { PrivateRoute } from '@/shared/ui/PrivateRoute'
-import { ProductUpdatePage } from '@/pages/dashboard/ProductUpdatePage'
 import { RequireAdmin } from '@/shared/ui/RequireAdmin'
 import { RequireAuth } from '@/shared/ui/RequireAuth'
 
@@ -136,21 +132,19 @@ export const router = createBrowserRouter([
         path: 'center',
         element: <DashboardCenterPage />,
       },
-      {
-        path: 'statistics',
-        element: <DashboardPage />,
-      },
+
       {
         path: 'orders',
         element: <OrderManagementPage />,
       },
+
       {
-        path: 'reviews',
-        element: <ReviewManagementPage />,
-      },
-      {
-        path: 'comments',
-        element: <CommentManagementPage />,
+        path: 'products/create',
+        element: (
+          <RequireAdmin>
+            <ProductCreatePage />
+          </RequireAdmin>
+        ),
       },
       {
         path: 'products/:productId/edit',
@@ -188,15 +182,7 @@ export const router = createBrowserRouter([
         path: 'users',
         element: (
           <RequireAdmin>
-            <UserRoleManagementPage />
-          </RequireAdmin>
-        ),
-      },
-      {
-        path: 'accounts',
-        element: (
-          <RequireAdmin>
-            <AccountManagementPage />
+            <Navigate to={ROUTE_PATHS.DASHBOARD_ACCOUNTS} replace />
           </RequireAdmin>
         ),
       },
