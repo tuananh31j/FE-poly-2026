@@ -82,6 +82,16 @@ const PAYMENT_METHOD_LABEL: Record<AdminOrderItem['paymentMethod'], string> = {
   zalopay: 'ZaloPay',
 }
 
+const getPaymentMethodLabel = (order: AdminOrderItem) => {
+  if (order.paymentMethod !== 'zalopay') {
+    return PAYMENT_METHOD_LABEL[order.paymentMethod]
+  }
+
+  return order.zalopayChannel === 'bank_card'
+    ? 'ZaloPay - Thẻ Visa/Master/JCB'
+    : 'ZaloPay - Ví'
+}
+
 const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
   pending: 'Chờ thanh toán',
   paid: 'Đã thanh toán',
@@ -320,7 +330,7 @@ export const OrderManagementPage = () => {
       render: (_, record) => (
         <Space direction="vertical" size={2}>
           <Tag color="blue" className="!m-0 w-fit">
-            {PAYMENT_METHOD_LABEL[record.paymentMethod]}
+            {getPaymentMethodLabel(record)}
           </Tag>
           <Typography.Text type="secondary" className="text-xs">
             {PAYMENT_STATUS_LABEL[record.paymentStatus]}
@@ -613,7 +623,7 @@ export const OrderManagementPage = () => {
                 {
                   key: 'paymentMethod',
                   label: 'Phương thức thanh toán',
-                  children: PAYMENT_METHOD_LABEL[detailOrder.paymentMethod],
+                  children: getPaymentMethodLabel(detailOrder),
                 },
                 {
                   key: 'paymentStatus',

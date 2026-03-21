@@ -32,6 +32,7 @@ import {
 } from '@/features/account/api/account.api'
 import type {
   CheckoutVoucherItem,
+  ZalopayChannel,
   UpsertAddressPayload,
 } from '@/features/account/model/account.types'
 import { getMyCart } from '@/features/cart/api/cart.api'
@@ -86,6 +87,7 @@ export const CheckoutPage = () => {
   const [addressForm] = Form.useForm<AddressFormValues>()
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay' | 'zalopay'>('cod')
+  const [zalopayChannel, setZalopayChannel] = useState<ZalopayChannel>('wallet')
   const [voucherCode, setVoucherCode] = useState('')
   const [manualAddressId, setManualAddressId] = useState<string | null>(null)
   const [createAddressModalOpen, setCreateAddressModalOpen] = useState(false)
@@ -253,6 +255,7 @@ export const CheckoutPage = () => {
     createOrderMutation.mutate({
       addressId: selectedAddressId,
       paymentMethod,
+      zalopayChannel: paymentMethod === 'zalopay' ? zalopayChannel : undefined,
       voucherCode: normalizeVoucherCode(voucherCode) || undefined,
       selectedVariantIds,
     })
@@ -384,6 +387,29 @@ export const CheckoutPage = () => {
                   <Radio value="zalopay">ZaloPay - Thanh toán online</Radio>
                 </Space>
               </Radio.Group>
+
+              {paymentMethod === 'zalopay' ? (
+                <Card size="small" className="mt-4 border border-blue-100 bg-blue-50/40">
+                  <Space direction="vertical" size={10} className="w-full">
+                    <Typography.Text strong>Chọn kênh thanh toán ZaloPay</Typography.Text>
+                    <Radio.Group
+                      value={zalopayChannel}
+                      onChange={(event) => {
+                        setZalopayChannel(event.target.value as ZalopayChannel)
+                      }}
+                    >
+                      <Space direction="vertical" size={8}>
+                        <Radio value="wallet">Ví ZaloPay</Radio>
+                        <Radio value="bank_card">Thẻ Visa/Master/JCB qua ZaloPay</Radio>
+                      </Space>
+                    </Radio.Group>
+                    <Typography.Text type="secondary" className="text-xs">
+                      Nếu chọn thẻ, ZaloPay sẽ mở form nhập thông tin thẻ Visa, Master hoặc JCB
+                      để bạn tiếp tục xác thực thanh toán.
+                    </Typography.Text>
+                  </Space>
+                </Card>
+              ) : null}
             </Card>
 
             <Card title={`Sản phẩm đã chọn (${selectedCartItems.length})`}>

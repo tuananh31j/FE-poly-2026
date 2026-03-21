@@ -47,6 +47,7 @@ export type OrderStatus =
   | 'returned'
 
 export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type ZalopayChannel = 'wallet' | 'bank_card'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
 export type RefundMethod = 'bank_transfer' | 'wallet'
@@ -106,6 +107,7 @@ export interface MyOrderItem {
   discountAmount: number
   totalAmount: number
   paymentMethod: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   paymentStatus: PaymentStatus
   paymentTxnRef?: string
   paymentTransactionNo?: string
@@ -146,6 +148,7 @@ export interface CreateOrderPayload {
   shippingFee?: number
   voucherCode?: string
   paymentMethod?: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   selectedVariantIds?: string[]
 }
 

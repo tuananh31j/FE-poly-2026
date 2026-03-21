@@ -223,6 +223,10 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       value.paymentStatus === 'refunded'
         ? value.paymentStatus
         : 'pending',
+    zalopayChannel:
+      value.zalopayChannel === 'bank_card' || value.zalopayChannel === 'wallet'
+        ? value.zalopayChannel
+        : undefined,
     paymentTxnRef: typeof value.paymentTxnRef === 'string' ? value.paymentTxnRef : undefined,
     paymentTransactionNo:
       typeof value.paymentTransactionNo === 'string' ? value.paymentTransactionNo : undefined,

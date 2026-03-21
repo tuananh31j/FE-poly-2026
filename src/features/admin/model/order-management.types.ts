@@ -8,6 +8,7 @@ export type AdminOrderStatus =
   | 'returned'
 
 export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type AdminZalopayChannel = 'wallet' | 'bank_card'
 export type AdminPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type AdminReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
 export type AdminRefundMethod = 'bank_transfer' | 'wallet'
@@ -76,6 +77,7 @@ export interface AdminOrderItem {
   discountAmount: number
   totalAmount: number
   paymentMethod: AdminPaymentMethod
+  zalopayChannel?: AdminZalopayChannel
   paymentStatus: AdminPaymentStatus
   voucherId?: string
   status: AdminOrderStatus
