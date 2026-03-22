@@ -242,10 +242,10 @@ export const PrivateLayout = () => {
   const notificationListContent = (
     <div className="w-[360px]">
       <div className="mb-3 flex items-center justify-between">
-        <Typography.Text strong>Thông báo realtime</Typography.Text>
+        <Typography.Text strong>Thông báo</Typography.Text>
         <Space size={8}>
           <Tag color={isNotificationConnected ? 'green' : 'orange'}>
-            {isNotificationConnected ? 'Socket: Online' : 'Socket: Reconnecting'}
+            {isNotificationConnected ? 'Online' : 'Offline'}
           </Tag>
           <Button
             size="small"
