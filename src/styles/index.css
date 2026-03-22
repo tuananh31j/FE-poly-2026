@@ -110,3 +110,76 @@ body {
 .home-product-carousel .slick-slide > div {
   height: 100%;
 }
+
+.rich-text-editor-content {
+  min-height: inherit;
+  padding: 12px 14px;
+  outline: none;
+  line-height: 1.7;
+  color: #0f172a;
+}
+
+.rich-text-editor-content p {
+  margin: 0;
+}
+
+.rich-text-editor-content p + p {
+  margin-top: 0.75rem;
+}
+
+.rich-text-editor-content ul,
+.rich-text-editor-content ol {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+}
+
+.rich-text-editor-content blockquote {
+  margin: 0.75rem 0;
+  border-left: 3px solid #93c5fd;
+  padding-left: 0.75rem;
+  color: #334155;
+}
+
+.rich-text-editor-content h2,
+.rich-text-editor-content h3 {
+  margin: 0.75rem 0;
+  font-weight: 700;
+}
+
+.rich-text-editor-content h2 {
+  font-size: 1.15rem;
+}
+
+.rich-text-editor-content h3 {
+  font-size: 1rem;
+}
+
+.rich-text-editor-content .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.rich-text-render ul,
+.rich-text-render ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.rich-text-render p {
+  margin: 0;
+}
+
+.rich-text-render p + p {
+  margin-top: 0.75rem;
+}
+
+.rich-text-render blockquote {
+  margin: 0.75rem 0;
+  border-left: 3px solid #bfdbfe;
+  padding-left: 0.75rem;
+  color: #334155;
+}
+

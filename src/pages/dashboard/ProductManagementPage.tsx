@@ -46,8 +46,10 @@ import type {
 import { queryKeys } from '@/shared/api/queryKeys'
 import { uploadImage } from '@/shared/api/upload.api'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
+import { RichTextEditor } from '@/shared/ui/RichTextEditor'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
+import { normalizeRichTextValue } from '@/shared/utils/rich-text'
 
 const PAGE_SIZE = 10
 const VARIANT_PAGE_SIZE = 20
@@ -621,7 +623,7 @@ export const ProductManagementPage = () => {
       name: values.name.trim(),
       categoryId: values.categoryId,
       brandId: normalizedBrandId || undefined,
-      description: values.description?.trim() || undefined,
+      description: normalizeRichTextValue(values.description),
       images: normalizeStringArray(values.images),
       isAvailable: values.isAvailable,
       metaTitle: values.metaTitle?.trim() || undefined,
@@ -848,10 +850,10 @@ export const ProductManagementPage = () => {
           </Form.Item>
 
           <Form.Item name="description" label="Mô tả">
-            <Input.TextArea rows={6} placeholder="Nhập mô tả sản phẩm" />
+            <RichTextEditor placeholder="Nhập mô tả sản phẩm..." minHeight={240} />
           </Form.Item>
 
-          <Form.Item label="Danh sách ảnh (upload file)">
+          <Form.Item label="Danh sách ảnh">
             <Space direction="vertical" size={10} className="w-full">
               <Upload
                 multiple
