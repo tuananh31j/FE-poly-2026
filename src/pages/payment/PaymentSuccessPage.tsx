@@ -32,9 +32,9 @@ export const PaymentSuccessPage = () => {
     })
 
     return payload
-    }, [searchParams])
+  }, [searchParams])
 
-    const hasVnpReturnData =
+  const hasVnpReturnData =
     Boolean(vnpPayload.vnp_TxnRef) &&
     Boolean(vnpPayload.vnp_SecureHash) &&
     Boolean(vnpPayload.vnp_ResponseCode)
@@ -50,7 +50,7 @@ export const PaymentSuccessPage = () => {
 
   if (!hasVnpReturnData) {
     return (
-        <Card className="mx-auto mt-8 max-w-2xl">
+      <Card className="mx-auto mt-8 max-w-2xl">
         <Result
           status="warning"
           title="Không có dữ liệu thanh toán"
@@ -59,13 +59,15 @@ export const PaymentSuccessPage = () => {
             <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ACCOUNT_ORDERS)}>
               Đến đơn hàng của tôi
             </Button>
-            }
+          }
         />
-        </Card>
+      </Card>
     )
-    }
+  }
 
-    if (verifyMutation.isPending || verifyMutation.isIdle) {
+  const isVerifying = verifyMutation.isPending || verifyMutation.isIdle
+
+  if (isVerifying) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Space direction="vertical" align="center">
@@ -76,24 +78,30 @@ export const PaymentSuccessPage = () => {
     )
   }
 
-  if (verifyMutation.isError) {
+  const isVerifyError = verifyMutation.isError
+
+  if (isVerifyError) {
     return (
       <Card className="mx-auto mt-8 max-w-2xl">
         <Result
-            status="error"
-            title="Không xác thực được giao dịch VNPay"
+          status="error"
+          title="Không xác thực được giao dịch VNPay"
           subTitle="Vui lòng kiểm tra lại đơn hàng của bạn và thử thanh toán lại nếu cần."
           extra={
             <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ACCOUNT_ORDERS)}>
               Đơn hàng của tôi
             </Button>
-            }
+          }
         />
-        </Card>
+      </Card>
     )
-    }
+  }
 
-    const verifyResult = verifyMutation.data
+  const verifyResult = verifyMutation.data
+
+  if (!verifyResult) {
+    return null
+  }
   const order = verifyResult.order
   const isPaymentSuccess = verifyResult.isSuccess
 
@@ -108,21 +116,21 @@ export const PaymentSuccessPage = () => {
             key="orders"
             type="primary"
             onClick={() => {
-                navigate(ROUTE_PATHS.ACCOUNT_ORDERS)
+              navigate(ROUTE_PATHS.ACCOUNT_ORDERS)
             }}
-            >
-            Đến đơn hàng của tôi
+          >
+            Đơn hàng của tôi
           </Button>,
-        <Button
+          <Button
             key="home"
             onClick={() => {
-                navigate(ROUTE_PATHS.ROOT)
+              navigate(ROUTE_PATHS.ROOT)
             }}
-            >
+          >
             Về trang chủ
           </Button>,
         ]}
-        />
+      />
     </Card>
-    )
+  )
 }
