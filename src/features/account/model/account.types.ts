@@ -50,6 +50,7 @@ export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
 export type ZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type CancelRefundRequestStatus = 'pending' | 'rejected' | 'refunded'
 export type RefundMethod = 'bank_transfer' | 'wallet'
 
 export interface OrderItemSnapshot {
@@ -95,6 +96,23 @@ export interface ReturnRequest {
   updatedAt: string
 }
 
+export interface CancelRefundRequest {
+  requestedBy: string
+  status: CancelRefundRequestStatus
+  refundAmount: number
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
+  adminNote?: string
+  refundEvidenceImages?: string[]
+  requestedAt: string
+  updatedAt: string
+  processedAt?: string
+  processedBy?: string
+}
+
 export interface MyOrderItem {
   id: string
   orderCode: string
@@ -120,6 +138,7 @@ export interface MyOrderItem {
   items: OrderItemSnapshot[]
   statusHistory: OrderStatusHistoryItem[]
   returnRequests?: ReturnRequest[]
+  cancelRefundRequest?: CancelRefundRequest
   createdAt: string
   updatedAt: string
 }
@@ -159,6 +178,14 @@ export interface CreateReturnRequestPayload {
   }>
   reason?: string
   refundMethod?: RefundMethod
+}
+
+export interface CreateCancelRefundRequestPayload {
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
 }
 
 export interface VerifyVnpayReturnPayload {
