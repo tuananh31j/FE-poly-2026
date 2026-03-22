@@ -1,36 +1,18 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button, Card, message, Result, Space, Spin, Typography } from 'antd'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { verifyVnpayReturn, verifyZalopayRedirect } from '@/features/account/api/account.api'
+import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 
 export const PaymentSuccessPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const hasRequestedVerification = useRef(false)
-
-  const verifyMutation = useMutation({
-    mutationFn: verifyVnpayReturn,
-    onSuccess: (data) => {
-      void message.success(data.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
-    },
-    onError: (error) => {
-      void message.error(error.message)
-    },
-  })
-
-  const verifyZalopayMutation = useMutation({
-    mutationFn: verifyZalopayRedirect,
-    onSuccess: (data) => {
-      void message.success(data.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
-    },
-    onError: (error) => {
-      void message.error(error.message)
-    },
-  })
+  const notifiedSuccessKeyRef = useRef<string | null>(null)
+  const notifiedErrorKeyRef = useRef<string | null>(null)
 
   const vnpPayload = useMemo(() => {
     const payload: Record<string, string> = {}
@@ -85,32 +67,22 @@ export const PaymentSuccessPage = () => {
 
   const hasZalopayReturnData = Boolean(zalopayPayload)
 
-  useEffect(() => {
-    if ((hasVnpReturnData || hasZalopayReturnData) && hasRequestedVerification.current) {
-      return
-    }
+  const verifyVnpayQuery = useQuery({
+    queryKey: queryKeys.account.paymentVerification('vnpay', vnpPayload),
+    queryFn: () => verifyVnpayReturn(vnpPayload),
+    enabled: hasVnpReturnData,
+    retry: false,
+  })
 
-    if (!hasVnpReturnData && !hasZalopayReturnData) {
-      return
-    }
-
-    hasRequestedVerification.current = true
-    if (hasVnpReturnData) {
-      verifyMutation.mutate(vnpPayload)
-      return
-    }
-
-    if (hasZalopayReturnData && zalopayPayload) {
-      verifyZalopayMutation.mutate(zalopayPayload)
-    }
-  }, [
-    hasVnpReturnData,
-    hasZalopayReturnData,
-    verifyMutation,
-    verifyZalopayMutation,
-    vnpPayload,
-    zalopayPayload,
-  ])
+  const verifyZalopayQuery = useQuery({
+    queryKey: queryKeys.account.paymentVerification(
+      'zalopay',
+      (zalopayPayload ?? {}) as Record<string, unknown>
+    ),
+    queryFn: () => verifyZalopayRedirect(zalopayPayload!),
+    enabled: hasZalopayReturnData && Boolean(zalopayPayload),
+    retry: false,
+  })
 
   if (!hasVnpReturnData && !hasZalopayReturnData) {
     return (
@@ -130,13 +102,55 @@ export const PaymentSuccessPage = () => {
   }
 
   const activeGateway = hasVnpReturnData ? 'vnpay' : 'zalopay'
-  const isVerifying =
-    activeGateway === 'vnpay'
-      ? verifyMutation.isPending || (!hasRequestedVerification.current && verifyMutation.isIdle)
-      : verifyZalopayMutation.isPending ||
-        (!hasRequestedVerification.current && verifyZalopayMutation.isIdle)
+  const activeQuery = activeGateway === 'vnpay' ? verifyVnpayQuery : verifyZalopayQuery
+  const verifyResult = activeQuery.data
 
-  if (isVerifying) {
+  useEffect(() => {
+    if (!verifyResult) {
+      return
+    }
+
+    const notificationKey = `${activeGateway}:${verifyResult.order.id}:${verifyResult.responseCode}`
+
+    if (notifiedSuccessKeyRef.current === notificationKey) {
+      return
+    }
+
+    notifiedSuccessKeyRef.current = notificationKey
+    void message.success(verifyResult.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
+  }, [activeGateway, verifyResult])
+
+  useEffect(() => {
+    if (!activeQuery.error) {
+      return
+    }
+
+    const errorKey = `${activeGateway}:${activeQuery.error.message}`
+
+    if (notifiedErrorKeyRef.current === errorKey) {
+      return
+    }
+
+    notifiedErrorKeyRef.current = errorKey
+    void message.error(activeQuery.error.message)
+  }, [activeGateway, activeQuery.error])
+
+  const order = verifyResult?.order
+  const isPaymentSuccess = verifyResult?.isSuccess ?? false
+
+  useEffect(() => {
+    if (!isPaymentSuccess || !order?.id) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      navigate(`${ROUTE_PATHS.ACCOUNT_ORDERS}?orderId=${order.id}`)
+    }, 1200)
+
+    return () => window.clearTimeout(timer)
+  }, [isPaymentSuccess, navigate, order?.id])
+
+  if (activeQuery.isPending || activeQuery.fetchStatus === 'fetching') {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Space direction="vertical" align="center">
@@ -151,10 +165,7 @@ export const PaymentSuccessPage = () => {
     )
   }
 
-  const isVerifyError =
-    activeGateway === 'vnpay' ? verifyMutation.isError : verifyZalopayMutation.isError
-
-  if (isVerifyError) {
+  if (activeQuery.isError) {
     return (
       <Card className="mx-auto mt-8 max-w-2xl">
         <Result
@@ -175,10 +186,7 @@ export const PaymentSuccessPage = () => {
     )
   }
 
-  const verifyResult =
-    activeGateway === 'vnpay' ? verifyMutation.data : verifyZalopayMutation.data
-
-  if (!verifyResult) {
+  if (!verifyResult || !order) {
     return (
       <Card className="mx-auto mt-8 max-w-2xl">
         <Result
@@ -194,20 +202,6 @@ export const PaymentSuccessPage = () => {
       </Card>
     )
   }
-  const order = verifyResult.order
-  const isPaymentSuccess = verifyResult.isSuccess
-
-  useEffect(() => {
-    if (!isPaymentSuccess || !order?.id) {
-      return
-    }
-
-    const timer = window.setTimeout(() => {
-      navigate(`${ROUTE_PATHS.ACCOUNT_ORDERS}?orderId=${order.id}`)
-    }, 1200)
-
-    return () => window.clearTimeout(timer)
-  }, [isPaymentSuccess, navigate, order?.id])
 
   return (
     <Card className="mx-auto mt-8 max-w-2xl">

@@ -14,6 +14,8 @@ export const queryKeys = {
     checkoutVouchers: (filters?: Record<string, unknown>) =>
       ['account', 'checkout-vouchers', filters ?? {}] as const,
     orders: (filters?: Record<string, unknown>) => ['account', 'orders', filters ?? {}] as const,
+    paymentVerification: (gateway: 'vnpay' | 'zalopay', payload: Record<string, unknown>) =>
+      ['account', 'payment-verification', gateway, payload] as const,
   },
   admin: {
     dashboardStatistics: (filters?: Record<string, unknown>) =>
