@@ -5,14 +5,17 @@ import {
   ItalicOutlined,
   OrderedListOutlined,
   PlusOutlined,
+  UploadOutlined,
   UnorderedListOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { UploadProps } from 'antd'
 import {
   Button,
   Card,
   Divider,
   Form,
+  Image,
   Input,
   InputNumber,
   message,
@@ -20,9 +23,11 @@ import {
   Space,
   Switch,
   Typography,
+  Upload,
 } from 'antd'
 import type { TextAreaRef } from 'antd/es/input/TextArea'
 import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -37,6 +42,7 @@ import type {
   CreateAdminProductPayload,
   UpsertAdminProductVariantPayload,
 } from '@/features/admin/model/product-management.types'
+import { uploadImage } from '@/shared/api/upload.api'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 
@@ -50,15 +56,6 @@ const createSlugFromName = (value: string) => {
     .replace(/^-+|-+$/g, '')
 }
 
-const parseAttributesInput = (value?: string) => {
-  const normalizedValue = value?.trim()
-
-  if (!normalizedValue) {
-    return undefined
-  }
-
-  return JSON.parse(normalizedValue) as Record<string, unknown>
-}
 
 const normalizeStringArray = (value: unknown) => {
   if (!Array.isArray(value)) {
@@ -71,8 +68,15 @@ const normalizeStringArray = (value: unknown) => {
     .filter(Boolean)
 }
 
+const mergeUniqueStringArray = (current: string[], nextValue: string) => {
+  if (current.includes(nextValue)) {
+    return current
+  }
+
+  return [...current, nextValue]
+}
+
 interface ProductVariantFormValues {
-  sku: string
   colorId?: string
   sizeId?: string
   price: number
@@ -91,13 +95,11 @@ interface ProductCreateFormValues {
   isAvailable: boolean
   metaTitle?: string
   metaDescription?: string
-  attributesJson?: string
   variants: ProductVariantFormValues[]
 }
 
 const toVariantPayload = (variant: ProductVariantFormValues): UpsertAdminProductVariantPayload => {
   return {
-    sku: variant.sku.trim(),
     colorId: variant.colorId?.trim() || undefined,
     sizeId: variant.sizeId?.trim() || undefined,
     price: Number(variant.price),
@@ -115,8 +117,11 @@ export const ProductCreatePage = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [form] = Form.useForm<ProductCreateFormValues>()
+  const [uploadingCount, setUploadingCount] = useState(0)
   const descriptionEditorRef = useRef<TextAreaRef>(null)
   const descriptionValue = Form.useWatch('description', form) ?? ''
+  const productImages = normalizeStringArray(Form.useWatch('images', form))
+  const variantValues = Form.useWatch('variants', form) ?? []
 
   const categoriesQuery = useQuery({
     queryKey: queryKeys.admin.productMeta.categories,
@@ -137,6 +142,76 @@ export const ProductCreatePage = () => {
     queryKey: queryKeys.admin.productMeta.sizes,
     queryFn: listAdminSizes,
   })
+
+  const validateImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      void message.error('Chỉ chấp nhận file ảnh')
+      return false
+    }
+
+    if (file.size / 1024 / 1024 > 5) {
+      void message.error('Kích thước ảnh tối đa là 5MB')
+      return false
+    }
+
+    return true
+  }
+
+  const uploadProductImageFile = async (file: File, onSuccess: (url: string) => void) => {
+    if (!validateImageFile(file)) {
+      return
+    }
+
+    setUploadingCount((value) => value + 1)
+
+    try {
+        const uploaded = await uploadImage(file, 'products')
+        onSuccess(uploaded.url)
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Upload ảnh thất bại'
+        void message.error(errorMessage)
+    }finally {
+      setUploadingCount((value) => Math.max(0, value - 1))
+    }
+  }
+
+  const appendProductImage = (url: string) => {
+    form.setFieldValue('images', mergeUniqueStringArray(productImages, url))
+  }
+
+  const removeProductImage = (url: string) => {
+    form.setFieldValue(
+      'images',
+      productImages.filter((value) => value !== url)
+    )
+  }
+
+  const createProductImageBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+    void uploadProductImageFile(file as File, appendProductImage)
+    return Upload.LIST_IGNORE
+  }
+
+  const appendVariantImage = (variantIndex: number, url: string) => {
+    const currentImages = normalizeStringArray(form.getFieldValue(['variants', variantIndex, 'images']))
+    form.setFieldValue(['variants', variantIndex, 'images'], mergeUniqueStringArray(currentImages, url))
+  }
+
+  const removeVariantImage = (variantIndex: number, url: string) => {
+    const currentImages = normalizeStringArray(form.getFieldValue(['variants', variantIndex, 'images']))
+    form.setFieldValue(
+      ['variants', variantIndex, 'images'],
+      currentImages.filter((value) => value !== url)
+    )
+  }
+
+  const createVariantImageBeforeUpload =
+    (variantIndex: number): UploadProps['beforeUpload'] =>
+    (file) => {
+      void uploadProductImageFile(file as File, (url) => {
+        appendVariantImage(variantIndex, url)
+      })
+      return Upload.LIST_IGNORE
+    }
 
   const insertDescriptionText = (prefix: string, suffix = '', fallbackText = 'nội dung') => {
     const textarea = descriptionEditorRef.current?.resizableTextArea?.textArea
@@ -163,7 +238,6 @@ export const ProductCreatePage = () => {
 
   const createProductMutation = useMutation({
     mutationFn: async (values: ProductCreateFormValues) => {
-      const parsedAttributes = parseAttributesInput(values.attributesJson)
       const slug = createSlugFromName(values.name)
 
       if (!slug) {
@@ -176,7 +250,6 @@ export const ProductCreatePage = () => {
         categoryId: values.categoryId,
         brandId: values.brandId.trim(),
         description: values.description?.trim() || undefined,
-        attributes: parsedAttributes,
         images: normalizeStringArray(values.images),
         isAvailable: values.isAvailable,
         metaTitle: values.metaTitle?.trim() || undefined,
@@ -351,8 +424,57 @@ export const ProductCreatePage = () => {
             </Card>
           </Form.Item>
 
-          <Form.Item name="images" label="Danh sách ảnh (nhập URL, Enter để thêm)">
-            <Select mode="tags" tokenSeparators={[',']} placeholder="https://..." />
+          <Form.Item label="Danh sách ảnh (upload file)">
+            <Space direction="vertical" size={10} className="w-full">
+              <Upload
+                multiple
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={createProductImageBeforeUpload}
+              >
+                <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
+                  Tải ảnh sản phẩm
+                </Button>
+              </Upload>
+
+              <Typography.Text type="secondary" className="text-xs">
+                Hỗ trợ JPG/PNG/WebP, tối đa 5MB mỗi ảnh.
+              </Typography.Text>
+
+              {productImages.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {productImages.map((imageUrl) => (
+                    <div
+                      key={imageUrl}
+                      className="w-[110px] rounded-md border border-slate-200 p-2"
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt="Ảnh sản phẩm"
+                        className="h-[70px] w-full rounded object-cover"
+                        fallback="/images/product-placeholder.svg"
+                      />
+                      <Button
+                        danger
+                        type="text"
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          removeProductImage(imageUrl)
+                        }}
+                      >
+                        Xóa
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <Typography.Text type="secondary">Chưa có ảnh sản phẩm.</Typography.Text>
+              )}
+            </Space>
+          </Form.Item>
+          <Form.Item name="images" hidden>
+            <Input placeholder="Danh sách URL ảnh sản phẩm" />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -365,9 +487,6 @@ export const ProductCreatePage = () => {
             </Form.Item>
           </div>
 
-          <Form.Item name="attributesJson" label="Attributes JSON (tùy chọn)">
-            <Input.TextArea rows={4} placeholder='{"weight":"19oz","material":"Maple"}' />
-          </Form.Item>
 
           <Form.Item name="isAvailable" label="Trạng thái bán" valuePropName="checked">
             <Switch checkedChildren="Đang bán" unCheckedChildren="Ngừng bán" />
@@ -392,42 +511,33 @@ export const ProductCreatePage = () => {
           >
             {(fields, { add, remove }, { errors }) => (
               <div className="space-y-3">
-                {fields.map((field, index) => (
-                  <Card
-                    key={field.key}
-                    size="small"
-                    title={`Biến thể #${index + 1}`}
-                    extra={
-                      fields.length > 1 ? (
-                        <Button
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => {
-                            remove(field.name)
-                          }}
-                        >
-                          Xóa
-                        </Button>
-                      ) : null
-                    }
-                  >
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <Form.Item
-                        name={[field.name, 'sku']}
-                        label="SKU"
-                        rules={[{ required: true, message: 'Vui lòng nhập SKU' }]}
-                      >
-                        <Input placeholder="Ví dụ: SKU-P3-BLACK-13" />
-                      </Form.Item>
+              {fields.map((field, index) => {
+                  const variantIndex = Number(field.name)
+                  const variantImages = normalizeStringArray(variantValues[variantIndex]?.images)
 
-                      <Form.Item
-                        name={[field.name, 'price']}
-                        label="Giá bán"
-                        rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
-                      >
-                        <InputNumber min={0} className="w-full" placeholder="Nhập giá bán" />
-                      </Form.Item>
-                    </div>
+                  return (
+                    <Card
+                      key={field.key}
+                      size="small"
+                      title={`Biến thể #${index + 1}`}
+                      extra={
+                        fields.length > 1 ? (
+                          <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => {
+                              remove(field.name)
+                            }}
+                          >
+                            Xóa
+                          </Button>
+                        ) : null
+                      }
+                    >
+                    <Form.Item label="SKU">
+                      <Input disabled placeholder="SKU sẽ được hệ thống tự động tạo" />
+                    </Form.Item>
+
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <Form.Item name={[field.name, 'colorId']} label="Màu sắc (tùy chọn)">
@@ -458,6 +568,14 @@ export const ProductCreatePage = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <Form.Item
+                        name={[field.name, 'price']}
+                        label="Giá bán"
+                        rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
+                      >
+                        <InputNumber min={0} className="w-full" placeholder="Nhập giá bán" />
+                      </Form.Item>
+
                       <Form.Item name={[field.name, 'originalPrice']} label="Giá gốc">
                         <InputNumber
                           min={0}
@@ -475,8 +593,53 @@ export const ProductCreatePage = () => {
                       </Form.Item>
                     </div>
 
-                    <Form.Item name={[field.name, 'images']} label="Ảnh variant (URL)">
-                      <Select mode="tags" tokenSeparators={[',']} placeholder="https://..." />
+                    <Form.Item label="Ảnh variant (upload file)">
+                      <Space direction="vertical" size={10} className="w-full">
+                        <Upload
+                          multiple
+                          accept="image/*"
+                          showUploadList={false}
+                          beforeUpload={createVariantImageBeforeUpload(Number(field.name))}
+                        >
+                          <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
+                            Tải ảnh variant
+                          </Button>
+                        </Upload>
+
+                        {variantImages.length > 0 ? (
+                          <div className="flex flex-wrap gap-3">
+                            {variantImages.map((imageUrl) => (
+                              <div
+                                key={`${field.key}-${imageUrl}`}
+                                className="w-[110px] rounded-md border border-slate-200 p-2"
+                              >
+                                <Image
+                                  src={imageUrl}
+                                  alt="Ảnh variant"
+                                  className="h-[70px] w-full rounded object-cover"
+                                  fallback="/images/product-placeholder.svg"
+                                />
+                                <Button
+                                  danger
+                                  type="text"
+                                  size="small"
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => {
+                                    removeVariantImage(variantIndex, imageUrl)
+                                  }}
+                                >
+                                  Xóa
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <Typography.Text type="secondary">Chưa có ảnh variant.</Typography.Text>
+                        )}
+                      </Space>
+                    </Form.Item>
+                    <Form.Item name={[field.name, 'images']} hidden>
+                      <Input placeholder="Danh sách URL ảnh variant" />
                     </Form.Item>
 
                     <Form.Item
@@ -487,7 +650,8 @@ export const ProductCreatePage = () => {
                       <Switch checkedChildren="Còn hàng" unCheckedChildren="Hết hàng" />
                     </Form.Item>
                   </Card>
-                ))}
+                  )
+                })}
 
                 <Form.ErrorList errors={errors} />
 
