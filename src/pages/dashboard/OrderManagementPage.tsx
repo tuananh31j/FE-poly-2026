@@ -70,7 +70,7 @@ const PAYMENT_METHOD_LABEL: Record<AdminOrderItem['paymentMethod'], string> = {
   banking: 'Chuyển khoản',
   momo: 'MoMo',
   vnpay: 'VNPay',
-
+  zalopay: 'ZaloPay',
 }
 
 const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
