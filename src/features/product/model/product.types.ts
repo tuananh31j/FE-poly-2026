@@ -9,7 +9,6 @@ export interface ProductCardItem {
   id: string
   _id?: string
   name: string
-  slug: string
   categoryId: string
   brand: string
   description?: string
@@ -47,7 +46,6 @@ export interface ProductDetailResponse {
   id: string
   _id?: string
   name: string
-  slug: string
   categoryId: string
   brand: string
   description?: string

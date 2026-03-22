@@ -42,7 +42,6 @@ const normalizeProduct = (value: unknown): CartProductSummary | undefined => {
     return {
         id: toId(record._id ?? record.id),
         name: String(record.name ?? ''),
-        slug: String(record.slug ?? ''),
         brand: typeof record.brand === 'string' ? record.brand : PRODUCT_PLACEHOLDER_BRAND,
         images: toStringArray(record.images),
         isAvailable: Boolean(record.isAvailable),

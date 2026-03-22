@@ -46,15 +46,7 @@ import { uploadImage } from '@/shared/api/upload.api'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 
-const createSlugFromName = (value: string) => {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
+
 
 
 const normalizeStringArray = (value: unknown) => {
@@ -238,15 +230,11 @@ export const ProductCreatePage = () => {
 
   const createProductMutation = useMutation({
     mutationFn: async (values: ProductCreateFormValues) => {
-      const slug = createSlugFromName(values.name)
-
-      if (!slug) {
-        throw new Error('Tên sản phẩm không hợp lệ để tạo slug')
-      }
+      
 
       const payload: CreateAdminProductPayload = {
         name: values.name.trim(),
-        slug,
+        
         categoryId: values.categoryId,
         brandId: values.brandId.trim(),
         description: values.description?.trim() || undefined,
