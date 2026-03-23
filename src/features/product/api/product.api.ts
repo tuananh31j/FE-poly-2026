@@ -44,11 +44,9 @@ const toStringArray = (value: unknown) => {
 
 const normalizeProductCardItem = (item: Record<string, unknown>): ProductCardItem => {
   return {
-    ...item,
     id: toId(item.id ?? item._id),
     _id: typeof item._id === 'string' ? item._id : undefined,
     name: String(item.name ?? ''),
-    slug: String(item.slug ?? ''),
     categoryId: toId(item.categoryId),
     brand: typeof item.brand === 'string' ? item.brand : 'Generic',
     description: typeof item.description === 'string' ? item.description : undefined,
@@ -251,11 +249,9 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
       : []
 
     return {
-      ...data,
       id: toId(data.id ?? data._id),
       _id: typeof data._id === 'string' ? data._id : undefined,
       name: String(data.name ?? ''),
-      slug: String(data.slug ?? ''),
       categoryId: toId(data.categoryId),
       brand: typeof data.brand === 'string' ? data.brand : 'Generic',
       description: typeof data.description === 'string' ? data.description : undefined,

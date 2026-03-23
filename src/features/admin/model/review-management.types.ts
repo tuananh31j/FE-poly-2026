@@ -10,7 +10,6 @@ export interface AdminReviewUserProfile {
 export interface AdminReviewProductProfile {
   id: string
   name?: string
-  slug?: string
   thumbnailUrl?: string
 }
 
