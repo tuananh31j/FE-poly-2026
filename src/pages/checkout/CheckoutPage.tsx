@@ -85,7 +85,7 @@ export const CheckoutPage = () => {
   const queryClient = useQueryClient()
   const [addressForm] = Form.useForm<AddressFormValues>()
 
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay'>('cod')
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay' | 'zalopay'>('cod')
   const [voucherCode, setVoucherCode] = useState('')
   const [manualAddressId, setManualAddressId] = useState<string | null>(null)
   const [createAddressModalOpen, setCreateAddressModalOpen] = useState(false)
@@ -202,7 +202,10 @@ export const CheckoutPage = () => {
         }),
       ])
 
-      if (order.paymentMethod === 'vnpay' && order.paymentUrl) {
+      if (
+        (order.paymentMethod === 'vnpay' || order.paymentMethod === 'zalopay') &&
+        order.paymentUrl
+      ) {
         window.location.assign(order.paymentUrl)
         return
       }
@@ -372,12 +375,13 @@ export const CheckoutPage = () => {
               <Radio.Group
                 value={paymentMethod}
                 onChange={(event) => {
-                  setPaymentMethod(event.target.value as 'cod' | 'vnpay')
+                  setPaymentMethod(event.target.value as 'cod' | 'vnpay' | 'zalopay')
                 }}
               >
                 <Space direction="vertical" size={10}>
                   <Radio value="cod">COD - Thanh toán khi nhận hàng</Radio>
                   <Radio value="vnpay">VNPay - Thanh toán online</Radio>
+                  <Radio value="zalopay">ZaloPay - Thanh toán online</Radio>
                 </Space>
               </Radio.Group>
             </Card>
@@ -414,8 +418,14 @@ export const CheckoutPage = () => {
                           </Button>
                           <Space size={6} wrap>
                             <Tag className="!m-0 text-xs">SKU: {item.variant?.sku ?? 'N/A'}</Tag>
-                            <Tag className="!m-0 text-xs">Màu: {item.variant?.color ?? 'N/A'}</Tag>
-                            <Tag className="!m-0 text-xs">Size: {item.variant?.size ?? 'N/A'}</Tag>
+                            {item.variant?.color?.trim() ? (
+                              <Tag className="!m-0 text-xs">Màu: {item.variant.color.trim()}</Tag>
+                            ) : null}
+                            {item.variant?.size &&
+                            item.variant.size.trim() &&
+                            !['standard', 'n/a'].includes(item.variant.size.trim().toLowerCase()) ? (
+                              <Tag className="!m-0 text-xs">Size: {item.variant.size.trim()}</Tag>
+                            ) : null}
                           </Space>
                         </div>
 

@@ -7,7 +7,7 @@ export type AdminOrderStatus =
   | 'cancelled'
   | 'returned'
 
-export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay'
+export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
 export type AdminPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 
 export interface AdminOrderItemSnapshot {

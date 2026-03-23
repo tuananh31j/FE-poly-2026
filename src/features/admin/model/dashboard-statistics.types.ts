@@ -23,7 +23,7 @@ export interface DashboardSummary {
   totalComments: number
 }
 
-export interface DashboardDailyRevenueItem {
+  export interface DashboardDailyRevenueItem {
   date: string
   revenue: number
   orders: number
