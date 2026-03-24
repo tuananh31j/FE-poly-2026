@@ -14,7 +14,7 @@ import {
   Typography,
 } from 'antd'
 import { sumBy } from 'lodash'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
@@ -51,6 +51,17 @@ export const StorefrontLayout = () => {
     queryFn: getMyCart,
     enabled: Boolean(accessToken),
   })
+
+  useEffect(() => {
+    const state = location.state as { authSuccess?: 'login' | 'register' } | null
+    if (!state?.authSuccess) {
+      return
+    }
+
+    const content = state.authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
+    void message.success(content)
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [location.pathname, location.search, location.state, navigate])
 
   const selectedCategoryId = searchParams.get('categoryId')?.trim() ?? ''
   const selectedBrand = searchParams.get('brand')?.trim() ?? ''
