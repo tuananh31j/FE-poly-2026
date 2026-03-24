@@ -18,7 +18,7 @@ import { getProductFilters, getProducts } from '@/features/product/api/product.a
 import { ProductCard } from '@/features/product/components/ProductCard'
 import { queryKeys } from '@/shared/api/queryKeys'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 8
 
 export const ProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -175,7 +175,7 @@ export const ProductsPage = () => {
 
             <Row gutter={[16, 16]}>
               {(productsQuery.data?.items ?? []).map((product) => (
-                <Col key={product.id} xs={24} sm={12} xl={8}>
+                <Col key={product.id} xs={24} sm={12} lg={8} xl={6}>
                   <ProductCard product={product} />
                 </Col>
               ))}
