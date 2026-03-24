@@ -87,10 +87,19 @@ const getPaymentMethodLabel = (order: AdminOrderItem) => {
     return PAYMENT_METHOD_LABEL[order.paymentMethod]
   }
 
-  return order.zalopayChannel === 'bank_card'
-    ? 'ZaloPay - Thẻ Visa/Master/JCB'
-    : 'ZaloPay - Ví'
-}
+  if (order.zalopayChannel === 'bank_card') {
+    return 'ZaloPay - Thẻ Visa/Master/JCB'
+  }
+
+  if (order.zalopayChannel === 'atm') {
+    return 'ZaloPay - Thẻ ATM/Tài khoản ngân hàng'
+  }
+
+  if (order.zalopayChannel === 'wallet') {
+    return 'ZaloPay - Ví'
+  }
+
+  return 'ZaloPay - Cổng chung' }
 
 const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
   pending: 'Chờ thanh toán',

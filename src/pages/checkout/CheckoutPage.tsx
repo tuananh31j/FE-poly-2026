@@ -87,7 +87,7 @@ export const CheckoutPage = () => {
   const [addressForm] = Form.useForm<AddressFormValues>()
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay' | 'zalopay'>('cod')
-  const [zalopayChannel, setZalopayChannel] = useState<ZalopayChannel>('wallet')
+   const [zalopayChannel, setZalopayChannel] = useState<ZalopayChannel>('gateway')
   const [voucherCode, setVoucherCode] = useState('')
   const [manualAddressId, setManualAddressId] = useState<string | null>(null)
   const [createAddressModalOpen, setCreateAddressModalOpen] = useState(false)
@@ -399,13 +399,15 @@ export const CheckoutPage = () => {
                       }}
                     >
                       <Space direction="vertical" size={8}>
+                          <Radio value="gateway">Cổng ZaloPay chung (tự chọn ví, thẻ, ATM)</Radio>
                         <Radio value="wallet">Ví ZaloPay</Radio>
                         <Radio value="bank_card">Thẻ Visa/Master/JCB qua ZaloPay</Radio>
+                         <Radio value="atm">Thẻ ATM / tài khoản ngân hàng qua ZaloPay</Radio>
                       </Space>
                     </Radio.Group>
                     <Typography.Text type="secondary" className="text-xs">
-                      Nếu chọn thẻ, ZaloPay sẽ mở form nhập thông tin thẻ Visa, Master hoặc JCB
-                      để bạn tiếp tục xác thực thanh toán.
+                     Bạn có thể mở cổng ZaloPay chung để tự chọn phương thức trên ZaloPay, hoặc
+                      chọn sẵn ví, thẻ quốc tế hay ATM để gateway ưu tiên đúng luồng thanh toán.
                     </Typography.Text>
                   </Space>
                 </Card>
