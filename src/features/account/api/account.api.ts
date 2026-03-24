@@ -8,11 +8,15 @@ import type {
   ChangePasswordPayload,
   CheckoutVoucherItem,
   CreateOrderPayload,
+  CreateReturnRequestPayload,
   MyOrderItem,
   MyOrdersQueryParams,
   MyOrdersResponse,
   OrderItemSnapshot,
   OrderStatusHistoryItem,
+  RefundMethod,
+  ReturnRequest,
+  ReturnRequestItem,
   UpdateAddressPayload,
   UpdateMyProfilePayload,
   UpdateMyProfileResponse,
@@ -135,9 +139,9 @@ const normalizeOrderStatusHistory = (value: Record<string, unknown>): OrderStatu
   return {
     status:
       value.status === 'confirmed' ||
-      value.status === 'preparing' ||
       value.status === 'shipping' ||
       value.status === 'delivered' ||
+      value.status === 'completed' ||
       value.status === 'cancelled' ||
       value.status === 'returned'
         ? value.status
@@ -148,9 +152,52 @@ const normalizeOrderStatusHistory = (value: Record<string, unknown>): OrderStatu
   }
 }
 
+const normalizeRefundMethod = (value: unknown): RefundMethod => {
+  return value === 'wallet' ? 'wallet' : 'bank_transfer'
+}
+
+const normalizeReturnItem = (value: Record<string, unknown>): ReturnRequestItem => {
+  return {
+    productId: toId(value.productId),
+    productName: String(value.productName ?? ''),
+    variantId: toId(value.variantId),
+    variantSku: String(value.variantSku ?? ''),
+    quantity: Number(value.quantity ?? 0),
+    price: Number(value.price ?? 0),
+    total: Number(value.total ?? 0),
+  }
+}
+
+const normalizeReturnRequest = (value: Record<string, unknown>): ReturnRequest => {
+  const rawItems = Array.isArray(value.items) ? value.items : []
+
+  return {
+    id: toId(value.id ?? value._id),
+    requestedBy: toId(value.requestedBy),
+    status:
+      value.status === 'approved' ||
+      value.status === 'rejected' ||
+      value.status === 'refunded'
+        ? value.status
+        : 'pending',
+    refundMethod: normalizeRefundMethod(value.refundMethod),
+    refundAmount: Number(value.refundAmount ?? 0),
+    reason: typeof value.reason === 'string' ? value.reason : undefined,
+    note: typeof value.note === 'string' ? value.note : undefined,
+    refundEvidenceImages: toStringArray(value.refundEvidenceImages),
+    items: rawItems
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnItem(item)),
+    createdAt: String(value.createdAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
+  }
+}
+
 const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
   const rawItems = Array.isArray(value.items) ? value.items : []
   const rawStatusHistory = Array.isArray(value.statusHistory) ? value.statusHistory : []
+  const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
 
   return {
     id: toId(value.id ?? value._id),
@@ -176,6 +223,10 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       value.paymentStatus === 'refunded'
         ? value.paymentStatus
         : 'pending',
+    zalopayChannel:
+      value.zalopayChannel === 'bank_card' || value.zalopayChannel === 'wallet'
+        ? value.zalopayChannel
+        : undefined,
     paymentTxnRef: typeof value.paymentTxnRef === 'string' ? value.paymentTxnRef : undefined,
     paymentTransactionNo:
       typeof value.paymentTransactionNo === 'string' ? value.paymentTransactionNo : undefined,
@@ -189,9 +240,9 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     voucherId: value.voucherId ? toId(value.voucherId) : undefined,
     status:
       value.status === 'confirmed' ||
-      value.status === 'preparing' ||
       value.status === 'shipping' ||
       value.status === 'delivered' ||
+      value.status === 'completed' ||
       value.status === 'cancelled' ||
       value.status === 'returned'
         ? value.status
@@ -204,6 +255,10 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeOrderStatusHistory(item)),
+    returnRequests: rawReturnRequests
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnRequest(item)),
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
   }
@@ -303,11 +358,51 @@ export const listMyOrders = async (params: MyOrdersQueryParams = {}) => {
   }
 }
 
+export const getMyOrderById = async (orderId: string) => {
+  try {
+    const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}`
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
 export const cancelMyOrder = async (orderId: string, note?: string) => {
   try {
     const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
       `/orders/${orderId}/cancel`,
       note?.trim() ? { note: note.trim() } : undefined
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const confirmOrderReceived = async (orderId: string) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/received`
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createReturnRequest = async (
+  orderId: string,
+  payload: CreateReturnRequestPayload
+) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/return`,
+      payload
     )
 
     return normalizeOrder(extractApiData(response))

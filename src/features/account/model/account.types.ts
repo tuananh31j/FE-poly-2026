@@ -40,14 +40,17 @@ export type UpdateAddressPayload = Partial<UpsertAddressPayload>
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
-  | 'preparing'
   | 'shipping'
   | 'delivered'
+  | 'completed'
   | 'cancelled'
   | 'returned'
 
 export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type ZalopayChannel = 'wallet' | 'bank_card'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type RefundMethod = 'bank_transfer' | 'wallet'
 
 export interface OrderItemSnapshot {
   productId: string
@@ -68,6 +71,30 @@ export interface OrderStatusHistoryItem {
   changedAt: string
 }
 
+export interface ReturnRequestItem {
+  productId: string
+  productName: string
+  variantId: string
+  variantSku: string
+  quantity: number
+  price: number
+  total: number
+}
+
+export interface ReturnRequest {
+  id: string
+  requestedBy: string
+  status: ReturnRequestStatus
+  refundMethod: RefundMethod
+  refundAmount: number
+  reason?: string
+  note?: string
+  refundEvidenceImages?: string[]
+  items: ReturnRequestItem[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface MyOrderItem {
   id: string
   orderCode: string
@@ -80,6 +107,7 @@ export interface MyOrderItem {
   discountAmount: number
   totalAmount: number
   paymentMethod: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   paymentStatus: PaymentStatus
   paymentTxnRef?: string
   paymentTransactionNo?: string
@@ -91,6 +119,7 @@ export interface MyOrderItem {
   status: OrderStatus
   items: OrderItemSnapshot[]
   statusHistory: OrderStatusHistoryItem[]
+  returnRequests?: ReturnRequest[]
   createdAt: string
   updatedAt: string
 }
@@ -119,7 +148,17 @@ export interface CreateOrderPayload {
   shippingFee?: number
   voucherCode?: string
   paymentMethod?: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   selectedVariantIds?: string[]
+}
+
+export interface CreateReturnRequestPayload {
+  items: Array<{
+    variantId: string
+    quantity: number
+  }>
+  reason?: string
+  refundMethod?: RefundMethod
 }
 
 export interface VerifyVnpayReturnPayload {
