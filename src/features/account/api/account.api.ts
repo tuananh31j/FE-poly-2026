@@ -5,8 +5,10 @@ import type { ApiSuccess } from '@/shared/types/api.types'
 
 import type {
   AddressItem,
+  CancelRefundRequest,
   ChangePasswordPayload,
   CheckoutVoucherItem,
+  CreateCancelRefundRequestPayload,
   CreateOrderPayload,
   CreateReturnRequestPayload,
   MyOrderItem,
@@ -194,10 +196,31 @@ const normalizeReturnRequest = (value: Record<string, unknown>): ReturnRequest =
   }
 }
 
+const normalizeCancelRefundRequest = (value: Record<string, unknown>): CancelRefundRequest => {
+  return {
+    requestedBy: toId(value.requestedBy),
+    status:
+      value.status === 'rejected' || value.status === 'refunded' ? value.status : 'pending',
+    refundAmount: Number(value.refundAmount ?? 0),
+    bankCode: String(value.bankCode ?? ''),
+    bankName: String(value.bankName ?? ''),
+    accountNumber: String(value.accountNumber ?? ''),
+    accountHolder: String(value.accountHolder ?? ''),
+    note: typeof value.note === 'string' ? value.note : undefined,
+    adminNote: typeof value.adminNote === 'string' ? value.adminNote : undefined,
+    refundEvidenceImages: toStringArray(value.refundEvidenceImages),
+    requestedAt: String(value.requestedAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
+    processedAt: typeof value.processedAt === 'string' ? value.processedAt : undefined,
+    processedBy: value.processedBy ? toId(value.processedBy) : undefined,
+  }
+}
+
 const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
   const rawItems = Array.isArray(value.items) ? value.items : []
   const rawStatusHistory = Array.isArray(value.statusHistory) ? value.statusHistory : []
   const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
+  const rawCancelRefundRequest = toRecord(value.cancelRefundRequest)
 
   return {
     id: toId(value.id ?? value._id),
@@ -262,6 +285,9 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeReturnRequest(item)),
+    cancelRefundRequest: rawCancelRefundRequest
+      ? normalizeCancelRefundRequest(rawCancelRefundRequest)
+      : undefined,
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
   }
@@ -405,6 +431,22 @@ export const createReturnRequest = async (
   try {
     const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
       `/orders/${orderId}/return`,
+      payload
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createCancelRefundRequest = async (
+  orderId: string,
+  payload: CreateCancelRefundRequestPayload
+) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/cancel-refund`,
       payload
     )
 
