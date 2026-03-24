@@ -11,6 +11,7 @@ export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay
 export type AdminZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type AdminPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 export type AdminReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type AdminCancelRefundRequestStatus = 'pending' | 'rejected' | 'refunded'
 export type AdminRefundMethod = 'bank_transfer' | 'wallet'
 export type AdminUserRole = 'customer' | 'staff' | 'admin'
 
@@ -43,6 +44,23 @@ export interface AdminReturnRequest {
   items: AdminReturnRequestItem[]
   createdAt: string
   updatedAt: string
+}
+
+export interface AdminCancelRefundRequest {
+  requestedBy: string
+  status: AdminCancelRefundRequestStatus
+  refundAmount: number
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
+  adminNote?: string
+  refundEvidenceImages?: string[]
+  requestedAt: string
+  updatedAt: string
+  processedAt?: string
+  processedBy?: string
 }
 
 export interface AdminOrderItemSnapshot {
@@ -84,6 +102,7 @@ export interface AdminOrderItem {
   items: AdminOrderItemSnapshot[]
   statusHistory: AdminOrderStatusHistoryItem[]
   returnRequests?: AdminReturnRequest[]
+  cancelRefundRequest?: AdminCancelRefundRequest
   createdAt: string
   updatedAt: string
 }
@@ -109,4 +128,10 @@ export interface ListAdminOrdersParams {
 export interface UpdateAdminOrderStatusPayload {
   status: AdminOrderStatus
   note?: string
+}
+
+export interface UpdateAdminCancelRefundRequestPayload {
+  status: AdminCancelRefundRequestStatus
+  adminNote?: string
+  refundEvidenceImages?: string[]
 }
