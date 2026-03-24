@@ -32,7 +32,6 @@ import {
 } from '@/features/account/api/account.api'
 import type {
   CheckoutVoucherItem,
-  ZalopayChannel,
   UpsertAddressPayload,
 } from '@/features/account/model/account.types'
 import { getMyCart } from '@/features/cart/api/cart.api'
@@ -87,7 +86,6 @@ export const CheckoutPage = () => {
   const [addressForm] = Form.useForm<AddressFormValues>()
 
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'vnpay' | 'zalopay'>('cod')
-   const [zalopayChannel, setZalopayChannel] = useState<ZalopayChannel>('gateway')
   const [voucherCode, setVoucherCode] = useState('')
   const [manualAddressId, setManualAddressId] = useState<string | null>(null)
   const [createAddressModalOpen, setCreateAddressModalOpen] = useState(false)
@@ -255,7 +253,7 @@ export const CheckoutPage = () => {
     createOrderMutation.mutate({
       addressId: selectedAddressId,
       paymentMethod,
-      zalopayChannel: paymentMethod === 'zalopay' ? zalopayChannel : undefined,
+     zalopayChannel: paymentMethod === 'zalopay' ? 'gateway' : undefined,
       voucherCode: normalizeVoucherCode(voucherCode) || undefined,
       selectedVariantIds,
     })
@@ -389,28 +387,10 @@ export const CheckoutPage = () => {
               </Radio.Group>
 
               {paymentMethod === 'zalopay' ? (
-                <Card size="small" className="mt-4 border border-blue-100 bg-blue-50/40">
-                  <Space direction="vertical" size={10} className="w-full">
-                    <Typography.Text strong>Chọn kênh thanh toán ZaloPay</Typography.Text>
-                    <Radio.Group
-                      value={zalopayChannel}
-                      onChange={(event) => {
-                        setZalopayChannel(event.target.value as ZalopayChannel)
-                      }}
-                    >
-                      <Space direction="vertical" size={8}>
-                          <Radio value="gateway">Cổng ZaloPay chung (tự chọn ví, thẻ, ATM)</Radio>
-                        <Radio value="wallet">Ví ZaloPay</Radio>
-                        <Radio value="bank_card">Thẻ Visa/Master/JCB qua ZaloPay</Radio>
-                         <Radio value="atm">Thẻ ATM / tài khoản ngân hàng qua ZaloPay</Radio>
-                      </Space>
-                    </Radio.Group>
-                    <Typography.Text type="secondary" className="text-xs">
-                     Bạn có thể mở cổng ZaloPay chung để tự chọn phương thức trên ZaloPay, hoặc
-                      chọn sẵn ví, thẻ quốc tế hay ATM để gateway ưu tiên đúng luồng thanh toán.
-                    </Typography.Text>
-                  </Space>
-                </Card>
+              <Typography.Text type="secondary" className="mt-4 block text-sm">
+                  Khi chọn ZaloPay, hệ thống sẽ mở cổng ZaloPay chung để bạn tự chọn ví, thẻ
+                  hoặc ATM ở phía ZaloPay.
+                </Typography.Text>
               ) : null}
             </Card>
 
