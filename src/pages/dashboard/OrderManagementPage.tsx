@@ -26,10 +26,13 @@ import { useMemo, useState } from 'react'
 
 import {
   listAdminOrders,
+  updateAdminCancelRefundRequest,
   updateAdminOrderStatus,
   updateAdminReturnRequest,
 } from '@/features/admin/api/order-management.api'
 import type {
+  AdminCancelRefundRequest,
+  AdminCancelRefundRequestStatus,
   AdminOrderItem,
   AdminOrderStatus,
   AdminRefundMethod,
@@ -38,6 +41,7 @@ import type {
 } from '@/features/admin/model/order-management.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { uploadImage } from '@/shared/api/upload.api'
+import { buildVietQrImageUrl } from '@/shared/constants/vietqr'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -99,7 +103,8 @@ const getPaymentMethodLabel = (order: AdminOrderItem) => {
     return 'ZaloPay - Ví'
   }
 
-  return 'ZaloPay - Cổng chung' }
+  return 'ZaloPay - Cổng chung'
+}
 
 const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
   pending: 'Chờ thanh toán',
@@ -127,6 +132,18 @@ const REFUND_METHOD_LABEL: Record<AdminRefundMethod, string> = {
   wallet: 'Hoàn vào ví',
 }
 
+const CANCEL_REFUND_STATUS_LABEL: Record<AdminCancelRefundRequestStatus, string> = {
+  pending: 'Chờ xử lý',
+  rejected: 'Từ chối',
+  refunded: 'Đã hoàn tiền',
+}
+
+const CANCEL_REFUND_STATUS_COLOR: Record<AdminCancelRefundRequestStatus, string> = {
+  pending: 'gold',
+  rejected: 'red',
+  refunded: 'green',
+}
+
 interface UpdateStatusFormValues {
   status: AdminOrderStatus
   note?: string
@@ -138,10 +155,16 @@ interface UpdateReturnRequestFormValues {
   note?: string
 }
 
+interface UpdateCancelRefundFormValues {
+  status: AdminCancelRefundRequestStatus
+  adminNote?: string
+}
+
 export const OrderManagementPage = () => {
   const queryClient = useQueryClient()
   const [statusForm] = Form.useForm<UpdateStatusFormValues>()
   const [returnForm] = Form.useForm<UpdateReturnRequestFormValues>()
+  const [cancelRefundForm] = Form.useForm<UpdateCancelRefundFormValues>()
   const [returnModalOpen, setReturnModalOpen] = useState(false)
   const [returnContext, setReturnContext] = useState<{
     orderId: string
@@ -149,6 +172,13 @@ export const OrderManagementPage = () => {
   } | null>(null)
   const [refundEvidenceImages, setRefundEvidenceImages] = useState<string[]>([])
   const [uploadingRefundEvidence, setUploadingRefundEvidence] = useState(false)
+  const [cancelRefundModalOpen, setCancelRefundModalOpen] = useState(false)
+  const [cancelRefundContext, setCancelRefundContext] = useState<{
+    orderId: string
+    request: AdminCancelRefundRequest
+  } | null>(null)
+  const [cancelRefundEvidenceImages, setCancelRefundEvidenceImages] = useState<string[]>([])
+  const [uploadingCancelRefundEvidence, setUploadingCancelRefundEvidence] = useState(false)
 
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<AdminOrderStatus | 'all'>('all')
@@ -232,6 +262,34 @@ export const OrderManagementPage = () => {
     },
   })
 
+  const updateCancelRefundMutation = useMutation({
+    mutationFn: (payload: {
+      orderId: string
+      payload: {
+        status: AdminCancelRefundRequestStatus
+        adminNote?: string
+        refundEvidenceImages?: string[]
+      }
+    }) => updateAdminCancelRefundRequest(payload.orderId, payload.payload),
+    onSuccess: async (updatedOrder) => {
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
+      void message.success('Đã cập nhật yêu cầu hoàn tiền')
+      setCancelRefundModalOpen(false)
+      setCancelRefundContext(null)
+      cancelRefundForm.resetFields()
+
+      if (detailOrder?.id === updatedOrder.id) {
+        setDetailOrder({
+          ...updatedOrder,
+          user: detailOrder.user ?? updatedOrder.user,
+        })
+      }
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
+
   const availableStatusOptions = useMemo(() => {
     if (!updatingOrder) {
       return []
@@ -269,6 +327,16 @@ export const OrderManagementPage = () => {
     })
   }
 
+  const openCancelRefundModal = (orderId: string, request: AdminCancelRefundRequest) => {
+    setCancelRefundContext({ orderId, request })
+    setCancelRefundModalOpen(true)
+    setCancelRefundEvidenceImages(request.refundEvidenceImages ?? [])
+    cancelRefundForm.setFieldsValue({
+      status: request.status,
+      adminNote: request.adminNote,
+    })
+  }
+
   const handleUploadRefundEvidence = async (file: File) => {
     setUploadingRefundEvidence(true)
     try {
@@ -287,6 +355,26 @@ export const OrderManagementPage = () => {
 
   const removeRefundEvidence = (url: string) => {
     setRefundEvidenceImages((prev) => prev.filter((item) => item !== url))
+  }
+
+  const handleUploadCancelRefundEvidence = async (file: File) => {
+    setUploadingCancelRefundEvidence(true)
+    try {
+      const uploaded = await uploadImage(file, 'others')
+      setCancelRefundEvidenceImages((prev) => [...prev, uploaded.url])
+      void message.success('Tải bill chuyển khoản thành công')
+    } catch (error) {
+      const messageText = error instanceof Error ? error.message : 'Upload bill chuyển khoản thất bại'
+      void message.error(messageText)
+    } finally {
+      setUploadingCancelRefundEvidence(false)
+    }
+
+    return false
+  }
+
+  const removeCancelRefundEvidence = (url: string) => {
+    setCancelRefundEvidenceImages((prev) => prev.filter((item) => item !== url))
   }
 
   const handleSubmitStatus = (values: UpdateStatusFormValues) => {
@@ -413,6 +501,14 @@ export const OrderManagementPage = () => {
   }, [detailOrder])
 
   const returnRequests = detailOrder?.returnRequests ?? []
+  const cancelRefundRequest = detailOrder?.cancelRefundRequest
+  const cancelRefundVietQrUrl = buildVietQrImageUrl({
+    bankCode: cancelRefundRequest?.bankCode,
+    accountNumber: cancelRefundRequest?.accountNumber,
+    accountHolder: cancelRefundRequest?.accountHolder,
+    amount: cancelRefundRequest?.refundAmount,
+    orderCode: detailOrder?.orderCode,
+  })
 
   return (
     <div className="space-y-5">
@@ -775,6 +871,115 @@ export const OrderManagementPage = () => {
 
             <div>
               <Typography.Title level={5} className="!mb-3">
+                Hoàn tiền đơn hủy
+              </Typography.Title>
+              {!cancelRefundRequest ? (
+                <Empty description="Chưa có yêu cầu hoàn tiền cho đơn hủy" />
+              ) : (
+                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <Space wrap>
+                      <Tag color={CANCEL_REFUND_STATUS_COLOR[cancelRefundRequest.status]}>
+                        {CANCEL_REFUND_STATUS_LABEL[cancelRefundRequest.status]}
+                      </Tag>
+                      <Typography.Text strong>
+                        {formatVndCurrency(cancelRefundRequest.refundAmount)}
+                      </Typography.Text>
+                    </Space>
+                    <Button size="small" onClick={() => openCancelRefundModal(detailOrder.id, cancelRefundRequest)}>
+                      Xử lý hoàn tiền
+                    </Button>
+                  </div>
+
+                  <Descriptions
+                    bordered
+                    size="small"
+                    column={2}
+                    items={[
+                      {
+                        key: 'refundBankName',
+                        label: 'Ngân hàng',
+                        children: cancelRefundRequest.bankName,
+                      },
+                      {
+                        key: 'refundBankCode',
+                        label: 'Mã ngân hàng',
+                        children: cancelRefundRequest.bankCode,
+                      },
+                      {
+                        key: 'refundAccountNumber',
+                        label: 'Số tài khoản',
+                        children: cancelRefundRequest.accountNumber,
+                      },
+                      {
+                        key: 'refundAccountHolder',
+                        label: 'Chủ tài khoản',
+                        children: cancelRefundRequest.accountHolder,
+                      },
+                      {
+                        key: 'refundRequestedAt',
+                        label: 'Thời gian gửi yêu cầu',
+                        children: formatDateTime(cancelRefundRequest.requestedAt),
+                      },
+                      {
+                        key: 'refundProcessedAt',
+                        label: 'Thời gian xử lý',
+                        children: cancelRefundRequest.processedAt
+                          ? formatDateTime(cancelRefundRequest.processedAt)
+                          : 'Chưa xử lý',
+                      },
+                      {
+                        key: 'refundCustomerNote',
+                        label: 'Ghi chú khách hàng',
+                        span: 2,
+                        children: cancelRefundRequest.note ?? '—',
+                      },
+                      {
+                        key: 'refundAdminNote',
+                        label: 'Ghi chú nhân viên',
+                        span: 2,
+                        children: cancelRefundRequest.adminNote ?? '—',
+                      },
+                    ]}
+                  />
+
+                  {cancelRefundVietQrUrl ? (
+                    <div>
+                      <Typography.Text strong className="mb-2 block">
+                        VietQR chuyển khoản
+                      </Typography.Text>
+                      <img
+                        src={cancelRefundVietQrUrl}
+                        alt="VietQR hoàn tiền"
+                        className="h-48 w-48 rounded border border-slate-200 bg-white object-contain"
+                      />
+                    </div>
+                  ) : null}
+
+                  {cancelRefundRequest.refundEvidenceImages?.length ? (
+                    <div>
+                      <Typography.Text strong className="mb-2 block">
+                        Bill chuyển khoản
+                      </Typography.Text>
+                      <div className="flex flex-wrap gap-2">
+                        {cancelRefundRequest.refundEvidenceImages.map((url) => (
+                          <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                            <img
+                              src={url}
+                              alt="Bill chuyển khoản"
+                              className="h-16 w-16 rounded border border-slate-200 object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Typography.Title level={5} className="!mb-3">
                 Lịch sử trạng thái
               </Typography.Title>
               <Timeline
@@ -915,6 +1120,158 @@ export const OrderManagementPage = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        open={cancelRefundModalOpen}
+        title="Xử lý hoàn tiền đơn hủy"
+        okText="Lưu"
+        cancelText="Đóng"
+        confirmLoading={updateCancelRefundMutation.isPending}
+        onCancel={() => {
+          setCancelRefundModalOpen(false)
+          setCancelRefundContext(null)
+          cancelRefundForm.resetFields()
+        }}
+        onOk={() => {
+          if (!cancelRefundContext) {
+            return
+          }
+
+          cancelRefundForm
+            .validateFields()
+            .then((values) => {
+              if (values.status === 'refunded' && cancelRefundEvidenceImages.length === 0) {
+                void message.error('Cần upload bill chuyển khoản trước khi xác nhận hoàn tiền')
+                return
+              }
+
+              updateCancelRefundMutation.mutate({
+                orderId: cancelRefundContext.orderId,
+                payload: {
+                  status: values.status,
+                  adminNote: values.adminNote?.trim() || undefined,
+                  refundEvidenceImages: cancelRefundEvidenceImages,
+                },
+              })
+            })
+            .catch(() => undefined)
+        }}
+      >
+        {!cancelRefundContext ? null : (
+          <Space direction="vertical" size={16} className="w-full">
+            <Descriptions
+              bordered
+              size="small"
+              column={1}
+              items={[
+                {
+                  key: 'cancelRefundOrderId',
+                  label: 'Đơn hàng',
+                  children: detailOrder?.orderCode ?? cancelRefundContext.orderId,
+                },
+                {
+                  key: 'cancelRefundAmount',
+                  label: 'Số tiền hoàn',
+                  children: formatVndCurrency(cancelRefundContext.request.refundAmount),
+                },
+                {
+                  key: 'cancelRefundBank',
+                  label: 'Ngân hàng',
+                  children: `${cancelRefundContext.request.bankName} (${cancelRefundContext.request.bankCode})`,
+                },
+                {
+                  key: 'cancelRefundAccountNumber',
+                  label: 'Số tài khoản',
+                  children: cancelRefundContext.request.accountNumber,
+                },
+                {
+                  key: 'cancelRefundAccountHolder',
+                  label: 'Chủ tài khoản',
+                  children: cancelRefundContext.request.accountHolder,
+                },
+                {
+                  key: 'cancelRefundCustomerNote',
+                  label: 'Ghi chú khách hàng',
+                  children: cancelRefundContext.request.note ?? '—',
+                },
+              ]}
+            />
+
+            {cancelRefundVietQrUrl ? (
+              <div>
+                <Typography.Text strong className="mb-2 block">
+                  VietQR chuyển khoản
+                </Typography.Text>
+                <img
+                  src={cancelRefundVietQrUrl}
+                  alt="VietQR chuyển khoản"
+                  className="h-56 w-56 rounded border border-slate-200 bg-white object-contain"
+                />
+              </div>
+            ) : null}
+
+            <Form layout="vertical" form={cancelRefundForm}>
+              <Form.Item
+                label="Trạng thái"
+                name="status"
+                rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+              >
+                <Select
+                  placeholder="Chọn trạng thái"
+                  options={Object.entries(CANCEL_REFUND_STATUS_LABEL).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item label="Ghi chú nhân viên" name="adminNote">
+                <Input.TextArea rows={3} placeholder="Nhập ghi chú xử lý hoàn tiền" />
+              </Form.Item>
+              <Form.Item label="Bill chuyển khoản">
+                <Space direction="vertical" size={8} className="w-full">
+                  <Upload
+                    multiple
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={(file) => handleUploadCancelRefundEvidence(file as File)}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploadingCancelRefundEvidence}>
+                      Tải bill chuyển khoản
+                    </Button>
+                  </Upload>
+                  {cancelRefundEvidenceImages.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {cancelRefundEvidenceImages.map((url) => (
+                        <div
+                          key={url}
+                          className="flex w-[90px] flex-col items-center gap-1 rounded border border-slate-200 p-2"
+                        >
+                          <img
+                            src={url}
+                            alt="Bill chuyển khoản"
+                            className="h-12 w-12 rounded object-cover"
+                          />
+                          <Button
+                            danger
+                            type="text"
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            onClick={() => removeCancelRefundEvidence(url)}
+                          >
+                            Xóa
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <Typography.Text type="secondary">Chưa có bill chuyển khoản.</Typography.Text>
+                  )}
+                </Space>
+              </Form.Item>
+            </Form>
+          </Space>
+        )}
       </Modal>
     </div>
   )
