@@ -5,6 +5,7 @@ import type {
   ProductCardItem,
   ProductDetailResponse,
   ProductFilterCategory,
+  ProductFilterColor,
   ProductFiltersResponse,
   ProductListResponse,
   ProductVariantItem,
@@ -20,6 +21,8 @@ interface ProductListQuery {
   limit?: number
   categoryId?: string
   brand?: string
+  colorIds?: string[]
+  priceRanges?: string[]
   search?: string
   isAvailable?: boolean
 }
@@ -162,12 +165,21 @@ const normalizeFilterCategory = (item: Record<string, unknown>): ProductFilterCa
   }
 }
 
+const normalizeFilterColor = (item: Record<string, unknown>): ProductFilterColor => {
+  return {
+    id: toId(item.id ?? item._id),
+    name: String(item.name ?? 'Màu sắc'),
+    hexCode: typeof item.hexCode === 'string' ? item.hexCode : undefined,
+  }
+}
+
 export const getProductFilters = async (): Promise<ProductFiltersResponse> => {
   try {
     const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>('/products/filters')
     const data = extractApiData(response)
     const rawCategories = Array.isArray(data.categories) ? data.categories : []
     const rawBrands = Array.isArray(data.brands) ? data.brands : []
+    const rawColors = Array.isArray(data.colors) ? data.colors : []
 
     return {
       categories: rawCategories
@@ -177,6 +189,9 @@ export const getProductFilters = async (): Promise<ProductFiltersResponse> => {
         .filter((item): item is string => typeof item === 'string')
         .map((item) => item.trim())
         .filter(Boolean),
+      colors: rawColors
+        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .map((item) => normalizeFilterColor(item)),
     }
   } catch (error) {
     throw toApiClientError(error)
@@ -223,8 +238,16 @@ export const getNewestProducts = async (limit = 10): Promise<NewestResponse> => 
 
 export const getProducts = async (params: ProductListQuery = {}): Promise<ProductListResponse> => {
   try {
+    const colorIds =
+      params.colorIds && params.colorIds.length > 0 ? params.colorIds.join(',') : undefined
+    const priceRanges =
+      params.priceRanges && params.priceRanges.length > 0 ? params.priceRanges.join(',') : undefined
     const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>('/products', {
-      params,
+      params: {
+        ...params,
+        colorIds,
+        priceRanges,
+      },
     })
 
     return normalizePaginated(extractApiData(response), normalizeProductCardItem)

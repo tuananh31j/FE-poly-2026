@@ -112,7 +112,14 @@ export interface ProductFilterCategory {
   image?: string
 }
 
+export interface ProductFilterColor {
+  id: string
+  name: string
+  hexCode?: string
+}
+
 export interface ProductFiltersResponse {
   categories: ProductFilterCategory[]
   brands: string[]
+  colors: ProductFilterColor[]
 }

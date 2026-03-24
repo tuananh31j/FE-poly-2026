@@ -23,10 +23,9 @@ export const LoginPage = () => {
       dispatch(setUser(data.user))
       dispatch(setAuthStatus('authenticated'))
       setRefreshTokenCookie(data.tokens.refreshToken)
-      void message.success('Đăng nhập thành công')
       const nextPath =
         redirectPath && redirectPath.startsWith('/') ? redirectPath : getDefaultRouteByRole(data.user.role)
-      navigate(nextPath, { replace: true })
+      navigate(nextPath, { replace: true, state: { authSuccess: 'login' } })
     },
     onError: (error) => {
       void message.error(error.message)
