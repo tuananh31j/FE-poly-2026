@@ -35,6 +35,7 @@ import {
   buildDashboardProductsPath,
   ROUTE_PATHS,
 } from '@/shared/constants/routes'
+import { consumeAuthSuccessFlash } from '@/shared/utils/auth-success-flash'
 import { clearRefreshTokenCookie, getRefreshTokenCookie } from '@/shared/utils/cookie'
 
 const { Header, Content, Sider } = Layout
@@ -159,15 +160,15 @@ export const PrivateLayout = () => {
   }, [location.pathname, location.search])
 
   useEffect(() => {
-    const state = location.state as { authSuccess?: 'login' | 'register' } | null
-    if (!state?.authSuccess) {
+    const authSuccess = consumeAuthSuccessFlash()
+
+    if (!authSuccess) {
       return
     }
 
-    const content = state.authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
+    const content = authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
     void message.success(content)
-    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
-  }, [location.pathname, location.search, location.state, navigate])
+  }, [location.key])
 
   const selectedKeys = useMemo(() => [selectedMenuKey], [selectedMenuKey])
   const [isSiderCollapsed, setIsSiderCollapsed] = useState(false)

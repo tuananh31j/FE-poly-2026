@@ -7,6 +7,7 @@ import { register } from '@/features/auth/api/auth.api'
 import type { RegisterPayload } from '@/features/auth/model/auth.types'
 import { setAccessToken, setAuthStatus, setUser } from '@/features/auth/store/auth.slice'
 import { getDefaultRouteByRole, ROUTE_PATHS } from '@/shared/constants/routes'
+import { setAuthSuccessFlash } from '@/shared/utils/auth-success-flash'
 import { setRefreshTokenCookie } from '@/shared/utils/cookie'
 
 interface RegisterFormValues extends RegisterPayload {
@@ -25,7 +26,8 @@ export const RegisterPage = () => {
       dispatch(setUser(data.user))
       dispatch(setAuthStatus('authenticated'))
       setRefreshTokenCookie(data.tokens.refreshToken)
-      navigate(getDefaultRouteByRole(data.user.role), { replace: true, state: { authSuccess: 'register' } })
+      setAuthSuccessFlash('register')
+      navigate(getDefaultRouteByRole(data.user.role), { replace: true })
     },
     onError: (error) => {
       void message.error(error.message)

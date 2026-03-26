@@ -8,6 +8,7 @@ import type { LoginPayload } from '@/features/auth/model/auth.types'
 import { setAccessToken, setAuthStatus, setUser } from '@/features/auth/store/auth.slice'
 import { getDefaultRouteByRole, ROUTE_PATHS } from '@/shared/constants/routes'
 import { setRefreshTokenCookie } from '@/shared/utils/cookie'
+import { setAuthSuccessFlash } from '@/shared/utils/auth-success-flash'
 
 export const LoginPage = () => {
   const [form] = Form.useForm<LoginPayload>()
@@ -23,9 +24,10 @@ export const LoginPage = () => {
       dispatch(setUser(data.user))
       dispatch(setAuthStatus('authenticated'))
       setRefreshTokenCookie(data.tokens.refreshToken)
+      setAuthSuccessFlash('login')
       const nextPath =
         redirectPath && redirectPath.startsWith('/') ? redirectPath : getDefaultRouteByRole(data.user.role)
-      navigate(nextPath, { replace: true, state: { authSuccess: 'login' } })
+      navigate(nextPath, { replace: true })
     },
     onError: (error) => {
       void message.error(error.message)
