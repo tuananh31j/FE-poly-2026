@@ -18,6 +18,7 @@ import {
   TeamOutlined,
   TrademarkOutlined,
   UnorderedListOutlined,
+  CustomerServiceOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Menu, message, Typography } from 'antd'
@@ -43,6 +44,7 @@ const MENU_KEYS = {
   ORDERS: 'dashboard-orders',
   REVIEWS: 'dashboard-reviews',
   COMMENTS: 'dashboard-comments',
+  SUPPORT_CHAT: 'dashboard-support-chat',
   PRODUCTS_LIST: 'dashboard-products-list',
   PRODUCTS_CREATE: 'dashboard-products-create',
   VOUCHERS: 'dashboard-vouchers',
@@ -269,6 +271,11 @@ export const PrivateLayout = () => {
                   key: MENU_KEYS.COMMENTS,
                   icon: <MessageOutlined />,
                   label: <Link to={ROUTE_PATHS.DASHBOARD_COMMENTS}>Bình luận</Link>,
+                },
+                {
+                  key: MENU_KEYS.SUPPORT_CHAT,
+                  icon: <CustomerServiceOutlined />,
+                  label: <Link to={ROUTE_PATHS.DASHBOARD_SUPPORT_CHAT}>Hỗ trợ chat</Link>,
                 },
                 ...(user?.role === 'admin'
                   ? [
