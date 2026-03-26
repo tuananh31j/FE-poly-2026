@@ -21,7 +21,7 @@ export const ProductCarouselSection = ({
   const screens = Grid.useBreakpoint()
   const carouselRef = useRef<CarouselRef>(null)
 
-  const cardsPerSlide = screens.xxl ? 6 : screens.xl ? 5 : screens.lg ? 4 : screens.md ? 3 : screens.sm ? 2 : 1
+  const cardsPerSlide = screens.lg ? 4 : screens.md ? 3 : screens.sm ? 2 : 1
   const hasMultipleSlides = products.length > cardsPerSlide
 
   return (
@@ -47,7 +47,7 @@ export const ProductCarouselSection = ({
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: cardsPerSlide }).map((_, index) => (
             <Skeleton.Node key={index} active className="!h-[300px] !w-full !max-w-none" />
           ))}
