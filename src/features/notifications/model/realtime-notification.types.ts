@@ -2,7 +2,11 @@ import type { AuthRole } from '@/shared/constants/routes'
 
 export type BackofficeRole = Extract<AuthRole, 'staff' | 'admin'>
 
-export type StaffRealtimeNotificationType = 'order_created' | 'comment_created' | 'review_created'
+export type StaffRealtimeNotificationType =
+  | 'order_created'
+  | 'comment_created'
+  | 'review_created'
+  | 'chat_message'
 
 export interface StaffRealtimeNotificationPayload {
   id: string

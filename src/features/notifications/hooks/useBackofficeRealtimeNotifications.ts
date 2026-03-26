@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { notification } from 'antd'
 import { io, type Socket } from 'socket.io-client'
 
 import { env } from '@/shared/constants/env'
@@ -144,7 +145,16 @@ export const useBackofficeRealtimeNotifications = ({
 
       if (shouldUseServiceWorker) {
         void showServiceWorkerNotification(payload)
+        return
       }
+
+      notification.info({
+        key: `staff-notification-${payload.id}`,
+        message: payload.title,
+        description: payload.body,
+        placement: 'bottomRight',
+        duration: 4,
+      })
     })
 
     return () => {
