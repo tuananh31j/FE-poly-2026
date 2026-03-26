@@ -6,9 +6,9 @@ import { env } from '@/shared/constants/env'
 import { useAppSelector } from '@/app/store/hooks'
 
 import {
-  joinSupportConversation,
+  createSupportConversation,
   listConversationMessages,
-  listSupportConversationsAsStaff,
+  listSupportConversations,
   sendConversationMessage,
 } from '../api/chat.api'
 import type { ChatConversation, ChatMessage } from '../model/chat.types'
@@ -21,25 +21,32 @@ const getSocketBaseUrl = () => {
   }
 }
 
-export const useStaffSupportChat = () => {
+export const useCustomerSupportChat = (open: boolean) => {
   const accessToken = useAppSelector((state) => state.auth.accessToken)
   const userId = useAppSelector((state) => state.auth.user?.id)
   const socketRef = useRef<Socket | null>(null)
-
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
 
   const conversationsQuery = useQuery({
-    queryKey: ['support-conversations-staff', accessToken],
-    queryFn: () => listSupportConversationsAsStaff(1, 20),
-    enabled: Boolean(accessToken),
+    queryKey: ['support-conversations', accessToken],
+    queryFn: () => listSupportConversations(1, 1),
+    enabled: Boolean(open && accessToken),
   })
 
-  const joinMutation = useMutation({ mutationFn: joinSupportConversation })
-  const sendMessageMutation = useMutation({ mutationFn: sendConversationMessage })
+  const createConversationMutation = useMutation({
+    mutationFn: createSupportConversation,
+    onSuccess: (conversation) => {
+      setActiveConversationId(conversation.id)
+    },
+  })
+
+  const sendMessageMutation = useMutation({
+    mutationFn: sendConversationMessage,
+  })
 
   useEffect(() => {
-    if (!accessToken) {
+    if (!open || !accessToken) {
       socketRef.current?.disconnect()
       socketRef.current = null
       return
@@ -60,36 +67,30 @@ export const useStaffSupportChat = () => {
         socketRef.current = null
       }
     }
-  }, [accessToken])
+  }, [accessToken, open])
 
   useEffect(() => {
-    if (!activeConversationId || !accessToken) {
-      setMessages([])
+    if (!open || !accessToken) {
       return
     }
 
-    let cancelled = false
+    const existingConversation = conversationsQuery.data?.items[0]
 
-    const load = async () => {
-      const data = await listConversationMessages(activeConversationId, 1, 50)
-      if (!cancelled) {
-        const sorted = [...data].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        setMessages(sorted)
-      }
+    if (existingConversation) {
+      setActiveConversationId(existingConversation.id)
+      return
     }
 
-    void load()
-
-    return () => {
-      cancelled = true
+    if (conversationsQuery.isSuccess && !createConversationMutation.isPending) {
+      createConversationMutation.mutate({})
     }
-  }, [activeConversationId, accessToken])
+  }, [open, accessToken, conversationsQuery.data, conversationsQuery.isSuccess])
 
   useEffect(() => {
     const conversationId = activeConversationId
     const socket = socketRef.current
 
-    if (!conversationId || !socket) {
+    if (!conversationId || !socket || !open) {
       return
     }
 
@@ -117,7 +118,30 @@ export const useStaffSupportChat = () => {
     return () => {
       socket.off('chat:message_created', handleMessage)
     }
-  }, [activeConversationId])
+  }, [activeConversationId, open])
+
+  useEffect(() => {
+    if (!activeConversationId || !open) {
+      setMessages([])
+      return
+    }
+
+    let cancelled = false
+
+    const load = async () => {
+      const data = await listConversationMessages(activeConversationId, 1, 40)
+      if (!cancelled) {
+        const sorted = [...data].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        setMessages(sorted)
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeConversationId, open])
 
   const sendMessage = async (content: string) => {
     if (!activeConversationId || !content.trim()) {
@@ -140,34 +164,28 @@ export const useStaffSupportChat = () => {
         content,
       })
 
-      setMessages((prev) => prev.map((item) => (item.id === optimisticMessage.id ? saved : item)))
+      setMessages((prev) =>
+        prev.map((item) => (item.id === optimisticMessage.id ? saved : item))
+      )
     } catch {
       setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id))
-      throw new Error('Không thể gửi tin nhắn')
+      throw new Error('Không thể gửi tin nhắn lúc này')
     }
   }
 
-  const conversations = useMemo<ChatConversation[]>(() => {
-    return conversationsQuery.data?.items ?? []
+  const conversation = useMemo<ChatConversation | null>(() => {
+    const existingConversation = conversationsQuery.data?.items[0]
+    return existingConversation ?? null
   }, [conversationsQuery.data])
 
-  const selectConversation = async (conversationId: string) => {
-    if (!conversationId) {
-      return
-    }
-
-    if (conversationId !== activeConversationId) {
-      await joinMutation.mutateAsync(conversationId)
-      setActiveConversationId(conversationId)
-    }
-  }
-
   return {
-    conversations,
+    conversation,
     messages,
-    activeConversationId,
-    selectConversation,
     sendMessage,
-    isLoading: conversationsQuery.isLoading || joinMutation.isPending,
+    isReady: Boolean(activeConversationId),
+    isLoading:
+      conversationsQuery.isLoading ||
+      createConversationMutation.isPending ||
+      !activeConversationId,
   }
 }
