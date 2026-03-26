@@ -67,13 +67,13 @@ export const HomePage = () => {
       </section>
 
       <ProductCarouselSection
-        title="Top 10 sản phẩm bán chạy"
+        title="Top 8 sản phẩm bán chạy"
         products={topSellingQuery.data ?? []}
         loading={topSellingQuery.isLoading}
       />
 
       <ProductCarouselSection
-        title="10 sản phẩm mới nhất"
+        title="8 sản phẩm mới nhất"
         products={newestQuery.data ?? []}
         loading={newestQuery.isLoading}
       />

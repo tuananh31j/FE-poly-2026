@@ -23,6 +23,7 @@ import { clearAuth } from '@/features/auth/store/auth.slice'
 import { getMyCart } from '@/features/cart/api/cart.api'
 import { CartDrawer } from '@/features/cart/components/CartDrawer'
 import { getProductFilters } from '@/features/product/api/product.api'
+import { CustomerSupportChatWidget } from '@/features/chat/components/CustomerSupportChatWidget'
 import { ProductSearchModal } from '@/features/product/components/ProductSearchModal'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { BRAND } from '@/shared/constants/brand'
@@ -420,6 +421,16 @@ export const StorefrontLayout = () => {
         }}
       />
 
+      {!isBackofficeRole(user?.role) && (
+        <>
+          <CustomerChatbotWidget />
+          <CustomerSupportChatWidget
+            isAuthenticated={Boolean(accessToken)}
+            customerId={user?.id}
+          />
+        </>
+      )}
+      
       <Footer className="mt-10 border-t border-slate-200 bg-white px-4 py-10 md:px-8">
         <div className="mx-auto grid w-full max-w-7xl gap-8 md:grid-cols-3">
           <div>
