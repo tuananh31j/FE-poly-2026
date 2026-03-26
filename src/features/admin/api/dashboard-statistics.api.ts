@@ -26,9 +26,9 @@ const toRecord = (value: unknown): Record<string, unknown> | undefined => {
 
 const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
   return value === 'confirmed' ||
-    value === 'preparing' ||
     value === 'shipping' ||
     value === 'delivered' ||
+    value === 'completed' ||
     value === 'cancelled' ||
     value === 'returned'
     ? value

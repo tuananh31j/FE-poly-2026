@@ -97,6 +97,18 @@ export const PaymentSuccessPage = () => {
   const order = verifyResult.order
   const isPaymentSuccess = verifyResult.isSuccess
 
+  useEffect(() => {
+    if (!isPaymentSuccess || !order?.id) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      navigate(`${ROUTE_PATHS.ACCOUNT_ORDERS}?orderId=${order.id}`)
+    }, 1200)
+
+    return () => window.clearTimeout(timer)
+  }, [isPaymentSuccess, navigate, order?.id])
+
   return (
     <Card className="mx-auto mt-8 max-w-2xl">
       <Result
