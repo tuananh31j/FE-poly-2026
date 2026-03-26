@@ -8,9 +8,6 @@ export interface AdminUserItem {
   phone?: string
   role: AuthRole
   avatarUrl?: string
-  loyaltyPoints?: number
-  membershipTier?: string
-  staffDepartment?: string
   staffStartDate?: string
   createdAt: string
   updatedAt: string
@@ -48,9 +45,6 @@ export interface UpdateAdminUserPayload {
   role?: Extract<AuthRole, 'customer' | 'staff'>
   isActive?: boolean
   avatarUrl?: string
-  loyaltyPoints?: number
-  membershipTier?: 'bronze' | 'silver' | 'gold' | 'platinum'
-  staffDepartment?: string
   staffStartDate?: string
   password?: string
 }
