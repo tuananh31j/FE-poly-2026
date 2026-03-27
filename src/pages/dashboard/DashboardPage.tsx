@@ -37,9 +37,9 @@ const DAYS_OPTIONS = [
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
-  preparing: 'Đang chuẩn bị',
   shipping: 'Đang giao',
   delivered: 'Đã giao',
+  completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   returned: 'Trả hàng',
 }
@@ -48,9 +48,9 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending: 'default',
   confirmed: 'blue',
-  preparing: 'cyan',
   shipping: 'geekblue',
   delivered: 'green',
+  completed: 'green',
   cancelled: 'volcano',
   returned: 'orange',
 }
