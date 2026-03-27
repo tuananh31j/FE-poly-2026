@@ -12,18 +12,23 @@ import {
   StarOutlined,
   TagsOutlined,
   TeamOutlined,
-  UserSwitchOutlined,
 } from '@ant-design/icons'
 import { Card, Col, Row, Space, Typography } from 'antd'
-import type { ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import type { ApexOptions } from 'apexcharts'
+import Chart from 'react-apexcharts'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useAppSelector } from '@/app/store/hooks'
+import { getAdminDashboardStatistics } from '@/features/admin/api/dashboard-statistics.api'
+import { queryKeys } from '@/shared/api/queryKeys'
 import {
   buildDashboardMasterDataPath,
   buildDashboardProductsPath,
   ROUTE_PATHS,
 } from '@/shared/constants/routes'
+import { formatVndCurrency } from '@/shared/utils/currency'
 
 interface CenterMenuItem {
   key: string
@@ -161,7 +166,7 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
   {
     key: 'system',
     title: 'Hệ thống',
-    description: 'Các màn hình quản trị tài khoản và phân quyền.',
+    description: 'Các màn hình quản trị tài khoản hệ thống.',
     icon: <SettingOutlined />,
     items: [
       {
@@ -183,16 +188,6 @@ const CENTER_MENU_GROUPS: CenterMenuGroup[] = [
         iconColor: '#334155',
         adminOnly: true,
       },
-      {
-        key: 'roles',
-        title: 'Phân quyền',
-        description: 'Cấp quyền admin/staff theo nghiệp vụ.',
-        to: ROUTE_PATHS.DASHBOARD_USERS,
-        icon: <UserSwitchOutlined />,
-        iconBackground: '#fff7ed',
-        iconColor: '#c2410c',
-        adminOnly: true,
-      },
     ],
   },
 ]
@@ -201,8 +196,73 @@ export const DashboardCenterPage = () => {
   const role = useAppSelector((state) => state.auth.user?.role)
   const isAdmin = role === 'admin'
 
+  const statisticsQuery = useQuery({
+    queryKey: queryKeys.admin.dashboardStatistics({ days: 7 }),
+    queryFn: () => getAdminDashboardStatistics(7),
+  })
+
+  const revenueSeries = useMemo(() => {
+    const dailyRevenue = statisticsQuery.data?.trends.dailyRevenue ?? []
+    return [
+      {
+        name: 'Doanh thu',
+        data: dailyRevenue.map((item) => item.revenue),
+      },
+    ]
+  }, [statisticsQuery.data?.trends.dailyRevenue])
+
+  const revenueCategories = useMemo(() => {
+    return (statisticsQuery.data?.trends.dailyRevenue ?? []).map((item) => item.date)
+  }, [statisticsQuery.data?.trends.dailyRevenue])
+
+  const revenueOptions = useMemo(
+    (): ApexOptions => ({
+      chart: {
+        height: 260,
+        type: 'area',
+        toolbar: { show: false },
+      },
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 3 },
+      fill: {
+        type: 'gradient',
+        gradient: { opacityFrom: 0.35, opacityTo: 0.05 },
+      },
+      xaxis: {
+        categories: revenueCategories,
+        labels: { rotate: -30 },
+      },
+      yaxis: {
+        labels: {
+          formatter: (value: number) => formatVndCurrency(value),
+        },
+      },
+      tooltip: {
+        shared: false,
+        intersect: false,
+        y: {
+          formatter: (value: number) => formatVndCurrency(value),
+        },
+      },
+    }),
+    [revenueCategories]
+  )
+
   return (
     <div className="space-y-6">
+      <Card>
+        <Space direction="vertical" size={6} className="w-full">
+          <Typography.Title level={4} className="!mb-0">
+            Doanh thu 7 ngày gần nhất
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            Tổng quan nhanh doanh thu để theo dõi xu hướng.
+          </Typography.Text>
+        </Space>
+        <div className="mt-4">
+          <Chart options={revenueOptions} series={revenueSeries} type="area" height={260} />
+        </div>
+      </Card>
       <div className="space-y-1">
         <Typography.Title level={3} className="!mb-0">
           Trung tâm quản trị

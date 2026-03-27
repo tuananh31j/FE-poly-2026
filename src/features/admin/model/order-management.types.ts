@@ -1,14 +1,67 @@
 export type AdminOrderStatus =
   | 'pending'
   | 'confirmed'
-  | 'preparing'
   | 'shipping'
   | 'delivered'
+  | 'completed'
   | 'cancelled'
   | 'returned'
 
-export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay'
+export type AdminPaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type AdminZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type AdminPaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type AdminReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type AdminCancelRefundRequestStatus = 'pending' | 'rejected' | 'refunded'
+export type AdminRefundMethod = 'bank_transfer' | 'wallet'
+export type AdminUserRole = 'customer' | 'staff' | 'admin'
+
+export interface AdminOrderUser {
+  id: string
+  fullName?: string
+  email?: string
+  role?: AdminUserRole
+}
+
+export interface AdminReturnRequestItem {
+  productId: string
+  productName: string
+  variantId: string
+  variantSku: string
+  quantity: number
+  price: number
+  total: number
+}
+
+export interface AdminReturnRequest {
+  id: string
+  requestedBy: string
+  status: AdminReturnRequestStatus
+  refundMethod: AdminRefundMethod
+  refundAmount: number
+  reason?: string
+  note?: string
+  refundEvidenceImages?: string[]
+  items: AdminReturnRequestItem[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminCancelRefundRequest {
+  requestedBy: string
+  status: AdminCancelRefundRequestStatus
+  refundAmount: number
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
+  adminNote?: string
+  refundEvidenceImages?: string[]
+  requestedAt: string
+  updatedAt: string
+  processedAt?: string
+  processedBy?: string
+}
 
 export interface AdminOrderItemSnapshot {
   productId: string
@@ -33,6 +86,7 @@ export interface AdminOrderItem {
   id: string
   orderCode: string
   userId: string
+  user?: AdminOrderUser
   shippingRecipientName: string
   shippingPhone: string
   shippingAddress: string
@@ -41,11 +95,14 @@ export interface AdminOrderItem {
   discountAmount: number
   totalAmount: number
   paymentMethod: AdminPaymentMethod
+  zalopayChannel?: AdminZalopayChannel
   paymentStatus: AdminPaymentStatus
   voucherId?: string
   status: AdminOrderStatus
   items: AdminOrderItemSnapshot[]
   statusHistory: AdminOrderStatusHistoryItem[]
+  returnRequests?: AdminReturnRequest[]
+  cancelRefundRequest?: AdminCancelRefundRequest
   createdAt: string
   updatedAt: string
 }
@@ -71,4 +128,10 @@ export interface ListAdminOrdersParams {
 export interface UpdateAdminOrderStatusPayload {
   status: AdminOrderStatus
   note?: string
+}
+
+export interface UpdateAdminCancelRefundRequestPayload {
+  status: AdminCancelRefundRequestStatus
+  adminNote?: string
+  refundEvidenceImages?: string[]
 }
