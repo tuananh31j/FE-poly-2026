@@ -292,6 +292,14 @@ export const ProductDetailPage = () => {
     variantCarouselRef.current?.goTo(variantSlideIndex)
   }
 
+  const handleVariantSlidePrev = () => {
+    variantCarouselRef.current?.prev()
+  }
+
+  const handleVariantSlideNext = () => {
+    variantCarouselRef.current?.next()
+  }
+
   // worklog: 2026-03-04 14:54:46 | trantu | refactor | handleDecreaseQuantity
   const handleDecreaseQuantity = () => {
     setPurchaseQuantity((prev) => Math.max(1, prev - 1))
@@ -429,9 +437,7 @@ export const ProductDetailPage = () => {
                       icon={<LeftOutlined />}
                       aria-label="Xem phiên bản trước"
                       disabled={activeVariantSlide <= 0}
-                      onClick={() => {
-                        variantCarouselRef.current?.prev()
-                      }}
+                      onClick={handleVariantSlidePrev}
                     />
                     <Button
                       shape="circle"
@@ -440,9 +446,7 @@ export const ProductDetailPage = () => {
                       icon={<RightOutlined />}
                       aria-label="Xem phiên bản tiếp theo"
                       disabled={activeVariantSlide >= variantSlides.length - 1}
-                      onClick={() => {
-                        variantCarouselRef.current?.next()
-                      }}
+                      onClick={handleVariantSlideNext}
                     />
                   </Space>
                 ) : null}
@@ -574,6 +578,31 @@ export const ProductDetailPage = () => {
                         </div>
                       ))}
                     </Carousel>
+
+                    {hasMultipleVariantSlides ? (
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                        <Button
+                          icon={<LeftOutlined />}
+                          disabled={activeVariantSlide <= 0}
+                          onClick={handleVariantSlidePrev}
+                        >
+                          Trước
+                        </Button>
+                        <Typography.Text type="secondary" className="text-xs sm:text-sm">
+                          {`Trang ${activeVariantSlide + 1}/${variantSlides.length}`}
+                        </Typography.Text>
+                        <Button
+                          type="primary"
+                          ghost
+                          icon={<RightOutlined />}
+                          iconPosition="end"
+                          disabled={activeVariantSlide >= variantSlides.length - 1}
+                          onClick={handleVariantSlideNext}
+                        >
+                          Tiếp
+                        </Button>
+                      </div>
+                    ) : null}
                   </Radio.Group>
 
                   <Typography.Paragraph className="!mb-0 !mt-2 text-xs" type="secondary">
