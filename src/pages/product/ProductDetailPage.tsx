@@ -238,7 +238,7 @@ export const ProductDetailPage = () => {
 
     return selectedVariant ?? product.variants[0]
   }, [product, selectedVariant])
-  const variantCardsPerSlide = screens.xl ? 3 : screens.md ? 2 : 1
+  const variantCardsPerSlide = screens.sm ? 2 : 1
   const variantGapPx = 16
   const variantItemWidth = useMemo(() => {
     if (variantCardsPerSlide <= 1) {
@@ -500,15 +500,15 @@ export const ProductDetailPage = () => {
                                 >
                                   <Radio
                                     value={variant.id}
-                                    className={`product-variant-option !m-0 !flex flex-1 !w-full items-stretch rounded-[24px] border bg-white p-4 transition-all duration-200 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:flex-1 ${
+                                    className={`product-variant-option !m-0 !flex !h-full flex-1 !w-full items-stretch rounded-[24px] border bg-white p-4 transition-all duration-200 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:flex-1 ${
                                       isSelected
                                         ? 'border-blue-500 bg-blue-50/70 shadow-[0_20px_40px_-30px_rgba(37,99,235,0.7)]'
                                         : 'border-slate-200 hover:border-blue-300 hover:shadow-[0_18px_36px_-32px_rgba(15,23,42,0.5)]'
                                     }`}
                                   >
                                     <div className="h-full w-full">
-                                      <div className="flex h-full gap-4">
-                                        <div className="h-24 w-28 shrink-0 overflow-hidden rounded-2xl bg-slate-100 sm:w-32">
+                                      <div className="flex h-full flex-col gap-4">
+                                        <div className="aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
                                           <img
                                             src={image}
                                             alt={`${product.name}-${variantLabel}`}
@@ -516,58 +516,66 @@ export const ProductDetailPage = () => {
                                           />
                                         </div>
 
-                                        <Space
-                                          direction="vertical"
-                                          size={6}
-                                          className="min-w-0 flex-1 justify-between"
-                                        >
-                                          <Space direction="vertical" size={2} className="min-w-0">
+                                        <div className="flex min-h-[164px] flex-1 flex-col justify-between gap-4">
+                                          <div className="space-y-2 min-w-0">
                                             <Typography.Text
                                               strong
-                                              className="line-clamp-1 !text-lg !leading-6"
+                                              className="block line-clamp-2 !text-base !leading-6 sm:!text-lg"
                                             >
                                               {variantLabel}
                                             </Typography.Text>
 
                                             <Typography.Text
                                               type="secondary"
-                                              className="line-clamp-1 !text-sm"
+                                              className="block line-clamp-1 !text-sm"
                                             >
                                               SKU: {variant.sku}
                                             </Typography.Text>
 
-                                            {renderVariantPrice(variant)}
-                                          </Space>
+                                            <div className="pt-1">{renderVariantPrice(variant)}</div>
+                                          </div>
 
-                                          <Space
-                                            size={10}
-                                            align="center"
-                                            className="w-full justify-between"
-                                          >
-                                            <Space size={8} align="center">
-                                              {variant.colorHex ? (
-                                                <span
-                                                  className="inline-block h-6 w-6 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(148,163,184,0.55)]"
-                                                  style={{ backgroundColor: variant.colorHex }}
-                                                />
-                                              ) : (
-                                                <span className="inline-block h-6 w-6 rounded-full bg-slate-100" />
-                                              )}
-                                              <Typography.Text type="secondary" className="text-xs">
-                                                Tồn kho: {variant.stockQuantity}
-                                              </Typography.Text>
-                                            </Space>
-                                            <Tag
-                                              className={`!m-0 !rounded-full !border-0 !px-3 !py-1 !text-xs !font-medium ${
-                                                availabilityLabel === 'Còn hàng'
-                                                  ? '!bg-lime-50 !text-lime-700'
-                                                  : '!bg-slate-100 !text-slate-500'
-                                              }`}
-                                            >
-                                              {availabilityLabel}
-                                            </Tag>
-                                          </Space>
-                                        </Space>
+                                          <div className="space-y-3">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                              {variant.color ? (
+                                                <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
+                                                  Màu: {variant.color}
+                                                </Tag>
+                                              ) : null}
+                                              {variant.size ? (
+                                                <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
+                                                  Size: {variant.size}
+                                                </Tag>
+                                              ) : null}
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                              <Space size={8} align="center">
+                                                {variant.colorHex ? (
+                                                  <span
+                                                    className="inline-block h-6 w-6 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(148,163,184,0.55)]"
+                                                    style={{ backgroundColor: variant.colorHex }}
+                                                  />
+                                                ) : (
+                                                  <span className="inline-block h-6 w-6 rounded-full bg-slate-100" />
+                                                )}
+                                                <Typography.Text type="secondary" className="text-xs">
+                                                  Tồn kho: {variant.stockQuantity}
+                                                </Typography.Text>
+                                              </Space>
+
+                                              <Tag
+                                                className={`!m-0 !rounded-full !border-0 !px-3 !py-1 !text-xs !font-medium ${
+                                                  availabilityLabel === 'Còn hàng'
+                                                    ? '!bg-lime-50 !text-lime-700'
+                                                    : '!bg-slate-100 !text-slate-500'
+                                                }`}
+                                              >
+                                                {availabilityLabel}
+                                              </Tag>
+                                            </div>
+                                          </div>
+                                        </div>
                                       </div>
                                     </div>
                                   </Radio>
