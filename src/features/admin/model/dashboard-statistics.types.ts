@@ -65,9 +65,27 @@ export interface DashboardTopProductItem {
   thumbnailUrl: string | null
 }
 
+export interface DashboardTopVariantItem {
+  variantId: string
+  productId: string
+  productName: string
+  variantSku: string
+  variantColor: string
+  size: string 
+  soldCount: number
+  revenue: number
+  stockQuantity: number
+  isAvailable: boolean
+  thumbnailUrl: string | null
+}
+
+
 export interface DashboardStatisticsResponse {
   summary: DashboardSummary
   trends: DashboardTrends
   breakdowns: DashboardBreakdowns
   topProducts: DashboardTopProductItem[]
+  bottomProducts: DashboardTopProductItem[]
+  topVariants: DashboardTopVariantItem[]
+  bottomVariants: DashboardTopVariantItem[]
 }
