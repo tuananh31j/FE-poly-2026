@@ -3,9 +3,10 @@ import {
   Avatar,
   Card,
   Col,
+  DatePicker,
   Empty,
   Row,
-  Select,
+  Segmented,
   Space,
   Statistic,
   Table,
@@ -13,13 +14,15 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import dayjs, { type Dayjs } from 'dayjs'
+import { useMemo, useState, type ReactNode } from 'react'
 import Chart from 'react-apexcharts'
 import { Link } from 'react-router-dom'
 
 import { getAdminDashboardStatistics } from '@/features/admin/api/dashboard-statistics.api'
 import type {
+  DashboardStatisticsFilters,
+  DashboardStatisticsPeriod,
   DashboardStatisticsResponse,
   DashboardTopProductItem,
   DashboardTopVariantItem,
@@ -31,12 +34,16 @@ import { formatDateTime } from '@/shared/utils/date'
 
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
 
-const DAYS_OPTIONS = [
-  { label: '7 ngày', value: 7 },
-  { label: '14 ngày', value: 14 },
-  { label: '30 ngày', value: 30 },
-  { label: '90 ngày', value: 90 },
-]
+const { RangePicker } = DatePicker
+
+type StatisticsFilterMode = Exclude<DashboardStatisticsPeriod, 'rolling'>
+
+const PERIOD_OPTIONS = [
+  { label: 'Ngày', value: 'day' },
+  { label: 'Tuần', value: 'week' },
+  { label: 'Tháng', value: 'month' },
+  { label: 'Khoảng thời gian', value: 'custom' },
+] satisfies { label: string; value: StatisticsFilterMode }[]
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
   pending: 'Chờ xác nhận',
@@ -266,14 +273,82 @@ const useCategoryOrderChartOptions = (stats?: DashboardStatisticsResponse) => {
   }, [stats])
 }
 
+interface DashboardMetricGroupProps {
+  title: string
+  loading: boolean
+  primaryLabel: string
+  primaryValue: number | string
+  primaryFormatter?: (value: number | string) => ReactNode
+  secondaryItems: Array<{
+    label: string
+    value: number | string
+    formatter?: (value: number | string) => ReactNode
+  }>
+}
+
+const DashboardMetricGroup = ({
+  title,
+  loading,
+  primaryLabel,
+  primaryValue,
+  primaryFormatter,
+  secondaryItems,
+}: DashboardMetricGroupProps) => {
+  return (
+    <Card loading={loading} className="h-full">
+      <Space direction="vertical" size={16} className="w-full">
+        <div>
+          <Typography.Text type="secondary">{title}</Typography.Text>
+        </div>
+
+        <Statistic title={primaryLabel} value={primaryValue} formatter={primaryFormatter} />
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {secondaryItems.map((item) => (
+            <Statistic
+              key={item.label}
+              title={item.label}
+              value={item.value}
+              formatter={item.formatter}
+            />
+          ))}
+        </div>
+      </Space>
+    </Card>
+  )
+}
+
 // worklog: 2026-03-04 14:47:25 | ducanh | fix | DashboardPage
 // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | DashboardPage
 export const DashboardPage = () => {
-  const [days, setDays] = useState(30)
+  const [filterMode, setFilterMode] = useState<StatisticsFilterMode>('month')
+  const [customRange, setCustomRange] = useState<[Dayjs, Dayjs] | null>(null)
+
+  const statisticsFilters = useMemo<DashboardStatisticsFilters>(() => {
+    if (filterMode === 'custom') {
+      if (!customRange?.[0] || !customRange?.[1]) {
+        return {
+          period: 'custom',
+        }
+      }
+
+      return {
+        period: 'custom',
+        fromDate: customRange[0].startOf('day').toISOString(),
+        toDate: customRange[1].endOf('day').toISOString(),
+      }
+    }
+
+    return {
+      period: filterMode,
+    }
+  }, [customRange, filterMode])
 
   const statisticsQuery = useQuery({
-    queryKey: queryKeys.admin.dashboardStatistics({ days }),
-    queryFn: () => getAdminDashboardStatistics(days),
+    queryKey: queryKeys.admin.dashboardStatistics(statisticsFilters),
+    queryFn: () => getAdminDashboardStatistics(statisticsFilters),
+    enabled: filterMode !== 'custom' || Boolean(customRange?.[0] && customRange?.[1]),
+    placeholderData: (previousData) => previousData,
   })
 
   const stats = statisticsQuery.data
@@ -281,11 +356,14 @@ export const DashboardPage = () => {
 
   const revenueChart = useRevenueChartOptions(stats)
   const categoryOrderChart = useCategoryOrderChartOptions(stats)
+  const isLoading = statisticsQuery.isLoading || statisticsQuery.isFetching
 
   const statusSeries = stats?.breakdowns.byStatus.map((item) => item.count) ?? []
   const statusLabels = stats?.breakdowns.byStatus.map((item) => ORDER_STATUS_LABELS[item.status]) ?? []
   const hasStatusData = statusSeries.some((value) => value > 0)
   const hasCategoryData = (stats?.breakdowns.byCategory.length ?? 0) > 0
+  const paymentMethodUsedCount =
+    stats?.breakdowns.byPaymentMethod.filter((item) => item.count > 0).length ?? 0
 
   return (
     <div className="space-y-6">
@@ -295,84 +373,134 @@ export const DashboardPage = () => {
             Dashboard thống kê
           </Typography.Title>
           <Typography.Text type="secondary">
-            Cập nhật mới nhất: {formatDateTime(stats?.trends.toDate)}
+            {stats?.trends.label
+              ? `Phạm vi thống kê: ${stats.trends.label} · cập nhật ${formatDateTime(stats.trends.toDate)}`
+              : 'Chọn phạm vi thời gian để xem số liệu'}
           </Typography.Text>
         </div>
 
-        <Select
-          className="w-36"
-          value={days}
-          options={DAYS_OPTIONS}
-          onChange={(value) => setDays(value)}
-        />
+        <Space wrap>
+          <Segmented<StatisticsFilterMode>
+            value={filterMode}
+            options={PERIOD_OPTIONS}
+            onChange={(value) => {
+              setFilterMode(value)
+            }}
+          />
+          <RangePicker
+            className={filterMode === 'custom' ? 'w-full md:w-[320px]' : 'hidden'}
+            value={customRange}
+            format="DD/MM/YYYY"
+            allowClear
+            onChange={(value) => {
+              if (value?.[0] && value[1]) {
+                setCustomRange([value[0], value[1]])
+                return
+              }
+
+              setCustomRange(null)
+            }}
+          />
+        </Space>
       </div>
 
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic
-              title="Doanh thu đã giao"
-              value={summary?.deliveredRevenue ?? 0}
-              formatter={(value) => formatVndCurrency(Number(value ?? 0))}
-            />
-          </Card>
+        <Col xs={24} xl={12}>
+          <DashboardMetricGroup
+            title="Thống kê doanh thu"
+            loading={isLoading}
+            primaryLabel="Doanh thu đã giao"
+            primaryValue={summary?.deliveredRevenue ?? 0}
+            primaryFormatter={(value) => formatVndCurrency(Number(value ?? 0))}
+            secondaryItems={[
+              {
+                label: 'Doanh thu gộp',
+                value: summary?.grossRevenue ?? 0,
+                formatter: (value) => formatVndCurrency(Number(value ?? 0)),
+              },
+              {
+                label: 'Giá trị đơn TB',
+                value: summary?.averageDeliveredOrderValue ?? 0,
+                formatter: (value) => formatVndCurrency(Number(value ?? 0)),
+              },
+            ]}
+          />
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Tổng đơn hàng" value={summary?.totalOrders ?? 0} />
-          </Card>
+        <Col xs={24} xl={12}>
+          <DashboardMetricGroup
+            title="Thống kê đơn hàng"
+            loading={isLoading}
+            primaryLabel="Tổng đơn hàng"
+            primaryValue={summary?.totalOrders ?? 0}
+            secondaryItems={[
+              { label: 'Đã giao/hoàn thành', value: summary?.deliveredOrders ?? 0 },
+              { label: 'Đang xử lý', value: summary?.processingOrders ?? 0 },
+              { label: 'Đã hủy/trả', value: summary?.cancelledOrders ?? 0 },
+              { label: 'Kênh thanh toán đang dùng', value: paymentMethodUsedCount },
+            ]}
+          />
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Tổng người dùng" value={summary?.totalUsers ?? 0} />
-          </Card>
+        <Col xs={24} xl={12}>
+          <DashboardMetricGroup
+            title="Thống kê khách hàng"
+            loading={isLoading}
+            primaryLabel="Khách phát sinh đơn"
+            primaryValue={summary?.purchasingCustomers ?? 0}
+            secondaryItems={[
+              { label: 'Khách hàng mới', value: summary?.newCustomersCount ?? 0 },
+              { label: 'Tổng khách hàng', value: summary?.customersCount ?? 0 },
+              { label: 'Đang hoạt động', value: summary?.activeUsers ?? 0 },
+              { label: 'Ngưng hoạt động', value: summary?.inactiveUsers ?? 0 },
+            ]}
+          />
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Tổng sản phẩm" value={summary?.totalProducts ?? 0} />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Đơn đang xử lý" value={summary?.processingOrders ?? 0} />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Đơn hủy/trả" value={summary?.cancelledOrders ?? 0} />
-          </Card>
+        <Col xs={24} xl={12}>
+          <DashboardMetricGroup
+            title="Thống kê sản phẩm"
+            loading={isLoading}
+            primaryLabel="Sản phẩm có phát sinh bán"
+            primaryValue={summary?.soldProducts ?? 0}
+            secondaryItems={[
+              { label: 'Biến thể có phát sinh bán', value: summary?.soldVariants ?? 0 },
+              { label: 'Tổng số lượng bán', value: summary?.totalItemsSold ?? 0 },
+              { label: 'Tổng sản phẩm', value: summary?.totalProducts ?? 0 },
+              { label: 'Đang bán', value: summary?.availableProducts ?? 0 },
+            ]}
+          />
         </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Biến thể sắp hết" value={summary?.lowStockVariants ?? 0} />
-          </Card>
-        </Col>
-
-        <Col xs={24} sm={12} lg={6}>
-          <Card loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
-            <Statistic title="Biến thể hết hàng" value={summary?.outOfStockVariants ?? 0} />
-          </Card>
+        <Col xs={24} xl={12}>
+          <DashboardMetricGroup
+            title="Thống kê danh mục"
+            loading={isLoading}
+            primaryLabel="Danh mục có phát sinh đơn"
+            primaryValue={summary?.categoriesWithOrders ?? 0}
+            secondaryItems={[
+              { label: 'Tổng danh mục', value: summary?.totalCategories ?? 0 },
+              { label: 'Biến thể sắp hết', value: summary?.lowStockVariants ?? 0 },
+              { label: 'Biến thể hết hàng', value: summary?.outOfStockVariants ?? 0 },
+              {
+                label: 'Bình luận / đánh giá',
+                value: `${summary?.totalComments ?? 0} / ${summary?.totalReviews ?? 0}`,
+              },
+            ]}
+          />
         </Col>
       </Row>
 
       <Card
-        title={`Doanh thu ${stats?.trends.days ?? days} ngày gần nhất`}
-        loading={statisticsQuery.isLoading || statisticsQuery.isFetching}
+        title={`Doanh thu theo ngày trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+        loading={isLoading}
       >
         <Chart type="line" height={320} series={revenueChart.series} options={revenueChart.options} />
       </Card>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="Cơ cấu trạng thái đơn hàng" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card title="Cơ cấu trạng thái đơn hàng" loading={isLoading}>
             {hasStatusData ? (
               <Chart
                 type="donut"
@@ -400,7 +528,7 @@ export const DashboardPage = () => {
         </Col>
 
         <Col xs={24} lg={12}>
-          <Card title="Thống kê đơn hàng theo danh mục" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card title="Thống kê đơn hàng theo danh mục" loading={isLoading}>
             {hasCategoryData ? (
               <Chart
                 type="bar"
@@ -417,7 +545,10 @@ export const DashboardPage = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>
-          <Card title="Top sản phẩm bán chạy" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card
+            title={`Top sản phẩm bán chạy trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+            loading={isLoading}
+          >
             <Table
               rowKey="productId"
               columns={topProductColumns}
@@ -431,7 +562,10 @@ export const DashboardPage = () => {
         </Col>
 
         <Col xs={24} xl={12}>
-          <Card title="Top sản phẩm bán chậm" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card
+            title={`Top sản phẩm bán chậm trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+            loading={isLoading}
+          >
             <Table
               rowKey="productId"
               columns={topProductColumns}
@@ -447,7 +581,10 @@ export const DashboardPage = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={12}>
-          <Card title="Top biến thể bán chạy" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card
+            title={`Top biến thể bán chạy trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+            loading={isLoading}
+          >
             <Table
               rowKey="variantId"
               columns={topVariantColumns}
@@ -461,7 +598,10 @@ export const DashboardPage = () => {
         </Col>
 
         <Col xs={24} xl={12}>
-          <Card title="Top biến thể bán chậm" loading={statisticsQuery.isLoading || statisticsQuery.isFetching}>
+          <Card
+            title={`Top biến thể bán chậm trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+            loading={isLoading}
+          >
             <Table
               rowKey="variantId"
               columns={topVariantColumns}

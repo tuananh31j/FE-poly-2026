@@ -1,5 +1,14 @@
 import type { AdminOrderStatus, AdminPaymentMethod } from './order-management.types'
 
+export type DashboardStatisticsPeriod = 'rolling' | 'day' | 'week' | 'month' | 'custom'
+
+export interface DashboardStatisticsFilters extends Record<string, unknown> {
+  days?: number
+  period?: Exclude<DashboardStatisticsPeriod, 'rolling'>
+  fromDate?: string
+  toDate?: string
+}
+
 export interface DashboardSummary {
   totalOrders: number
   deliveredOrders: number
@@ -11,11 +20,17 @@ export interface DashboardSummary {
   totalItemsSold: number
   totalUsers: number
   customersCount: number
+  newCustomersCount: number
+  purchasingCustomers: number
   staffCount: number
   adminCount: number
   activeUsers: number
   inactiveUsers: number
+  totalCategories: number
+  categoriesWithOrders: number
   totalProducts: number
+  soldProducts: number
+  soldVariants: number
   availableProducts: number
   outOfStockVariants: number
   lowStockVariants: number
@@ -32,6 +47,8 @@ export interface DashboardDailyRevenueItem {
 
 export interface DashboardTrends {
   days: number
+  period: DashboardStatisticsPeriod
+  label: string
   fromDate: string
   toDate: string
   dailyRevenue: DashboardDailyRevenueItem[]
