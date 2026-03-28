@@ -7,7 +7,9 @@ import {
 } from '@ant-design/icons'
 import { Avatar, Badge, Button, Drawer, Input, Space, Spin, Typography, message } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
+import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { useCustomerSupportChat } from '../hooks/useCustomerSupportChat'
 import type { ChatMessage } from '../model/chat.types'
 
@@ -52,6 +54,8 @@ interface CustomerSupportChatWidgetProps {
 }
 
 export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportChatWidgetProps) => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
@@ -145,7 +149,15 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
             className="!h-12 !rounded-full !px-4 shadow-lg"
             icon={<MessageOutlined />}
             aria-label="Mở chat với nhân viên"
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              if (!isAuthenticated) {
+                const redirect = `${location.pathname}${location.search}${location.hash}`
+                navigate(`${ROUTE_PATHS.LOGIN}?redirect=${encodeURIComponent(redirect)}`)
+                return
+              }
+
+              setOpen(true)
+            }}
           >
             Chat với nhân viên
           </Button>
