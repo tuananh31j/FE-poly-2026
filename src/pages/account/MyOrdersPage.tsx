@@ -10,6 +10,7 @@ import {
   message,
   Modal,
   Popconfirm,
+  Rate,
   Select,
   Space,
   Spin,
@@ -25,6 +26,7 @@ import {
   cancelMyOrder,
   confirmOrderReceived,
   createCancelRefundRequest,
+  createMyReview,
   createReturnRequest,
   listMyOrders,
   retryMyVnpayPayment,
@@ -32,15 +34,13 @@ import {
 import type {
   CancelRefundRequestStatus,
   CreateCancelRefundRequestPayload,
+  CreateReturnRequestPayload,
   MyOrderItem,
   OrderStatus,
   RefundMethod,
 } from '@/features/account/model/account.types'
 import { queryKeys } from '@/shared/api/queryKeys'
-import {
-  getVietQrBankByCode,
-  VIET_QR_BANK_OPTIONS,
-} from '@/shared/constants/vietqr'
+import { getVietQrBankByCode, VIET_QR_BANK_OPTIONS } from '@/shared/constants/vietqr'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -125,8 +125,8 @@ const canConfirmReceived = (status: OrderStatus) => {
   return status === 'delivered'
 }
 
-const canRequestReturn = (status: OrderStatus) => {
-  return status === 'completed'
+const canReviewOrder = (order: MyOrderItem) => {
+  return order.status === 'completed' && order.items.some((item) => !item.isReviewed)
 }
 
 const canRetryVnpay = (order: MyOrderItem) => {
@@ -137,8 +137,51 @@ const canRetryVnpay = (order: MyOrderItem) => {
   )
 }
 
+const canRequestReturn = (order: MyOrderItem) => {
+  if (order.status !== 'completed') {
+    return false
+  }
+
+  const requestedQuantities = new Map<string, number>()
+
+  for (const request of order.returnRequests ?? []) {
+    if (request.status === 'rejected') {
+      continue
+    }
+
+    for (const item of request.items) {
+      requestedQuantities.set(
+        item.variantId,
+        (requestedQuantities.get(item.variantId) ?? 0) + item.quantity
+      )
+    }
+  }
+
+  return order.items.some(
+    (item) => item.quantity - (requestedQuantities.get(item.variantId) ?? 0) > 0
+  )
+}
+
+const getReturnableQuantity = (
+  order: MyOrderItem,
+  variantId: string,
+  purchasedQuantity: number
+) => {
+  const requestedQuantity = (order.returnRequests ?? [])
+    .filter((request) => request.status !== 'rejected')
+    .flatMap((request) => request.items)
+    .filter((item) => item.variantId === variantId)
+    .reduce((sum, item) => sum + item.quantity, 0)
+
+  return Math.max(0, purchasedQuantity - requestedQuantity)
+}
+
 const canRequestCancelRefund = (order: MyOrderItem) => {
-  if (order.status !== 'cancelled' || order.paymentMethod === 'cod' || order.paymentStatus !== 'paid') {
+  if (
+    order.status !== 'cancelled' ||
+    order.paymentMethod === 'cod' ||
+    order.paymentStatus !== 'paid'
+  ) {
     return false
   }
 
@@ -157,13 +200,18 @@ export const MyOrdersPage = () => {
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
   const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([])
   const focusOrderId = searchParams.get('orderId')?.trim() ?? ''
-  const [returnModalOpen, setReturnModalOpen] = useState(false)
-  const [returnOrder, setReturnOrder] = useState<MyOrderItem | null>(null)
-  const [returnReason, setReturnReason] = useState('')
-  const [refundMethod, setRefundMethod] = useState<RefundMethod>('bank_transfer')
-  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({})
+  const [reviewModalOpen, setReviewModalOpen] = useState(false)
+  const [reviewOrder, setReviewOrder] = useState<MyOrderItem | null>(null)
+  const [selectedReviewProductId, setSelectedReviewProductId] = useState<string | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewContent, setReviewContent] = useState('')
   const [cancelRefundModalOpen, setCancelRefundModalOpen] = useState(false)
   const [cancelRefundOrder, setCancelRefundOrder] = useState<MyOrderItem | null>(null)
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [returnOrder, setReturnOrder] = useState<MyOrderItem | null>(null)
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({})
+  const [returnReason, setReturnReason] = useState('')
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>('bank_transfer')
   const [detailOrder, setDetailOrder] = useState<MyOrderItem | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [hasHandledFocusOrder, setHasHandledFocusOrder] = useState(false)
@@ -228,23 +276,21 @@ export const MyOrdersPage = () => {
     },
   })
 
-  const returnRequestMutation = useMutation({
-    mutationFn: (payload: { orderId: string; items: Array<{ variantId: string; quantity: number }>; reason?: string; refundMethod?: RefundMethod }) =>
-      createReturnRequest(payload.orderId, {
-        items: payload.items,
-        reason: payload.reason,
-        refundMethod: payload.refundMethod,
-      }),
-    onSuccess: async () => {
+  const createReviewMutation = useMutation({
+    mutationFn: createMyReview,
+    onSuccess: async (_, payload) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.account.orders(),
       })
-      void message.success('Đã gửi yêu cầu hoàn hàng')
-      setReturnModalOpen(false)
-      setReturnOrder(null)
-      setReturnQuantities({})
-      setReturnReason('')
-      setRefundMethod('bank_transfer')
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.products.reviews(payload.productId),
+      })
+      void message.success('Đã gửi đánh giá sản phẩm')
+      setReviewModalOpen(false)
+      setReviewOrder(null)
+      setSelectedReviewProductId(null)
+      setReviewRating(0)
+      setReviewContent('')
     },
     onError: (error) => {
       void message.error(error.message)
@@ -262,6 +308,25 @@ export const MyOrdersPage = () => {
       setCancelRefundModalOpen(false)
       setCancelRefundOrder(null)
       cancelRefundForm.resetFields()
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
+
+  const returnRequestMutation = useMutation({
+    mutationFn: (payload: { orderId: string; body: CreateReturnRequestPayload }) =>
+      createReturnRequest(payload.orderId, payload.body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.account.orders(),
+      })
+      void message.success('Đã gửi yêu cầu hoàn hàng')
+      setReturnModalOpen(false)
+      setReturnOrder(null)
+      setReturnQuantities({})
+      setReturnReason('')
+      setRefundMethod('bank_transfer')
     },
     onError: (error) => {
       void message.error(error.message)
@@ -300,6 +365,45 @@ export const MyOrdersPage = () => {
     })
   }
 
+  const openReviewModal = (order: MyOrderItem) => {
+    const firstPendingReviewItem = order.items.find((item) => !item.isReviewed)
+
+    setReviewOrder(order)
+    setSelectedReviewProductId(
+      firstPendingReviewItem?.productId ?? order.items[0]?.productId ?? null
+    )
+    setReviewRating(0)
+    setReviewContent('')
+    setReviewModalOpen(true)
+  }
+
+  const openReturnModal = (order: MyOrderItem) => {
+    const initialQuantities: Record<string, number> = {}
+
+    order.items.forEach((item) => {
+      const returnableQuantity = getReturnableQuantity(order, item.variantId, item.quantity)
+      initialQuantities[item.variantId] = returnableQuantity > 0 ? 1 : 0
+    })
+
+    setReturnOrder(order)
+    setReturnModalOpen(true)
+    setReturnQuantities(initialQuantities)
+    setReturnReason('')
+    setRefundMethod('bank_transfer')
+  }
+
+  const closeReturnModal = () => {
+    setReturnModalOpen(false)
+    setReturnOrder(null)
+    setReturnQuantities({})
+    setReturnReason('')
+    setRefundMethod('bank_transfer')
+  }
+
+  const selectedReviewItem =
+    reviewOrder?.items.find((item) => item.productId === selectedReviewProductId) ?? null
+  const pendingReviewItems = reviewOrder?.items.filter((item) => !item.isReviewed) ?? []
+
   const renderOrderItems = (record: MyOrderItem) => (
     <List
       size="small"
@@ -318,9 +422,16 @@ export const MyOrdersPage = () => {
               />
             </div>
             <div className="min-w-0 flex-1">
-              <Typography.Text strong className="block line-clamp-1">
-                {item.productName}
-              </Typography.Text>
+              <Space size={8} wrap className="mb-1">
+                <Typography.Text strong className="block line-clamp-1">
+                  {item.productName}
+                </Typography.Text>
+                {item.isReviewed ? (
+                  <Tag color="green" className="!m-0">
+                    Đã đánh giá
+                  </Tag>
+                ) : null}
+              </Space>
               <Typography.Text type="secondary" className="text-xs">
                 SKU: {item.variantSku} · Màu: {item.variantColor}
               </Typography.Text>
@@ -433,7 +544,9 @@ export const MyOrdersPage = () => {
           </Typography.Text>
           <Typography.Text className="block text-sm text-slate-700">
             Thời gian ghi nhận:{' '}
-            {record.refundedAt ? formatDateTime(record.refundedAt) : formatDateTime(record.updatedAt)}
+            {record.refundedAt
+              ? formatDateTime(record.refundedAt)
+              : formatDateTime(record.updatedAt)}
           </Typography.Text>
           <Typography.Text type="secondary" className="mt-1 block text-xs">
             Hệ thống đã ghi nhận hoàn tiền cho đơn hàng này.
@@ -489,7 +602,11 @@ export const MyOrdersPage = () => {
             {
               key: 'status',
               label: 'Trạng thái đơn',
-              children: <Tag color={ORDER_STATUS_COLOR[record.status]}>{ORDER_STATUS_LABEL[record.status]}</Tag>,
+              children: (
+                <Tag color={ORDER_STATUS_COLOR[record.status]}>
+                  {ORDER_STATUS_LABEL[record.status]}
+                </Tag>
+              ),
             },
             {
               key: 'totalAmount',
@@ -570,7 +687,8 @@ export const MyOrdersPage = () => {
           const allowCancel = canCancelOrder(record.status)
           const allowRetryVnpay = canRetryVnpay(record)
           const allowConfirmReceived = canConfirmReceived(record.status)
-          const allowReturn = canRequestReturn(record.status)
+          const allowReview = canReviewOrder(record)
+          const allowReturn = canRequestReturn(record)
           const allowCancelRefund = canRequestCancelRefund(record)
           return (
             <Space wrap>
@@ -612,17 +730,22 @@ export const MyOrdersPage = () => {
                 </Popconfirm>
               ) : null}
 
+              {allowReview ? (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    openReviewModal(record)
+                  }}
+                >
+                  Đánh giá sản phẩm
+                </Button>
+              ) : null}
+
               {allowReturn ? (
                 <Button
                   size="small"
                   onClick={() => {
-                    setReturnOrder(record)
-                    setReturnModalOpen(true)
-                    const initialQuantities: Record<string, number> = {}
-                    record.items.forEach((item) => {
-                      initialQuantities[item.variantId] = 0
-                    })
-                    setReturnQuantities(initialQuantities)
+                    openReturnModal(record)
                   }}
                 >
                   Hoàn hàng
@@ -658,7 +781,9 @@ export const MyOrdersPage = () => {
                     openCancelRefundModal(record)
                   }}
                 >
-                  {record.cancelRefundRequest?.status === 'rejected' ? 'Gửi lại hoàn tiền' : 'Hoàn tiền'}
+                  {record.cancelRefundRequest?.status === 'rejected'
+                    ? 'Gửi lại hoàn tiền'
+                    : 'Hoàn tiền'}
                 </Button>
               ) : null}
             </Space>
@@ -672,6 +797,7 @@ export const MyOrdersPage = () => {
       expandedOrderIds,
       openCancelRefundModal,
       repayOrderMutation,
+      returnRequestMutation,
     ]
   )
 
@@ -743,9 +869,7 @@ export const MyOrdersPage = () => {
               return current.filter((id) => id !== record.id)
             })
           },
-          expandedRowRender: (record) => (
-            renderOrderDetailContent(record)
-          ),
+          expandedRowRender: (record) => renderOrderDetailContent(record),
         }}
       />
 
@@ -861,17 +985,15 @@ export const MyOrdersPage = () => {
             </Form.Item>
 
             <Form.Item label="Ghi chú" name="note">
-              <Input.TextArea
-                rows={3}
-                placeholder="Ví dụ: hoàn tiền vào tài khoản chính của tôi"
-              />
+              <Input.TextArea rows={3} placeholder="Ví dụ: hoàn tiền vào tài khoản chính của tôi" />
             </Form.Item>
           </Form>
 
           {selectedCancelRefundBankCode ? (
             <Typography.Text type="secondary" className="text-xs">
               Ngân hàng đã chọn:{' '}
-              {getVietQrBankByCode(selectedCancelRefundBankCode)?.name ?? selectedCancelRefundBankCode}
+              {getVietQrBankByCode(selectedCancelRefundBankCode)?.name ??
+                selectedCancelRefundBankCode}
             </Typography.Text>
           ) : null}
         </Space>
@@ -882,10 +1004,8 @@ export const MyOrdersPage = () => {
         title={`Yêu cầu hoàn hàng${returnOrder ? ` · ${returnOrder.orderCode}` : ''}`}
         okText="Gửi yêu cầu"
         cancelText="Đóng"
-        onCancel={() => {
-          setReturnModalOpen(false)
-          setReturnOrder(null)
-        }}
+        confirmLoading={returnRequestMutation.isPending}
+        onCancel={closeReturnModal}
         onOk={() => {
           if (!returnOrder) {
             return
@@ -894,7 +1014,10 @@ export const MyOrdersPage = () => {
           const items = returnOrder.items
             .map((item) => ({
               variantId: item.variantId,
-              quantity: returnQuantities[item.variantId] ?? 0,
+              quantity: Math.min(
+                returnQuantities[item.variantId] ?? 0,
+                getReturnableQuantity(returnOrder, item.variantId, item.quantity)
+              ),
             }))
             .filter((item) => item.quantity > 0)
 
@@ -905,54 +1028,67 @@ export const MyOrdersPage = () => {
 
           returnRequestMutation.mutate({
             orderId: returnOrder.id,
-            items,
-            reason: returnReason.trim() ? returnReason.trim() : undefined,
-            refundMethod,
+            body: {
+              items,
+              reason: returnReason.trim() ? returnReason.trim() : undefined,
+              refundMethod,
+            },
           })
         }}
-        confirmLoading={returnRequestMutation.isPending}
       >
         {!returnOrder ? null : (
           <Space direction="vertical" size={16} className="w-full">
             <Typography.Text type="secondary">
-              Chọn số lượng muốn hoàn cho từng sản phẩm (có thể hoàn một phần).
+              Chọn số lượng muốn hoàn cho từng sản phẩm. Hệ thống sẽ khóa các sản phẩm đã gửi yêu
+              cầu hoàn trước đó.
             </Typography.Text>
+
             <List
               dataSource={returnOrder.items}
               locale={{ emptyText: 'Không có sản phẩm' }}
-              renderItem={(item) => (
-                <List.Item>
-                  <div className="flex w-full items-center gap-3">
-                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-slate-200">
-                      <img
-                        src={item.productImage ?? ITEM_PLACEHOLDER}
-                        alt={item.productName}
-                        className="h-full w-full object-cover"
+              renderItem={(item) => {
+                const maxReturnableQuantity = getReturnableQuantity(
+                  returnOrder,
+                  item.variantId,
+                  item.quantity
+                )
+
+                return (
+                  <List.Item>
+                    <div className="flex w-full items-center gap-3">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-slate-200">
+                        <img
+                          src={item.productImage ?? ITEM_PLACEHOLDER}
+                          alt={item.productName}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Typography.Text strong className="block line-clamp-1">
+                          {item.productName}
+                        </Typography.Text>
+                        <Typography.Text type="secondary" className="text-xs">
+                          SKU: {item.variantSku} · Còn có thể hoàn: {maxReturnableQuantity}
+                        </Typography.Text>
+                      </div>
+                      <InputNumber
+                        min={0}
+                        max={maxReturnableQuantity}
+                        disabled={maxReturnableQuantity === 0}
+                        value={returnQuantities[item.variantId] ?? 0}
+                        onChange={(value) => {
+                          setReturnQuantities((current) => ({
+                            ...current,
+                            [item.variantId]: Number(value ?? 0),
+                          }))
+                        }}
                       />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <Typography.Text strong className="block line-clamp-1">
-                        {item.productName}
-                      </Typography.Text>
-                      <Typography.Text type="secondary" className="text-xs">
-                        SKU: {item.variantSku}
-                      </Typography.Text>
-                    </div>
-                    <InputNumber
-                      min={0}
-                      max={item.quantity}
-                      value={returnQuantities[item.variantId] ?? 0}
-                      onChange={(value) => {
-                        setReturnQuantities((current) => ({
-                          ...current,
-                          [item.variantId]: Number(value ?? 0),
-                        }))
-                      }}
-                    />
-                  </div>
-                </List.Item>
-              )}
+                  </List.Item>
+                )
+              }}
             />
+
             <Space direction="vertical" size={8} className="w-full">
               <Typography.Text strong>Phương thức hoàn tiền</Typography.Text>
               <Select
@@ -963,15 +1099,137 @@ export const MyOrdersPage = () => {
                   { label: 'Hoàn vào ví', value: 'wallet' },
                 ]}
               />
+
               <Typography.Text strong>Ghi chú</Typography.Text>
-              <textarea
-                className="w-full rounded-md border border-slate-200 p-2 text-sm"
+              <Input.TextArea
                 rows={3}
                 placeholder="Lý do hoàn hàng (tùy chọn)"
                 value={returnReason}
                 onChange={(event) => setReturnReason(event.target.value)}
               />
             </Space>
+          </Space>
+        )}
+      </Modal>
+
+      <Modal
+        open={reviewModalOpen}
+        title={`Đánh giá sản phẩm${reviewOrder ? ` · ${reviewOrder.orderCode}` : ''}`}
+        okText="Gửi đánh giá"
+        cancelText="Đóng"
+        confirmLoading={createReviewMutation.isPending}
+        onCancel={() => {
+          setReviewModalOpen(false)
+          setReviewOrder(null)
+          setSelectedReviewProductId(null)
+          setReviewRating(0)
+          setReviewContent('')
+        }}
+        onOk={() => {
+          if (!reviewOrder || !selectedReviewItem) {
+            void message.error('Vui lòng chọn sản phẩm cần đánh giá')
+            return
+          }
+
+          if (selectedReviewItem.isReviewed) {
+            void message.warning('Sản phẩm này đã được đánh giá trước đó')
+            return
+          }
+
+          if (reviewRating < 1) {
+            void message.error('Vui lòng chọn số sao đánh giá')
+            return
+          }
+
+          createReviewMutation.mutate({
+            orderId: reviewOrder.id,
+            productId: selectedReviewItem.productId,
+            rating: reviewRating,
+            content: reviewContent.trim() || undefined,
+          })
+        }}
+      >
+        {!reviewOrder ? null : (
+          <Space direction="vertical" size={16} className="w-full">
+            <Typography.Text type="secondary">
+              Chỉ có thể đánh giá các sản phẩm trong đơn đã hoàn thành. Mỗi sản phẩm chỉ được đánh
+              giá một lần cho mỗi đơn hàng.
+            </Typography.Text>
+
+            <List
+              dataSource={reviewOrder.items}
+              locale={{ emptyText: 'Không có sản phẩm' }}
+              renderItem={(item) => {
+                const isSelected = item.productId === selectedReviewProductId
+
+                return (
+                  <List.Item>
+                    <button
+                      type="button"
+                      disabled={item.isReviewed}
+                      onClick={() => {
+                        if (!item.isReviewed) {
+                          setSelectedReviewProductId(item.productId)
+                        }
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                        item.isReviewed
+                          ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-70'
+                          : isSelected
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-slate-200 bg-white hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-100">
+                        <img
+                          src={item.productImage ?? ITEM_PLACEHOLDER}
+                          alt={item.productName}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Space size={8} wrap className="mb-1">
+                          <Typography.Text strong className="block line-clamp-1">
+                            {item.productName}
+                          </Typography.Text>
+                          <Tag color={item.isReviewed ? 'green' : isSelected ? 'blue' : 'default'}>
+                            {item.isReviewed
+                              ? 'Đã đánh giá'
+                              : isSelected
+                                ? 'Đang chọn'
+                                : 'Chưa đánh giá'}
+                          </Tag>
+                        </Space>
+                        <Typography.Text type="secondary" className="text-xs">
+                          SKU: {item.variantSku} · Màu: {item.variantColor}
+                        </Typography.Text>
+                      </div>
+                    </button>
+                  </List.Item>
+                )
+              }}
+            />
+
+            {pendingReviewItems.length === 0 ? (
+              <Typography.Text type="secondary">
+                Tất cả sản phẩm trong đơn này đã được đánh giá.
+              </Typography.Text>
+            ) : (
+              <Space direction="vertical" size={8} className="w-full">
+                <Typography.Text strong>
+                  {selectedReviewItem
+                    ? `Đánh giá cho ${selectedReviewItem.productName}`
+                    : 'Chọn sản phẩm để đánh giá'}
+                </Typography.Text>
+                <Rate value={reviewRating} onChange={setReviewRating} />
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Chia sẻ cảm nhận của bạn về sản phẩm"
+                  value={reviewContent}
+                  onChange={(event) => setReviewContent(event.target.value)}
+                />
+              </Space>
+            )}
           </Space>
         )}
       </Modal>
