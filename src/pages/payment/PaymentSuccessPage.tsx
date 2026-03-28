@@ -132,8 +132,9 @@ export const PaymentSuccessPage = () => {
   const activeGateway = hasVnpReturnData ? 'vnpay' : 'zalopay'
   const isVerifying =
     activeGateway === 'vnpay'
-      ? verifyMutation.isPending || verifyMutation.isIdle
-      : verifyZalopayMutation.isPending || verifyZalopayMutation.isIdle
+      ? verifyMutation.isPending || (!hasRequestedVerification.current && verifyMutation.isIdle)
+      : verifyZalopayMutation.isPending ||
+        (!hasRequestedVerification.current && verifyZalopayMutation.isIdle)
 
   if (isVerifying) {
     return (
@@ -178,7 +179,20 @@ export const PaymentSuccessPage = () => {
     activeGateway === 'vnpay' ? verifyMutation.data : verifyZalopayMutation.data
 
   if (!verifyResult) {
-    return null
+    return (
+      <Card className="mx-auto mt-8 max-w-2xl">
+        <Result
+          status="warning"
+          title="Không nhận được kết quả xác thực thanh toán"
+          subTitle="Giao dịch có thể đã được xử lý nhưng trang trả về không lấy được phản hồi cuối cùng."
+          extra={
+            <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ACCOUNT_ORDERS)}>
+              Đơn hàng của tôi
+            </Button>
+          }
+        />
+      </Card>
+    )
   }
   const order = verifyResult.order
   const isPaymentSuccess = verifyResult.isSuccess
