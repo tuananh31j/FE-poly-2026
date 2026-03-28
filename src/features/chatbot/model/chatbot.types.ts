@@ -14,25 +14,23 @@ export interface ChatbotSuggestedProduct {
   url: string
 }
 
-export interface AskChatbotPayload {
+export interface ChatbotPresetOption {
+  id: string
   question: string
+}
+
+export interface AskChatbotPayload {
+  presetId: string
   context?: {
     path?: string
   }
 }
 
 export interface AskChatbotResponse {
-  intent:
-    | 'order_tracking'
-    | 'payment'
-    | 'shipping'
-    | 'voucher'
-    | 'return_refund'
-    | 'recommendation'
-    | 'general'
+  intent: 'preset'
   answer: string
   actions: ChatbotAction[]
-  followUpQuestions: string[]
+  followUpQuestions: ChatbotPresetOption[]
   suggestedProducts: ChatbotSuggestedProduct[]
 }
 
@@ -43,5 +41,5 @@ export interface ChatbotUiMessage {
   createdAt: string
   actions?: ChatbotAction[]
   suggestedProducts?: ChatbotSuggestedProduct[]
-  followUpQuestions?: string[]
+  followUpQuestions?: ChatbotPresetOption[]
 }
