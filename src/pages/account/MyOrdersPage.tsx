@@ -797,7 +797,6 @@ export const MyOrdersPage = () => {
       expandedOrderIds,
       openCancelRefundModal,
       repayOrderMutation,
-      returnRequestMutation,
     ]
   )
 
@@ -1043,7 +1042,7 @@ export const MyOrdersPage = () => {
               cầu hoàn trước đó.
             </Typography.Text>
 
-            <List
+            <List<MyOrderItem['items'][number]>
               dataSource={returnOrder.items}
               locale={{ emptyText: 'Không có sản phẩm' }}
               renderItem={(item) => {
