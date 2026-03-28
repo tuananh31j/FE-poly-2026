@@ -396,6 +396,9 @@ export const ProductDetailPage = () => {
                     }}
                   >
                     <Carousel
+                      autoplay={variantSlides.length > 1}
+                      autoplaySpeed={3500}
+                      pauseOnHover
                       draggable
                       dots
                       infinite={variantSlides.length > 1}
