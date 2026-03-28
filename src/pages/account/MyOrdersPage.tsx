@@ -5,7 +5,6 @@ import {
   Descriptions,
   Form,
   Input,
-  InputNumber,
   List,
   message,
   Modal,
@@ -27,17 +26,14 @@ import {
   confirmOrderReceived,
   createCancelRefundRequest,
   createMyReview,
-  createReturnRequest,
   listMyOrders,
   retryMyVnpayPayment,
 } from '@/features/account/api/account.api'
 import type {
   CancelRefundRequestStatus,
   CreateCancelRefundRequestPayload,
-  CreateReturnRequestPayload,
   MyOrderItem,
   OrderStatus,
-  RefundMethod,
 } from '@/features/account/model/account.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { getVietQrBankByCode, VIET_QR_BANK_OPTIONS } from '@/shared/constants/vietqr'
@@ -137,45 +133,6 @@ const canRetryVnpay = (order: MyOrderItem) => {
   )
 }
 
-const canRequestReturn = (order: MyOrderItem) => {
-  if (order.status !== 'completed') {
-    return false
-  }
-
-  const requestedQuantities = new Map<string, number>()
-
-  for (const request of order.returnRequests ?? []) {
-    if (request.status === 'rejected') {
-      continue
-    }
-
-    for (const item of request.items) {
-      requestedQuantities.set(
-        item.variantId,
-        (requestedQuantities.get(item.variantId) ?? 0) + item.quantity
-      )
-    }
-  }
-
-  return order.items.some(
-    (item) => item.quantity - (requestedQuantities.get(item.variantId) ?? 0) > 0
-  )
-}
-
-const getReturnableQuantity = (
-  order: MyOrderItem,
-  variantId: string,
-  purchasedQuantity: number
-) => {
-  const requestedQuantity = (order.returnRequests ?? [])
-    .filter((request) => request.status !== 'rejected')
-    .flatMap((request) => request.items)
-    .filter((item) => item.variantId === variantId)
-    .reduce((sum, item) => sum + item.quantity, 0)
-
-  return Math.max(0, purchasedQuantity - requestedQuantity)
-}
-
 const canRequestCancelRefund = (order: MyOrderItem) => {
   if (
     order.status !== 'cancelled' ||
@@ -207,11 +164,6 @@ export const MyOrdersPage = () => {
   const [reviewContent, setReviewContent] = useState('')
   const [cancelRefundModalOpen, setCancelRefundModalOpen] = useState(false)
   const [cancelRefundOrder, setCancelRefundOrder] = useState<MyOrderItem | null>(null)
-  const [returnModalOpen, setReturnModalOpen] = useState(false)
-  const [returnOrder, setReturnOrder] = useState<MyOrderItem | null>(null)
-  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({})
-  const [returnReason, setReturnReason] = useState('')
-  const [refundMethod, setRefundMethod] = useState<RefundMethod>('bank_transfer')
   const [detailOrder, setDetailOrder] = useState<MyOrderItem | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [hasHandledFocusOrder, setHasHandledFocusOrder] = useState(false)
@@ -314,25 +266,6 @@ export const MyOrdersPage = () => {
     },
   })
 
-  const returnRequestMutation = useMutation({
-    mutationFn: (payload: { orderId: string; body: CreateReturnRequestPayload }) =>
-      createReturnRequest(payload.orderId, payload.body),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.account.orders(),
-      })
-      void message.success('Đã gửi yêu cầu hoàn hàng')
-      setReturnModalOpen(false)
-      setReturnOrder(null)
-      setReturnQuantities({})
-      setReturnReason('')
-      setRefundMethod('bank_transfer')
-    },
-    onError: (error) => {
-      void message.error(error.message)
-    },
-  })
-
   useEffect(() => {
     if (!focusOrderId || hasHandledFocusOrder || !ordersQuery.data?.items?.length) {
       return
@@ -375,29 +308,6 @@ export const MyOrdersPage = () => {
     setReviewRating(0)
     setReviewContent('')
     setReviewModalOpen(true)
-  }
-
-  const openReturnModal = (order: MyOrderItem) => {
-    const initialQuantities: Record<string, number> = {}
-
-    order.items.forEach((item) => {
-      const returnableQuantity = getReturnableQuantity(order, item.variantId, item.quantity)
-      initialQuantities[item.variantId] = returnableQuantity > 0 ? 1 : 0
-    })
-
-    setReturnOrder(order)
-    setReturnModalOpen(true)
-    setReturnQuantities(initialQuantities)
-    setReturnReason('')
-    setRefundMethod('bank_transfer')
-  }
-
-  const closeReturnModal = () => {
-    setReturnModalOpen(false)
-    setReturnOrder(null)
-    setReturnQuantities({})
-    setReturnReason('')
-    setRefundMethod('bank_transfer')
   }
 
   const selectedReviewItem =
@@ -688,7 +598,6 @@ export const MyOrdersPage = () => {
           const allowRetryVnpay = canRetryVnpay(record)
           const allowConfirmReceived = canConfirmReceived(record.status)
           const allowReview = canReviewOrder(record)
-          const allowReturn = canRequestReturn(record)
           const allowCancelRefund = canRequestCancelRefund(record)
           return (
             <Space wrap>
@@ -741,17 +650,6 @@ export const MyOrdersPage = () => {
                 </Button>
               ) : null}
 
-              {allowReturn ? (
-                <Button
-                  size="small"
-                  onClick={() => {
-                    openReturnModal(record)
-                  }}
-                >
-                  Hoàn hàng
-                </Button>
-              ) : null}
-
               {allowCancel ? (
                 <Popconfirm
                   title="Bạn muốn hủy đơn hàng này?"
@@ -794,8 +692,8 @@ export const MyOrdersPage = () => {
     [
       cancelOrderMutation,
       confirmReceivedMutation,
-      expandedOrderIds,
       openCancelRefundModal,
+      openReviewModal,
       repayOrderMutation,
     ]
   )
@@ -996,119 +894,6 @@ export const MyOrdersPage = () => {
             </Typography.Text>
           ) : null}
         </Space>
-      </Modal>
-
-      <Modal
-        open={returnModalOpen}
-        title={`Yêu cầu hoàn hàng${returnOrder ? ` · ${returnOrder.orderCode}` : ''}`}
-        okText="Gửi yêu cầu"
-        cancelText="Đóng"
-        confirmLoading={returnRequestMutation.isPending}
-        onCancel={closeReturnModal}
-        onOk={() => {
-          if (!returnOrder) {
-            return
-          }
-
-          const items = returnOrder.items
-            .map((item) => ({
-              variantId: item.variantId,
-              quantity: Math.min(
-                returnQuantities[item.variantId] ?? 0,
-                getReturnableQuantity(returnOrder, item.variantId, item.quantity)
-              ),
-            }))
-            .filter((item) => item.quantity > 0)
-
-          if (items.length === 0) {
-            void message.error('Vui lòng chọn số lượng hoàn hàng')
-            return
-          }
-
-          returnRequestMutation.mutate({
-            orderId: returnOrder.id,
-            body: {
-              items,
-              reason: returnReason.trim() ? returnReason.trim() : undefined,
-              refundMethod,
-            },
-          })
-        }}
-      >
-        {!returnOrder ? null : (
-          <Space direction="vertical" size={16} className="w-full">
-            <Typography.Text type="secondary">
-              Chọn số lượng muốn hoàn cho từng sản phẩm. Hệ thống sẽ khóa các sản phẩm đã gửi yêu
-              cầu hoàn trước đó.
-            </Typography.Text>
-
-            <List<MyOrderItem['items'][number]>
-              dataSource={returnOrder.items}
-              locale={{ emptyText: 'Không có sản phẩm' }}
-              renderItem={(item) => {
-                const maxReturnableQuantity = getReturnableQuantity(
-                  returnOrder,
-                  item.variantId,
-                  item.quantity
-                )
-
-                return (
-                  <List.Item>
-                    <div className="flex w-full items-center gap-3">
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-slate-200">
-                        <img
-                          src={item.productImage ?? ITEM_PLACEHOLDER}
-                          alt={item.productName}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <Typography.Text strong className="block line-clamp-1">
-                          {item.productName}
-                        </Typography.Text>
-                        <Typography.Text type="secondary" className="text-xs">
-                          SKU: {item.variantSku} · Còn có thể hoàn: {maxReturnableQuantity}
-                        </Typography.Text>
-                      </div>
-                      <InputNumber
-                        min={0}
-                        max={maxReturnableQuantity}
-                        disabled={maxReturnableQuantity === 0}
-                        value={returnQuantities[item.variantId] ?? 0}
-                        onChange={(value) => {
-                          setReturnQuantities((current) => ({
-                            ...current,
-                            [item.variantId]: Number(value ?? 0),
-                          }))
-                        }}
-                      />
-                    </div>
-                  </List.Item>
-                )
-              }}
-            />
-
-            <Space direction="vertical" size={8} className="w-full">
-              <Typography.Text strong>Phương thức hoàn tiền</Typography.Text>
-              <Select
-                value={refundMethod}
-                onChange={(value) => setRefundMethod(value as RefundMethod)}
-                options={[
-                  { label: 'Chuyển khoản', value: 'bank_transfer' },
-                  { label: 'Hoàn vào ví', value: 'wallet' },
-                ]}
-              />
-
-              <Typography.Text strong>Ghi chú</Typography.Text>
-              <Input.TextArea
-                rows={3}
-                placeholder="Lý do hoàn hàng (tùy chọn)"
-                value={returnReason}
-                onChange={(event) => setReturnReason(event.target.value)}
-              />
-            </Space>
-          </Space>
-        )}
       </Modal>
 
       <Modal
