@@ -1,15 +1,10 @@
-import {
-  CloseOutlined,
-  MessageOutlined,
-  ReloadOutlined,
-  SendOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
-import { Avatar, Badge, Button, Drawer, Input, Space, Spin, Typography, message } from 'antd'
+import { CloseOutlined, MessageOutlined, SendOutlined, UserOutlined } from '@ant-design/icons'
+import { Avatar, Badge, Button, Drawer, Input, message, Space, Spin, Typography } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { ROUTE_PATHS } from '@/shared/constants/routes'
+
 import { useCustomerSupportChat } from '../hooks/useCustomerSupportChat'
 import type { ChatMessage } from '../model/chat.types'
 
@@ -170,9 +165,7 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
             <Avatar icon={<UserOutlined />} size={28} />
             <Space direction="vertical" size={0}>
               <Typography.Text strong>Hỗ trợ trực tuyến</Typography.Text>
-              <Typography.Text type="secondary" className="text-xs">
-                {isAuthenticated ? (isReady ? 'Đang kết nối nhân viên' : 'Đang kết nối...') : 'Cần đăng nhập'}
-              </Typography.Text>
+              <Typography.Text type="secondary" className="text-xs"></Typography.Text>
             </Space>
           </Space>
         }
@@ -182,11 +175,6 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
         onClose={() => setOpen(false)}
         closeIcon={<CloseOutlined />}
         destroyOnClose={false}
-        extra={
-          <Button type="text" icon={<ReloadOutlined />} onClick={() => setInputValue('')}>
-            Xóa nội dung
-          </Button>
-        }
         styles={{
           body: { padding: 12 },
           footer: { padding: 12 },
@@ -195,7 +183,11 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
           <Space direction="vertical" size={8} className="w-full">
             <TextArea
               autoSize={{ minRows: 2, maxRows: 4 }}
-              placeholder={isAuthenticated ? 'Nhập tin nhắn cho nhân viên...' : 'Đăng nhập để chat với nhân viên'}
+              placeholder={
+                isAuthenticated
+                  ? 'Nhập tin nhắn cho nhân viên...'
+                  : 'Đăng nhập để chat với nhân viên'
+              }
               value={inputValue}
               onChange={(event) => setInputValue(event.target.value)}
               onPressEnter={(event) => {
@@ -224,7 +216,10 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
           </Space>
         }
       >
-        <div ref={messageContainerRef} className="flex max-h-[calc(100vh-300px)] flex-col gap-3 overflow-y-auto pr-1">
+        <div
+          ref={messageContainerRef}
+          className="flex max-h-[calc(100vh-300px)] flex-col gap-3 overflow-y-auto pr-1"
+        >
           {isLoading ? (
             <div className="flex justify-center py-6">
               <Spin />
@@ -232,7 +227,9 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
           ) : groupedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center text-slate-400">
               <Typography.Text>Chưa có tin nhắn nào.</Typography.Text>
-              <Typography.Text className="text-xs">Hãy gửi lời chào tới nhân viên hỗ trợ.</Typography.Text>
+              <Typography.Text className="text-xs">
+                Hãy gửi lời chào tới nhân viên hỗ trợ.
+              </Typography.Text>
             </div>
           ) : (
             groupedMessages.map((group) => (
@@ -252,7 +249,9 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
                         }`}
                       >
                         <div className="whitespace-pre-wrap">{item.content}</div>
-                        <div className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-slate-400'}`}>
+                        <div
+                          className={`mt-1 text-[11px] ${isMine ? 'text-blue-100' : 'text-slate-400'}`}
+                        >
                           {formatTime(item.createdAt)}
                         </div>
                       </div>
