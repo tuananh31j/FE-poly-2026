@@ -117,7 +117,7 @@ export const PaymentSuccessPage = () => {
     }
 
     notifiedSuccessKeyRef.current = notificationKey
-    void message.success(verifyResult.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
+    void message.info(verifyResult.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
   }, [activeGateway, verifyResult])
 
   useEffect(() => {

@@ -7,7 +7,6 @@ import {
   Form,
   Image,
   Input,
-  InputNumber,
   message,
   Modal,
   Popconfirm,
@@ -94,8 +93,13 @@ export const ChatbotPresetManagementPage = () => {
   })
 
   const updatePresetMutation = useMutation({
-    mutationFn: ({ presetId, payload }: { presetId: string; payload: Partial<UpsertAdminChatbotPresetPayload> }) =>
-      updateAdminChatbotPreset(presetId, payload),
+    mutationFn: ({
+      presetId,
+      payload,
+    }: {
+      presetId: string
+      payload: Partial<UpsertAdminChatbotPresetPayload>
+    }) => updateAdminChatbotPreset(presetId, payload),
     onSuccess: async () => {
       await invalidateChatbotQueries()
       void message.success('Cập nhật preset chatbot thành công')
@@ -126,14 +130,19 @@ export const ChatbotPresetManagementPage = () => {
       label: `${product.name} · ${product.brand}`,
       value: product.id,
       thumbnailUrl: product.thumbnailUrl,
-      description: typeof product.priceFrom === 'number' ? `Từ ${product.priceFrom.toLocaleString('vi-VN')} đ` : undefined,
+      description:
+        typeof product.priceFrom === 'number'
+          ? `Từ ${product.priceFrom.toLocaleString('vi-VN')} đ`
+          : undefined,
     }))
   }, [productsQuery.data?.items])
 
   const selectedProductIds = Form.useWatch('productIds', form) ?? []
 
   const selectedProducts = useMemo(() => {
-    const productMap = new Map((productsQuery.data?.items ?? []).map((product) => [product.id, product]))
+    const productMap = new Map(
+      (productsQuery.data?.items ?? []).map((product) => [product.id, product])
+    )
 
     return selectedProductIds
       .map((productId) => {
@@ -196,7 +205,9 @@ export const ChatbotPresetManagementPage = () => {
         dataIndex: 'isActive',
         key: 'isActive',
         width: 120,
-        render: (value: boolean) => <Tag color={value ? 'green' : 'default'}>{value ? 'Đang dùng' : 'Tắt'}</Tag>,
+        render: (value: boolean) => (
+          <Tag color={value ? 'green' : 'default'}>{value ? 'Đang dùng' : 'Tắt'}</Tag>
+        ),
       },
       {
         title: 'Thứ tự',
@@ -294,14 +305,14 @@ export const ChatbotPresetManagementPage = () => {
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <Typography.Title level={4} className="!mb-1">
-              Preset chatbot
+              Cài đặt chatbot
             </Typography.Title>
             <Typography.Text type="secondary">
               Khách hàng chỉ có thể bấm các câu hỏi mẫu được cấu hình tại đây.
             </Typography.Text>
           </div>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
-            Thêm preset
+            Thêm cài đặt
           </Button>
         </div>
 
@@ -312,7 +323,7 @@ export const ChatbotPresetManagementPage = () => {
           dataSource={presetsQuery.data ?? []}
           pagination={false}
           locale={{
-            emptyText: 'Chưa có preset chatbot',
+            emptyText: 'Chưa có cài đặt chatbot',
           }}
           scroll={{ x: 1100 }}
         />
@@ -374,14 +385,19 @@ export const ChatbotPresetManagementPage = () => {
               placeholder="Chọn các sản phẩm chatbot sẽ gợi ý"
               options={productOptions}
               loading={productsQuery.isLoading}
-              notFoundContent={productsQuery.isLoading ? 'Đang tải sản phẩm...' : 'Không có sản phẩm'}
+              notFoundContent={
+                productsQuery.isLoading ? 'Đang tải sản phẩm...' : 'Không có sản phẩm'
+              }
             />
           </Form.Item>
 
           {selectedProducts.length > 0 && (
             <div className="mb-6 grid gap-3 md:grid-cols-2">
               {selectedProducts.map((product) => (
-                <div key={product.id} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 p-3"
+                >
                   {product.imageUrl ? (
                     <Image
                       src={product.imageUrl}
@@ -408,10 +424,6 @@ export const ChatbotPresetManagementPage = () => {
           )}
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Form.Item label="Thứ tự hiển thị" name="sortOrder">
-              <InputNumber min={0} className="!w-full" placeholder="0" />
-            </Form.Item>
-
             <Form.Item label="Kích hoạt" name="isActive" valuePropName="checked">
               <Switch checkedChildren="Đang dùng" unCheckedChildren="Tắt" />
             </Form.Item>
