@@ -9,6 +9,7 @@ import type {
   ChangePasswordPayload,
   CheckoutVoucherItem,
   CreateCancelRefundRequestPayload,
+  CreateMyReviewPayload,
   CreateOrderPayload,
   CreateReturnRequestPayload,
   MyOrderItem,
@@ -134,6 +135,7 @@ const normalizeOrderSnapshot = (value: Record<string, unknown>): OrderItemSnapsh
     quantity: Number(value.quantity ?? 0),
     price: Number(value.price ?? 0),
     total: Number(value.total ?? 0),
+    isReviewed: Boolean(value.isReviewed),
   }
 }
 
@@ -451,6 +453,15 @@ export const createCancelRefundRequest = async (
     )
 
     return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createMyReview = async (payload: CreateMyReviewPayload) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>('/reviews', payload)
+    return extractApiData(response)
   } catch (error) {
     throw toApiClientError(error)
   }
