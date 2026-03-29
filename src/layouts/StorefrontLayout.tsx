@@ -423,11 +423,7 @@ export const StorefrontLayout = () => {
 
       {!isBackofficeRole(user?.role) && (
         <>
-          <CustomerChatbotWidget />
-          <CustomerSupportChatWidget
-            isAuthenticated={Boolean(accessToken)}
-            customerId={user?.id}
-          />
+        <CustomerSupportChatWidget isAuthenticated={Boolean(accessToken)} />
         </>
       )}
       

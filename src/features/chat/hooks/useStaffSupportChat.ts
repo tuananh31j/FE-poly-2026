@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { env } from '@/shared/constants/env'
 import { useAppSelector } from '@/app/store/hooks'
+import { useMeQuery } from '@/features/auth/hooks/useMeQuery'
 
 import {
   joinSupportConversation,
@@ -23,11 +24,13 @@ const getSocketBaseUrl = () => {
 
 export const useStaffSupportChat = () => {
   const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const authUserId = useAppSelector((state) => state.auth.user?.id)
+  const { data: meData } = useMeQuery()
   const socketRef = useRef<Socket | null>(null)
 
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
+const currentUserId = meData?.id ?? authUserId ?? null
 
   const conversationsQuery = useQuery({
     queryKey: ['support-conversations-staff', accessToken],
@@ -114,10 +117,19 @@ export const useStaffSupportChat = () => {
 
     socket.on('chat:message_created', handleMessage)
 
+     socket.on('staff:notification', (payload: { type?: string; metadata?: Record<string, unknown> }) => {
+      if (payload?.type !== 'chat_message') {
+        return
+      }
+
+      void conversationsQuery.refetch()
+    })
+
     return () => {
       socket.off('chat:message_created', handleMessage)
     }
-  }, [activeConversationId])
+     socket.off('staff:notification')
+  }, [activeConversationId, conversationsQuery])
 
   const sendMessage = async (content: string) => {
     if (!activeConversationId || !content.trim()) {
@@ -127,7 +139,7 @@ export const useStaffSupportChat = () => {
     const optimisticMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       conversationId: activeConversationId,
-      senderId: userId ?? 'me',
+       senderId: currentUserId ?? 'me',
       content,
       createdAt: new Date().toISOString(),
     }
@@ -166,6 +178,7 @@ export const useStaffSupportChat = () => {
     conversations,
     messages,
     activeConversationId,
+     currentUserId,
     selectConversation,
     sendMessage,
     isLoading: conversationsQuery.isLoading || joinMutation.isPending,

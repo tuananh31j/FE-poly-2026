@@ -43,13 +43,13 @@ const renderMessageBubble = (messageItem: ChatMessage, isMine: boolean) => {
 }
 
 export const StaffSupportChatPanel = () => {
-  const staffId = useAppSelector((state) => state.auth.user?.id)
   const [filter, setFilter] = useState('')
   const [inputValue, setInputValue] = useState('')
   const {
     conversations,
     activeConversationId,
     messages,
+    currentUserId,
     selectConversation,
     sendMessage,
     isLoading,
@@ -149,10 +149,10 @@ export const StaffSupportChatPanel = () => {
         <div className="flex-1 overflow-y-auto py-4">
           {activeConversationId ? (
             <div className="flex flex-col gap-3">
-              {messages.length === 0 ? (
+             {messages.length === 0 ? (
                 <Typography.Text type="secondary">Chưa có tin nhắn.</Typography.Text>
               ) : (
-                messages.map((item) => renderMessageBubble(item, item.senderId === staffId))
+                messages.map((item) => renderMessageBubble(item, item.senderId === currentUserId))  
               )}
             </div>
           ) : (
