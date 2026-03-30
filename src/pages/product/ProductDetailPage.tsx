@@ -253,6 +253,14 @@ export const ProductDetailPage = () => {
     setPurchaseQuantity(1)
     carouselRef.current?.goTo(variantImageIndexMap.get(variant.id) ?? 0)
   }
+  
+  const handleVariantSlidePrev = () => {
+    variantCarouselRef.current?.prev()
+  }
+
+  const handleVariantSlideNext = () => {
+    variantCarouselRef.current?.next()
+  }
 
   // worklog: 2026-03-04 14:54:46 | trantu | refactor | handleDecreaseQuantity
   const handleDecreaseQuantity = () => {
@@ -373,8 +381,34 @@ export const ProductDetailPage = () => {
               ))}
             </Carousel>
             <div className="w-full border-t border-slate-200 pt-4">
-              <Typography.Text strong>Phiên bản sản phẩm</Typography.Text>
-
+              <div className="space-y-1">
+                <Typography.Title level={4} className="!mb-0 !text-xl md:!text-[30px]">
+                    Phiên bản sản phẩm
+                </Typography.Title>
+                <Typography.Text type="secondary">
+                    {product.variants.length} phiên bản để lựa chọn
+                  </Typography.Text>
+              </div>
+              {hasMultipleVariantSlides ? (
+                  <Space size={8}>
+                    <Button
+                      shape="circle"
+                      icon={<LeftOutlined />}
+                      aria-label="Xem phiên bản trước"
+                      disabled={activeVariantSlide <= 0}
+                      onClick={handleVariantSlidePrev}
+                    />
+                    <Button
+                      shape="circle"
+                      type="primary"
+                      ghost
+                      icon={<RightOutlined />}
+                      aria-label="Xem phiên bản tiếp theo"
+                      disabled={activeVariantSlide >= variantSlides.length - 1}
+                      onClick={handleVariantSlideNext}
+                    />
+                  </Space>
+                ) : null}
               {product.variants.length === 0 ? (
                 <div className="pt-3">
                   <Empty description="Hiện chưa có phiên bản sản phẩm" />
@@ -395,6 +429,9 @@ export const ProductDetailPage = () => {
                     }}
                   >
                     <Carousel
+                      autoplay={variantSlides.length > 1}
+                      autoplaySpeed={3500}
+                      pauseOnHover
                       draggable
                       dots
                       infinite={variantSlides.length > 1}
@@ -421,8 +458,8 @@ export const ProductDetailPage = () => {
                                     value={variant.id}
                                     className={`product-variant-option !m-0 !flex flex-1 !w-full items-stretch rounded-lg border p-2 transition-all [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:flex-1 ${
                                       isSelected
-                                        ? 'border-blue-500 bg-blue-50/60 shadow-sm'
-                                        : 'border-slate-200 bg-white hover:border-blue-300'
+                                        ? 'border-blue-500 bg-blue-50/70 shadow-[0_20px_40px_-30px_rgba(37,99,235,0.7)]'
+                                        : 'border-slate-200 hover:border-blue-300 hover:shadow-[0_18px_36px_-32px_rgba(15,23,42,0.5)]'
                                     }`}
                                   >
                                     <div className="h-full w-full">
@@ -487,6 +524,30 @@ export const ProductDetailPage = () => {
                         </div>
                       ))}
                     </Carousel>
+                    {hasMultipleVariantSlides ? (
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                        <Button
+                          icon={<LeftOutlined />}
+                          disabled={activeVariantSlide <= 0}
+                          onClick={handleVariantSlidePrev}
+                        >
+                          Trước
+                        </Button>
+                         <Typography.Text type="secondary" className="text-xs sm:text-sm">
+                          {`Trang ${activeVariantSlide + 1}/${variantSlides.length}`}
+                        </Typography.Text>
+                        <Button
+                          type="primary"
+                            ghost
+                            icon={<RightOutlined />}
+                            iconPosition="end"
+                            disabled={activeVariantSlide >= variantSlides.length - 1}
+                            onClick={handleVariantSlideNext}
+                        >
+                          Tiếp
+                        </Button>
+                      </div>
+                    ) : null}
                   </Radio.Group>
 
                   <Typography.Paragraph className="!mb-0 !mt-2 text-xs" type="secondary">
@@ -560,6 +621,12 @@ export const ProductDetailPage = () => {
 
                   <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                     <Badge status="success" text="VNPay - Thanh toán online" />
+                    <Tag color="green" className="!m-0">
+                      Hỗ trợ
+                    </Tag>
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <Badge status="success" text="ZaloPay - Thanh toán online" />
                     <Tag color="green" className="!m-0">
                       Hỗ trợ
                     </Tag>

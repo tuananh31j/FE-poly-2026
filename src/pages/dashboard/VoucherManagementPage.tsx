@@ -20,7 +20,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { useMemo, useState } from 'react'
+import { use, useEffect, useMemo, useState } from 'react'
 
 import {
   createAdminVoucher,
@@ -283,6 +283,11 @@ export const VoucherManagementPage = () => {
   )
 
   const discountTypeValue = Form.useWatch('discountType', form) ?? 'percentage'
+  useEffect(() => {
+    if (discountTypeValue === 'percentage') {
+      form.setFieldsValue('maxDiscountAmount', undefined)
+    }
+  }, [discountTypeValue, form])
 
   const openCreateModal = () => {
     setEditingVoucher(null)
@@ -308,7 +313,9 @@ export const VoucherManagementPage = () => {
       discountValue: values.discountValue,
       minOrderValue: values.minOrderValue ?? 0,
       maxDiscountAmount:
-        typeof values.maxDiscountAmount === 'number' ? values.maxDiscountAmount : undefined,
+        values.discountType === 'percentage' && typeof values.maxDiscountAmount === 'number'
+          ? values.maxDiscountAmount
+          : undefined,
       startDate: values.activeTime[0].toISOString(),
       expirationDate: values.activeTime[1].toISOString(),
       usageLimit: values.usageLimit,
@@ -454,7 +461,25 @@ export const VoucherManagementPage = () => {
             <Form.Item
               label="Giá trị giảm"
               name="discountValue"
-              rules={[{ required: true, message: 'Vui lòng nhập giá trị giảm' }]}
+              dependencies={['discountType', 'minOrderValue']}
+              rules={[
+                { required: true, message: 'Vui lòng nhập giá trị giảm' },
+                {
+                  validator: async (_, value) => {
+                    const discountType = form.getFieldValue('discountType')
+                    const minOrderValue = form.getFieldValue('minOrderValue')
+
+                    if (
+                      discountType === 'fixed_amount' &&
+                      typeof value === 'number' &&
+                      typeof minOrderValue === 'number' &&
+                      value >= minOrderValue
+                    ) {
+                      throw new Error('Giá trị giảm phải nhỏ hơn đơn tối thiểu')
+                    }
+                  },
+                },
+              ]}
             >
               <InputNumber
                 min={0}
@@ -464,13 +489,40 @@ export const VoucherManagementPage = () => {
               />
             </Form.Item>
 
-            <Form.Item label="Đơn tối thiểu" name="minOrderValue">
+            <Form.Item
+              label="Đơn tối thiểu"
+              name="minOrderValue"
+              dependencies={['discountType', 'discountValue']}
+              rules={[
+                {
+                  validator: async (_, value) => {
+                    const discountType = form.getFieldValue('discountType')
+                     const discountValue = form.getFieldValue('discountValue')
+
+                    if (
+                      discountType === 'fixed_amount' &&
+                      typeof discountValue === 'number' &&
+                      typeof value === 'number' &&
+                      discountValue >= value
+                    ) {
+                      throw new Error('Đơn tối thiểu phải lớn hơn giá trị giảm')
+                    }
+                  },
+                },
+              ]}
+            >
               <InputNumber min={0} className="!w-full" placeholder="0" />
             </Form.Item>
 
-            <Form.Item label="Giảm tối đa" name="maxDiscountAmount">
-              <InputNumber min={0} className="!w-full" placeholder="Không giới hạn nếu bỏ trống" />
-            </Form.Item>
+            {discountTypeValue === 'percentage' ? (
+              <Form.Item label="Giảm tối đa" name="maxDiscountAmount">
+                <InputNumber
+                  min={0}
+                  className="!w-full"
+                  placeholder="Không giới hạn nếu bỏ trống"
+                />
+              </Form.Item>
+            ) : null}
 
             <Form.Item
               label="Lượt sử dụng tối đa"

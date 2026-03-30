@@ -5,20 +5,29 @@ import type { ApiSuccess } from '@/shared/types/api.types'
 
 import type {
   AddressItem,
+  CancelRefundRequest,
   ChangePasswordPayload,
   CheckoutVoucherItem,
+  CreateCancelRefundRequestPayload,
+  CreateMyReviewPayload,
   CreateOrderPayload,
+  CreateReturnRequestPayload,
   MyOrderItem,
   MyOrdersQueryParams,
   MyOrdersResponse,
   OrderItemSnapshot,
   OrderStatusHistoryItem,
+  RefundMethod,
+  ReturnRequest,
+  ReturnRequestItem,
   UpdateAddressPayload,
   UpdateMyProfilePayload,
   UpdateMyProfileResponse,
   UpsertAddressPayload,
   VerifyVnpayReturnPayload,
   VerifyVnpayReturnResponse,
+  VerifyZalopayRedirectPayload,
+  VerifyZalopayRedirectResponse,
 } from '../model/account.types'
 
 // worklog: 2026-03-04 22:03:47 | trantu | fix | toId
@@ -122,6 +131,7 @@ const normalizeOrderSnapshot = (value: Record<string, unknown>): OrderItemSnapsh
     quantity: Number(value.quantity ?? 0),
     price: Number(value.price ?? 0),
     total: Number(value.total ?? 0),
+    isReviewed: Boolean(value.isReviewed),
   }
 }
 
@@ -129,9 +139,9 @@ const normalizeOrderStatusHistory = (value: Record<string, unknown>): OrderStatu
   return {
     status:
       value.status === 'confirmed' ||
-      value.status === 'preparing' ||
       value.status === 'shipping' ||
       value.status === 'delivered' ||
+      value.status === 'completed' ||
       value.status === 'cancelled' ||
       value.status === 'returned'
         ? value.status
@@ -142,9 +152,73 @@ const normalizeOrderStatusHistory = (value: Record<string, unknown>): OrderStatu
   }
 }
 
+const normalizeRefundMethod = (value: unknown): RefundMethod => {
+  return value === 'wallet' ? 'wallet' : 'bank_transfer'
+}
+
+const normalizeReturnItem = (value: Record<string, unknown>): ReturnRequestItem => {
+  return {
+    productId: toId(value.productId),
+    productName: String(value.productName ?? ''),
+    variantId: toId(value.variantId),
+    variantSku: String(value.variantSku ?? ''),
+    quantity: Number(value.quantity ?? 0),
+    price: Number(value.price ?? 0),
+    total: Number(value.total ?? 0),
+  }
+}
+
+const normalizeReturnRequest = (value: Record<string, unknown>): ReturnRequest => {
+  const rawItems = Array.isArray(value.items) ? value.items : []
+
+  return {
+    id: toId(value.id ?? value._id),
+    requestedBy: toId(value.requestedBy),
+    status:
+      value.status === 'approved' ||
+      value.status === 'rejected' ||
+      value.status === 'refunded'
+        ? value.status
+        : 'pending',
+    refundMethod: normalizeRefundMethod(value.refundMethod),
+    refundAmount: Number(value.refundAmount ?? 0),
+    reason: typeof value.reason === 'string' ? value.reason : undefined,
+    note: typeof value.note === 'string' ? value.note : undefined,
+    refundEvidenceImages: toStringArray(value.refundEvidenceImages),
+    items: rawItems
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnItem(item)),
+    createdAt: String(value.createdAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
+  }
+}
+
+const normalizeCancelRefundRequest = (value: Record<string, unknown>): CancelRefundRequest => {
+  return {
+    requestedBy: toId(value.requestedBy),
+    status:
+      value.status === 'rejected' || value.status === 'refunded' ? value.status : 'pending',
+    refundAmount: Number(value.refundAmount ?? 0),
+    bankCode: String(value.bankCode ?? ''),
+    bankName: String(value.bankName ?? ''),
+    accountNumber: String(value.accountNumber ?? ''),
+    accountHolder: String(value.accountHolder ?? ''),
+    note: typeof value.note === 'string' ? value.note : undefined,
+    adminNote: typeof value.adminNote === 'string' ? value.adminNote : undefined,
+    refundEvidenceImages: toStringArray(value.refundEvidenceImages),
+    requestedAt: String(value.requestedAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
+    processedAt: typeof value.processedAt === 'string' ? value.processedAt : undefined,
+    processedBy: value.processedBy ? toId(value.processedBy) : undefined,
+  }
+}
+
 const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
   const rawItems = Array.isArray(value.items) ? value.items : []
   const rawStatusHistory = Array.isArray(value.statusHistory) ? value.statusHistory : []
+  const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
+  const rawCancelRefundRequest = toRecord(value.cancelRefundRequest)
 
   return {
     id: toId(value.id ?? value._id),
@@ -160,7 +234,8 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     paymentMethod:
       value.paymentMethod === 'banking' ||
       value.paymentMethod === 'momo' ||
-      value.paymentMethod === 'vnpay'
+      value.paymentMethod === 'vnpay' ||
+      value.paymentMethod === 'zalopay'
         ? value.paymentMethod
         : 'cod',
     paymentStatus:
@@ -169,6 +244,13 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       value.paymentStatus === 'refunded'
         ? value.paymentStatus
         : 'pending',
+    zalopayChannel:
+      value.zalopayChannel === 'gateway' ||
+      value.zalopayChannel === 'wallet' ||
+      value.zalopayChannel === 'bank_card' ||
+      value.zalopayChannel === 'atm'
+        ? value.zalopayChannel
+        : undefined,
     paymentTxnRef: typeof value.paymentTxnRef === 'string' ? value.paymentTxnRef : undefined,
     paymentTransactionNo:
       typeof value.paymentTransactionNo === 'string' ? value.paymentTransactionNo : undefined,
@@ -182,9 +264,9 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     voucherId: value.voucherId ? toId(value.voucherId) : undefined,
     status:
       value.status === 'confirmed' ||
-      value.status === 'preparing' ||
       value.status === 'shipping' ||
       value.status === 'delivered' ||
+      value.status === 'completed' ||
       value.status === 'cancelled' ||
       value.status === 'returned'
         ? value.status
@@ -197,6 +279,13 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
       .map((item) => toRecord(item))
       .filter((item): item is Record<string, unknown> => Boolean(item))
       .map((item) => normalizeOrderStatusHistory(item)),
+    returnRequests: rawReturnRequests
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeReturnRequest(item)),
+    cancelRefundRequest: rawCancelRefundRequest
+      ? normalizeCancelRefundRequest(rawCancelRefundRequest)
+      : undefined,
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),
   }
@@ -296,6 +385,18 @@ export const listMyOrders = async (params: MyOrdersQueryParams = {}) => {
   }
 }
 
+export const getMyOrderById = async (orderId: string) => {
+  try {
+    const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}`
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
 export const cancelMyOrder = async (orderId: string, note?: string) => {
   try {
     const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
@@ -304,6 +405,59 @@ export const cancelMyOrder = async (orderId: string, note?: string) => {
     )
 
     return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const confirmOrderReceived = async (orderId: string) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/received`
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createReturnRequest = async (
+  orderId: string,
+  payload: CreateReturnRequestPayload
+) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/return`,
+      payload
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createCancelRefundRequest = async (
+  orderId: string,
+  payload: CreateCancelRefundRequestPayload
+) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      `/orders/${orderId}/cancel-refund`,
+      payload
+    )
+
+    return normalizeOrder(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+export const createMyReview = async (payload: CreateMyReviewPayload) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>('/reviews', payload)
+    return extractApiData(response)
   } catch (error) {
     throw toApiClientError(error)
   }
@@ -376,6 +530,35 @@ export const verifyVnpayReturn = async (payload: VerifyVnpayReturnPayload) => {
     )
 
     return normalizeVerifyVnpayReturnResponse(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
+}
+
+const normalizeVerifyZalopayRedirectResponse = (
+  value: Record<string, unknown>
+): VerifyZalopayRedirectResponse => {
+  const orderRecord = toRecord(value.order)
+
+  if (!orderRecord) {
+    throw new Error('Invalid order response')
+  }
+
+  return {
+    order: normalizeOrder(orderRecord),
+    isSuccess: Boolean(value.isSuccess),
+    responseCode: String(value.responseCode ?? ''),
+  }
+}
+
+export const verifyZalopayRedirect = async (payload: VerifyZalopayRedirectPayload) => {
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      '/orders/zalopay/verify-redirect',
+      payload
+    )
+
+    return normalizeVerifyZalopayRedirectResponse(extractApiData(response))
   } catch (error) {
     throw toApiClientError(error)
   }

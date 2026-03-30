@@ -40,14 +40,18 @@ export type UpdateAddressPayload = Partial<UpsertAddressPayload>
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
-  | 'preparing'
   | 'shipping'
   | 'delivered'
+  | 'completed'
   | 'cancelled'
   | 'returned'
 
-export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay'
+export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
+export type ZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+export type CancelRefundRequestStatus = 'pending' | 'rejected' | 'refunded'
+export type RefundMethod = 'bank_transfer' | 'wallet'
 
 export interface OrderItemSnapshot {
   productId: string
@@ -59,6 +63,7 @@ export interface OrderItemSnapshot {
   quantity: number
   price: number
   total: number
+  isReviewed: boolean
 }
 
 export interface OrderStatusHistoryItem {
@@ -66,6 +71,47 @@ export interface OrderStatusHistoryItem {
   changedBy: string
   note?: string
   changedAt: string
+}
+
+export interface ReturnRequestItem {
+  productId: string
+  productName: string
+  variantId: string
+  variantSku: string
+  quantity: number
+  price: number
+  total: number
+}
+
+export interface ReturnRequest {
+  id: string
+  requestedBy: string
+  status: ReturnRequestStatus
+  refundMethod: RefundMethod
+  refundAmount: number
+  reason?: string
+  note?: string
+  refundEvidenceImages?: string[]
+  items: ReturnRequestItem[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CancelRefundRequest {
+  requestedBy: string
+  status: CancelRefundRequestStatus
+  refundAmount: number
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
+  adminNote?: string
+  refundEvidenceImages?: string[]
+  requestedAt: string
+  updatedAt: string
+  processedAt?: string
+  processedBy?: string
 }
 
 export interface MyOrderItem {
@@ -80,6 +126,7 @@ export interface MyOrderItem {
   discountAmount: number
   totalAmount: number
   paymentMethod: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   paymentStatus: PaymentStatus
   paymentTxnRef?: string
   paymentTransactionNo?: string
@@ -91,6 +138,8 @@ export interface MyOrderItem {
   status: OrderStatus
   items: OrderItemSnapshot[]
   statusHistory: OrderStatusHistoryItem[]
+  returnRequests?: ReturnRequest[]
+  cancelRefundRequest?: CancelRefundRequest
   createdAt: string
   updatedAt: string
 }
@@ -119,7 +168,33 @@ export interface CreateOrderPayload {
   shippingFee?: number
   voucherCode?: string
   paymentMethod?: PaymentMethod
+  zalopayChannel?: ZalopayChannel
   selectedVariantIds?: string[]
+}
+
+export interface CreateReturnRequestPayload {
+  items: Array<{
+    variantId: string
+    quantity: number
+  }>
+  reason?: string
+  refundMethod?: RefundMethod
+}
+
+export interface CreateCancelRefundRequestPayload {
+  bankCode: string
+  bankName: string
+  accountNumber: string
+  accountHolder: string
+  note?: string
+}
+
+export interface CreateMyReviewPayload {
+  orderId: string
+  productId: string
+  rating: number
+  content?: string
+  images?: string[]
 }
 
 export interface VerifyVnpayReturnPayload {
@@ -127,6 +202,23 @@ export interface VerifyVnpayReturnPayload {
 }
 
 export interface VerifyVnpayReturnResponse {
+  order: MyOrderItem
+  isSuccess: boolean
+  responseCode: string
+}
+
+export interface VerifyZalopayRedirectPayload {
+  appid: string
+  apptransid: string
+  pmcid?: string
+  bankcode?: string
+  amount?: string | number
+  discountamount?: string | number
+  status?: string | number
+  checksum: string
+}
+
+export interface VerifyZalopayRedirectResponse {
   order: MyOrderItem
   isSuccess: boolean
   responseCode: string

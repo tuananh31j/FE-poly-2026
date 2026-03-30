@@ -2,8 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
   Card,
+  Descriptions,
+  Form,
+  Input,
   List,
   message,
+  Modal,
   Popconfirm,
   Select,
   Space,
@@ -13,15 +17,27 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import {
   cancelMyOrder,
+  confirmOrderReceived,
+  createCancelRefundRequest,
   listMyOrders,
   retryMyVnpayPayment,
 } from '@/features/account/api/account.api'
-import type { MyOrderItem, OrderStatus } from '@/features/account/model/account.types'
+import type {
+  CancelRefundRequestStatus,
+  CreateCancelRefundRequestPayload,
+  MyOrderItem,
+  OrderStatus
+} from '@/features/account/model/account.types'
 import { queryKeys } from '@/shared/api/queryKeys'
+import {
+  getVietQrBankByCode,
+  VIET_QR_BANK_OPTIONS,
+} from '@/shared/constants/vietqr'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -31,9 +47,9 @@ const ITEM_PLACEHOLDER = '/images/product-placeholder.svg'
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
-  preparing: 'Đang chuẩn bị',
   shipping: 'Đang giao',
   delivered: 'Đã giao',
+  completed: 'Hoàn thành',
   cancelled: 'Đã hủy',
   returned: 'Hoàn trả',
 }
@@ -41,9 +57,9 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
   pending: 'gold',
   confirmed: 'blue',
-  preparing: 'geekblue',
   shipping: 'cyan',
   delivered: 'green',
+  completed: 'green',
   cancelled: 'red',
   returned: 'volcano',
 }
@@ -53,6 +69,27 @@ const PAYMENT_METHOD_LABEL: Record<MyOrderItem['paymentMethod'], string> = {
   banking: 'Chuyển khoản',
   momo: 'MoMo',
   vnpay: 'VNPay',
+  zalopay: 'ZaloPay',
+}
+
+const getPaymentMethodLabel = (order: MyOrderItem) => {
+  if (order.paymentMethod !== 'zalopay') {
+    return PAYMENT_METHOD_LABEL[order.paymentMethod]
+  }
+
+  if (order.zalopayChannel === 'bank_card') {
+    return 'ZaloPay - Thẻ Visa/Master/JCB'
+  }
+
+  if (order.zalopayChannel === 'atm') {
+    return 'ZaloPay - Thẻ ATM/Tài khoản ngân hàng'
+  }
+
+  if (order.zalopayChannel === 'wallet') {
+    return 'ZaloPay - Ví'
+  }
+
+  return 'ZaloPay - Cổng chung'
 }
 
 const PAYMENT_STATUS_LABEL: Record<MyOrderItem['paymentStatus'], string> = {
@@ -62,19 +99,47 @@ const PAYMENT_STATUS_LABEL: Record<MyOrderItem['paymentStatus'], string> = {
   refunded: 'Hoàn tiền',
 }
 
+const CANCEL_REFUND_STATUS_LABEL: Record<CancelRefundRequestStatus, string> = {
+  pending: 'Chờ xử lý',
+  rejected: 'Từ chối',
+  refunded: 'Đã hoàn tiền',
+}
+
+const CANCEL_REFUND_STATUS_COLOR: Record<CancelRefundRequestStatus, string> = {
+  pending: 'gold',
+  rejected: 'red',
+  refunded: 'green',
+}
+
 // worklog: 2026-03-04 17:03:09 | ducanh | feature | canCancelOrder
 // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | canCancelOrder
 // worklog: 2026-03-04 12:58:05 | trantu | fix | canCancelOrder
 const canCancelOrder = (status: OrderStatus) => {
-  return status === 'pending'
+  return status === 'pending' || status === 'confirmed'
+}
+
+const canConfirmReceived = (status: OrderStatus) => {
+  return status === 'delivered'
+}
+
+const canRequestReturn = (status: OrderStatus) => {
+  return status === 'completed'
 }
 
 const canRetryVnpay = (order: MyOrderItem) => {
   return (
-    order.paymentMethod === 'vnpay' &&
+    (order.paymentMethod === 'vnpay' || order.paymentMethod === 'zalopay') &&
     order.status === 'pending' &&
     (order.paymentStatus === 'pending' || order.paymentStatus === 'failed')
   )
+}
+
+const canRequestCancelRefund = (order: MyOrderItem) => {
+  if (order.status !== 'cancelled' || order.paymentMethod === 'cod' || order.paymentStatus !== 'paid') {
+    return false
+  }
+
+  return !order.cancelRefundRequest || order.cancelRefundRequest.status === 'rejected'
 }
 
 // worklog: 2026-03-04 12:32:16 | trantu | refactor | MyOrdersPage
@@ -83,9 +148,23 @@ const canRetryVnpay = (order: MyOrderItem) => {
 // worklog: 2026-03-04 20:41:46 | quochuy | fix | MyOrdersPage
 export const MyOrdersPage = () => {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const [cancelRefundForm] = Form.useForm<CreateCancelRefundRequestPayload>()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
   const [expandedOrderIds, setExpandedOrderIds] = useState<string[]>([])
+  const focusOrderId = searchParams.get('orderId')?.trim() ?? ''
+  const [returnModalOpen, setReturnModalOpen] = useState(false)
+  const [returnOrder, setReturnOrder] = useState<MyOrderItem | null>(null)
+  const [returnReason, setReturnReason] = useState('')
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>('bank_transfer')
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({})
+  const [cancelRefundModalOpen, setCancelRefundModalOpen] = useState(false)
+  const [cancelRefundOrder, setCancelRefundOrder] = useState<MyOrderItem | null>(null)
+  const [detailOrder, setDetailOrder] = useState<MyOrderItem | null>(null)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [hasHandledFocusOrder, setHasHandledFocusOrder] = useState(false)
+  const selectedCancelRefundBankCode = Form.useWatch('bankCode', cancelRefundForm)
 
   const ordersQuery = useQuery({
     queryKey: queryKeys.account.orders({
@@ -133,15 +212,301 @@ export const MyOrdersPage = () => {
     },
   })
 
-  const toggleOrderDetails = (orderId: string) => {
-    setExpandedOrderIds((current) => {
-      if (current.includes(orderId)) {
-        return current.filter((id) => id !== orderId)
-      }
+  const confirmReceivedMutation = useMutation({
+    mutationFn: (orderId: string) => confirmOrderReceived(orderId),
+    onSuccess: async (order) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.account.orders(),
+      })
+      void message.success(`Đã xác nhận nhận hàng ${order.orderCode}`)
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
-      return [...current, orderId]
+  const returnRequestMutation = useMutation({
+    mutationFn: (payload: { orderId: string; items: Array<{ variantId: string; quantity: number }>; reason?: string; refundMethod?: RefundMethod }) =>
+      createReturnRequest(payload.orderId, {
+        items: payload.items,
+        reason: payload.reason,
+        refundMethod: payload.refundMethod,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.account.orders(),
+      })
+      void message.success('Đã gửi yêu cầu hoàn hàng')
+      setReturnModalOpen(false)
+      setReturnOrder(null)
+      setReturnQuantities({})
+      setReturnReason('')
+      setRefundMethod('bank_transfer')
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
+
+  const cancelRefundRequestMutation = useMutation({
+    mutationFn: (payload: { orderId: string; body: CreateCancelRefundRequestPayload }) =>
+      createCancelRefundRequest(payload.orderId, payload.body),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.account.orders(),
+      })
+      void message.success('Đã gửi yêu cầu hoàn tiền')
+      setCancelRefundModalOpen(false)
+      setCancelRefundOrder(null)
+      cancelRefundForm.resetFields()
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
+
+  useEffect(() => {
+    if (!focusOrderId || hasHandledFocusOrder || !ordersQuery.data?.items?.length) { 
+      return
+    }
+
+    const focusedOrder = ordersQuery.data.items.find((item) => item.id === focusOrderId)
+    if (!focusedOrder) {
+      return
+    }
+
+    setExpandedOrderIds((current) =>
+      current.includes(focusOrderId) ? current : [...current, focusOrderId]
+    )
+    setDetailOrder(focusedOrder)
+    setDetailModalOpen(true)
+    setHasHandledFocusOrder(true)
+  }, [focusOrderId, hasHandledFocusOrder, ordersQuery.data?.items])
+
+  const openCancelRefundModal = (order: MyOrderItem) => {
+    setCancelRefundOrder(order)
+    setCancelRefundModalOpen(true)
+    const existingRequest = order.cancelRefundRequest
+    cancelRefundForm.setFieldsValue({
+      bankCode: existingRequest?.bankCode,
+      bankName: existingRequest?.bankName,
+      accountNumber: existingRequest?.accountNumber,
+      accountHolder: existingRequest?.accountHolder,
+      note: existingRequest?.note,
     })
   }
+
+  const renderOrderItems = (record: MyOrderItem) => (
+    <List
+      size="small"
+      dataSource={record.items}
+      locale={{
+        emptyText: 'Không có sản phẩm trong đơn',
+      }}
+      renderItem={(item) => (
+        <List.Item>
+          <div className="flex w-full items-center gap-3">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
+              <img
+              src={item.productImage ?? ITEM_PLACEHOLDER}
+                alt={item.productName}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="min-w-0 flex-1"></div>
+              <Typography.Text strong className="block line-clamp-1">
+                {item.productName}
+              </Typography.Text>
+              <Typography.Text type="secondary" className="text-xs">
+                SKU: {item.variantSku} · Màu: {item.variantColor}
+              </Typography.Text>
+            <Space direction="vertical" size={0} align="end">
+              <Typography.Text>Số lượng: {item.quantity}</Typography.Text>
+              <Typography.Text strong>{formatVndCurrency(item.total)}</Typography.Text>
+            </Space>
+          </div>
+        </List.Item>
+      )}
+    />
+  )
+
+  const renderOrderRefundBlocks = (record: MyOrderItem) => (
+    <>
+      {record.cancelRefundRequest ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+               <Typography.Text strong className="block">
+                Yêu cầu hoàn tiền đơn hủy
+              </Typography.Text>
+              <Space size={[8, 8]} wrap className="mt-2">
+                <Tag color={CANCEL_REFUND_STATUS_COLOR[record.cancelRefundRequest.status]}>
+                  {CANCEL_REFUND_STATUS_LABEL[record.cancelRefundRequest.status]}
+                </Tag>
+                <Typography.Text strong>
+                  {formatVndCurrency(record.cancelRefundRequest.refundAmount)}
+                </Typography.Text>
+                <Typography.Text type="secondary" className="text-xs">
+                  Gửi lúc: {formatDateTime(record.cancelRefundRequest.requestedAt)}
+                </Typography.Text>
+              </Space>
+            </div>
+
+            {record.cancelRefundRequest.status === 'rejected' ? (
+              <Button
+                size="small"
+                onClick={() => {
+                  openCancelRefundModal(record)
+                }}
+              >
+                Cập nhật thông tin hoàn tiền
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="mt-3 grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+            <Typography.Text>
+              Ngân hàng: <strong>{record.cancelRefundRequest.bankName}</strong>
+            </Typography.Text>
+            <Typography.Text>
+              Số tài khoản: <strong>{record.cancelRefundRequest.accountNumber}</strong>
+            </Typography.Text>
+            <Typography.Text>
+              Chủ tài khoản: <strong>{record.cancelRefundRequest.accountHolder}</strong>
+            </Typography.Text>
+            <Typography.Text>
+              Mã ngân hàng: <strong>{record.cancelRefundRequest.bankCode}</strong>
+            </Typography.Text>
+          </div>
+
+           {record.cancelRefundRequest.note ? (
+            <Typography.Text className="mt-2 block text-sm text-slate-700">
+              Ghi chú của bạn: {record.cancelRefundRequest.note}
+            </Typography.Text>
+          ) : null}
+
+          {record.cancelRefundRequest.adminNote ? (
+            <Typography.Text className="mt-1 block text-sm text-slate-700">
+              Ghi chú cửa hàng: {record.cancelRefundRequest.adminNote}
+            </Typography.Text>
+          ) : null}
+
+          {record.cancelRefundRequest.refundEvidenceImages?.length ? (
+            <div className="mt-3">
+              <Typography.Text strong className="mb-2 block">
+                Bill hoàn tiền
+              </Typography.Text>
+              <div className="flex flex-wrap gap-2">
+                {record.cancelRefundRequest.refundEvidenceImages.map((url) => (
+                  <a
+                  key={`${record.id}-${url}`}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block"
+                  >
+                    <img
+                      src={url}
+                      alt="Bill hoàn tiền"
+                      className="h-16 w-16 rounded border border-slate-200 object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {record.paymentStatus === 'refunded' && !record.cancelRefundRequest ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <Typography.Text strong className="block text-emerald-700">
+            Hoàn tiền đơn hàng
+          </Typography.Text>
+          <Typography.Text className="mt-1 block text-sm text-slate-700">
+            Số tiền hoàn: {formatVndCurrency(record.totalAmount)}
+          </Typography.Text>
+          <Typography.Text className="block text-sm text-slate-700">
+            Thời gian ghi nhận:{' '}
+            {record.refundedAt ? formatDateTime(record.refundedAt) : formatDateTime(record.updatedAt)}
+          </Typography.Text>
+          <Typography.Text type="secondary" className="mt-1 block text-xs">
+            Hệ thống đã ghi nhận hoàn tiền cho đơn hàng này.
+          </Typography.Text>
+        </div>
+      ) : null}
+    </>
+  )
+
+  const renderOrderDetailContent = (record: MyOrderItem, withSummary = false) => (
+    <div className="space-y-4">
+      {withSummary ? (
+        <Descriptions
+          column={1}
+          size="small"
+          bordered
+          items={[
+            {
+              key: 'orderCode',
+              label: 'Mã đơn',
+              children: record.orderCode,
+            },
+            {
+              key: 'createdAt',
+              label: 'Ngày đặt',
+              children: formatDateTime(record.createdAt),
+            },
+            {
+              key: 'shippingRecipientName',
+              label: 'Người nhận',
+              children: record.shippingRecipientName,
+            },
+            {
+              key: 'shippingPhone',
+              label: 'Số điện thoại',
+              children: record.shippingPhone,
+            },
+            {
+              key: 'shippingAddress',
+              label: 'Địa chỉ nhận hàng',
+              children: record.shippingAddress,
+            },
+            {
+              key: 'paymentMethod',
+              label: 'Thanh toán',
+              children: (
+                <Space wrap>
+                  <Tag color="blue">{getPaymentMethodLabel(record)}</Tag>
+                  <Typography.Text>{PAYMENT_STATUS_LABEL[record.paymentStatus]}</Typography.Text>
+                </Space>
+              ),
+            },
+            {
+              key: 'status',
+              label: 'Trạng thái đơn',
+              children: <Tag color={ORDER_STATUS_COLOR[record.status]}>{ORDER_STATUS_LABEL[record.status]}</Tag>,
+            },
+            {
+              key: 'totalAmount',
+              label: 'Tổng tiền',
+              children: formatVndCurrency(record.totalAmount),
+            },
+          ]}
+        />
+      ) : null}
+
+      <div>
+        <Typography.Text strong className="block mb-2">
+          Sản phẩm trong đơn
+        </Typography.Text>
+        {renderOrderItems(record)}
+      </div>
+
+      {renderOrderRefundBlocks(record)}
+    </div>
+  )
+
+
 
   const columns: ColumnsType<MyOrderItem> = useMemo(
     () => [
@@ -168,7 +533,7 @@ export const MyOrdersPage = () => {
         render: (_, record) => (
           <Space direction="vertical" size={2}>
             <Tag color="blue" className="!m-0 w-fit">
-              {PAYMENT_METHOD_LABEL[record.paymentMethod]}
+              {getPaymentMethodLabel(record)}
             </Tag>
             <Typography.Text type="secondary" className="text-xs">
               {PAYMENT_STATUS_LABEL[record.paymentStatus]}
@@ -201,17 +566,20 @@ export const MyOrdersPage = () => {
         render: (_, record) => {
           const allowCancel = canCancelOrder(record.status)
           const allowRetryVnpay = canRetryVnpay(record)
-          const isExpanded = expandedOrderIds.includes(record.id)
+          const allowConfirmReceived = canConfirmReceived(record.status)
+          const allowReturn = canRequestReturn(record.status)
+          const allowCancelRefund = canRequestCancelRefund(record)
 
           return (
             <Space wrap>
               <Button
                 size="small"
                 onClick={() => {
-                  toggleOrderDetails(record.id)
+                  setDetailOrder(record)
+                  setDetailModalOpen(true)
                 }}
               >
-                {isExpanded ? 'Ẩn chi tiết' : 'Xem chi tiết'}
+                Xem chi tiết
               </Button>
 
               {allowRetryVnpay ? (
@@ -227,12 +595,44 @@ export const MyOrdersPage = () => {
                 </Button>
               ) : null}
 
+              {allowConfirmReceived ? (
+                <Popconfirm
+                  title="Xác nhận bạn đã nhận đủ hàng?"
+                  okText="Đã nhận"
+                  cancelText="Đóng"
+                  onConfirm={() => {
+                    confirmReceivedMutation.mutate(record.id)
+                  }}
+                >
+                  <Button size="small" type="primary" ghost>
+                    Đã nhận hàng
+                  </Button>
+                </Popconfirm>
+              ) : null}
+
+              {allowReturn ? (
+                <Button
+                  size="small"
+                  onClick={() => {
+                    setReturnOrder(record)
+                    setReturnModalOpen(true)
+                    const initialQuantities: Record<string, number> = {}
+                    record.items.forEach((item) => {
+                      initialQuantities[item.variantId] = 0
+                    })
+                    setReturnQuantities(initialQuantities)
+                  }}
+                >
+                  Hoàn hàng
+                </Button>
+              ) : null}
+
               {allowCancel ? (
                 <Popconfirm
                   title="Bạn muốn hủy đơn hàng này?"
                   description={
                     record.paymentStatus === 'paid' && record.paymentMethod !== 'cod'
-                      ? 'Đơn đã thanh toán sẽ được ghi nhận hoàn tiền tự động.'
+                      ? 'Sau khi hủy đơn, bạn có thể gửi yêu cầu hoàn tiền và cung cấp thông tin tài khoản ngân hàng.'
                       : undefined
                   }
                   okText="Hủy đơn"
@@ -246,12 +646,31 @@ export const MyOrdersPage = () => {
                   </Button>
                 </Popconfirm>
               ) : null}
+
+              {allowCancelRefund ? (
+                <Button
+                  size="small"
+                  type="primary"
+                  ghost
+                  onClick={() => {
+                    openCancelRefundModal(record)
+                  }}
+                >
+                  {record.cancelRefundRequest?.status === 'rejected' ? 'Gửi lại hoàn tiền' : 'Hoàn tiền'}
+                </Button>
+              ) : null}
             </Space>
           )
         },
       },
     ],
-    [cancelOrderMutation, expandedOrderIds, repayOrderMutation]
+    [
+      cancelOrderMutation,
+      confirmReceivedMutation,
+      expandedOrderIds,
+      openCancelRefundModal,
+      repayOrderMutation,
+    ]
   )
 
   return (
@@ -273,9 +692,9 @@ export const MyOrdersPage = () => {
             { label: 'Tất cả trạng thái', value: 'all' },
             { label: ORDER_STATUS_LABEL.pending, value: 'pending' },
             { label: ORDER_STATUS_LABEL.confirmed, value: 'confirmed' },
-            { label: ORDER_STATUS_LABEL.preparing, value: 'preparing' },
             { label: ORDER_STATUS_LABEL.shipping, value: 'shipping' },
             { label: ORDER_STATUS_LABEL.delivered, value: 'delivered' },
+            { label: ORDER_STATUS_LABEL.completed, value: 'completed' },
             { label: ORDER_STATUS_LABEL.cancelled, value: 'cancelled' },
             { label: ORDER_STATUS_LABEL.returned, value: 'returned' },
           ]}
@@ -323,64 +742,237 @@ export const MyOrdersPage = () => {
             })
           },
           expandedRowRender: (record) => (
-            <div className="space-y-4">
-              <List
-                size="small"
-                dataSource={record.items}
-                locale={{
-                  emptyText: 'Không có sản phẩm trong đơn',
-                }}
-                renderItem={(item) => (
-                  <List.Item>
-                    <div className="flex w-full items-center gap-3">
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-100">
-                        <img
-                          src={item.productImage ?? ITEM_PLACEHOLDER}
-                          alt={item.productName}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <Typography.Text strong className="block line-clamp-1">
-                          {item.productName}
-                        </Typography.Text>
-                        <Typography.Text type="secondary" className="text-xs">
-                          SKU: {item.variantSku} · Màu: {item.variantColor}
-                        </Typography.Text>
-                      </div>
-                      <Space direction="vertical" size={0} align="end">
-                        <Typography.Text>Số lượng: {item.quantity}</Typography.Text>
-                        <Typography.Text strong>{formatVndCurrency(item.total)}</Typography.Text>
-                      </Space>
-         
-                    </div>
-                    </List.Item>
-                )}
-              />
-
-              {record.paymentStatus === 'refunded' ? (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <Typography.Text strong className="block text-emerald-700">
-                    Hoàn tiền đơn hàng
-                  </Typography.Text>
-                  <Typography.Text className="mt-1 block text-sm text-slate-700">
-                    Số tiền hoàn: {formatVndCurrency(record.totalAmount)}
-                  </Typography.Text>
-                  <Typography.Text className="block text-sm text-slate-700">
-                    Thời gian ghi nhận:{' '}
-                    {record.refundedAt ? formatDateTime(record.refundedAt) : formatDateTime(record.updatedAt)}
-                  </Typography.Text>
-                  <Typography.Text type="secondary" className="mt-1 block text-xs">
-                    {record.status === 'cancelled'
-                      ? 'Đơn đã thanh toán và được hệ thống ghi nhận hoàn tiền do khách hàng hủy.'
-                      : 'Hệ thống đã ghi nhận hoàn tiền cho đơn hàng này.'}
-                  </Typography.Text>
-                </div>
-              ) : null}
-            </div>
+            renderOrderDetailContent(record)
           ),
         }}
       />
+
+      <Modal
+        open={detailModalOpen}
+        title={`Chi tiết đơn hàng${detailOrder ? ` · ${detailOrder.orderCode}` : ''}`}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setDetailModalOpen(false)
+              setDetailOrder(null)
+            }}
+          >
+            Đóng
+          </Button>,
+        ]}
+        width={880}
+        onCancel={() => {
+          setDetailModalOpen(false)
+          setDetailOrder(null)
+        }}
+      >
+        {detailOrder ? renderOrderDetailContent(detailOrder, true) : null}
+      </Modal>
+
+      <Modal
+        open={cancelRefundModalOpen}
+        title={`Yêu cầu hoàn tiền${cancelRefundOrder ? ` · ${cancelRefundOrder.orderCode}` : ''}`}
+        okText="Gửi yêu cầu"
+        cancelText="Đóng"
+        confirmLoading={cancelRefundRequestMutation.isPending}
+        onCancel={() => {
+          setCancelRefundModalOpen(false)
+          setCancelRefundOrder(null)
+          cancelRefundForm.resetFields()
+        }}
+        onOk={() => {
+          if (!cancelRefundOrder) {
+            return
+          }
+
+          cancelRefundForm
+            .validateFields()
+            .then((values) => {
+              const bank = getVietQrBankByCode(values.bankCode)
+
+              if (!bank) {
+                void message.error('Vui lòng chọn ngân hàng hợp lệ')
+                return
+              }
+
+              cancelRefundRequestMutation.mutate({
+                orderId: cancelRefundOrder.id,
+                body: {
+                  bankCode: bank.code,
+                  bankName: bank.name,
+                  accountNumber: values.accountNumber.trim(),
+                  accountHolder: values.accountHolder.trim(),
+                  note: values.note?.trim() || undefined,
+                },
+              })
+            })
+            .catch(() => undefined)
+        }}
+      >
+        <Space direction="vertical" size={16} className="w-full">
+          {cancelRefundOrder ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <Typography.Text strong className="block text-slate-900">
+                {cancelRefundOrder.orderCode}
+              </Typography.Text>
+              <Typography.Text className="block">
+                Số tiền cần hoàn: {formatVndCurrency(cancelRefundOrder.totalAmount)}
+              </Typography.Text>
+              <Typography.Text type="secondary" className="block text-xs">
+                Sau khi gửi yêu cầu, nhân viên sẽ chuyển khoản và cập nhật bill hoàn tiền cho bạn.
+              </Typography.Text>
+            </div>
+          ) : null}
+
+          <Form<CreateCancelRefundRequestPayload> form={cancelRefundForm} layout="vertical">
+            <Form.Item
+              label="Ngân hàng"
+              name="bankCode"
+              rules={[{ required: true, message: 'Vui lòng chọn ngân hàng' }]}
+            >
+              <Select
+                showSearch
+                placeholder="Chọn ngân hàng nhận tiền"
+                optionFilterProp="label"
+                options={VIET_QR_BANK_OPTIONS.map((bank) => ({
+                  label: bank.name,
+                  value: bank.code,
+                }))}
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Số tài khoản"
+              name="accountNumber"
+              rules={[{ required: true, message: 'Vui lòng nhập số tài khoản' }]}
+            >
+              <Input placeholder="Nhập số tài khoản nhận hoàn tiền" />
+            </Form.Item>
+
+            <Form.Item
+              label="Chủ tài khoản"
+              name="accountHolder"
+              rules={[{ required: true, message: 'Vui lòng nhập tên chủ tài khoản' }]}
+            >
+              <Input placeholder="Nhập họ tên chủ tài khoản" />
+            </Form.Item>
+
+            <Form.Item label="Ghi chú" name="note">
+              <Input.TextArea
+                rows={3}
+                placeholder="Ví dụ: hoàn tiền vào tài khoản chính của tôi"
+              />
+            </Form.Item>
+          </Form>
+
+          {selectedCancelRefundBankCode ? (
+            <Typography.Text type="secondary" className="text-xs">
+              Ngân hàng đã chọn:{' '}
+              {getVietQrBankByCode(selectedCancelRefundBankCode)?.name ?? selectedCancelRefundBankCode}
+            </Typography.Text>
+          ) : null}
+        </Space>
+      </Modal>
+
+      <Modal
+        open={returnModalOpen}
+        title={`Yêu cầu hoàn hàng${returnOrder ? ` · ${returnOrder.orderCode}` : ''}`}
+        okText="Gửi yêu cầu"
+        cancelText="Đóng"
+        onCancel={() => {
+          setReturnModalOpen(false)
+          setReturnOrder(null)
+        }}
+        onOk={() => {
+          if (!returnOrder) {
+            return
+          }
+
+          const items = returnOrder.items
+            .map((item) => ({
+              variantId: item.variantId,
+              quantity: returnQuantities[item.variantId] ?? 0,
+            }))
+            .filter((item) => item.quantity > 0)
+
+          if (items.length === 0) {
+            void message.error('Vui lòng chọn số lượng hoàn hàng')
+            return
+          }
+
+          returnRequestMutation.mutate({
+            orderId: returnOrder.id,
+            items,
+            reason: returnReason.trim() ? returnReason.trim() : undefined,
+            refundMethod,
+          })
+        }}
+        confirmLoading={returnRequestMutation.isPending}
+      >
+        {!returnOrder ? null : (
+          <Space direction="vertical" size={16} className="w-full">
+            <Typography.Text type="secondary">
+              Chọn số lượng muốn hoàn cho từng sản phẩm (có thể hoàn một phần).
+            </Typography.Text>
+            <List
+              dataSource={returnOrder.items}
+              locale={{ emptyText: 'Không có sản phẩm' }}
+              renderItem={(item) => (
+                <List.Item>
+                  <div className="flex w-full items-center gap-3">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded border border-slate-200">
+                      <img
+                        src={item.productImage ?? ITEM_PLACEHOLDER}
+                        alt={item.productName}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Typography.Text strong className="block line-clamp-1">
+                        {item.productName}
+                      </Typography.Text>
+                      <Typography.Text type="secondary" className="text-xs">
+                        SKU: {item.variantSku}
+                      </Typography.Text>
+                    </div>
+                    <InputNumber
+                      min={0}
+                      max={item.quantity}
+                      value={returnQuantities[item.variantId] ?? 0}
+                      onChange={(value) => {
+                        setReturnQuantities((current) => ({
+                          ...current,
+                          [item.variantId]: Number(value ?? 0),
+                        }))
+                      }}
+                    />
+                  </div>
+                </List.Item>
+              )}
+            />
+            <Space direction="vertical" size={8} className="w-full">
+              <Typography.Text strong>Phương thức hoàn tiền</Typography.Text>
+              <Select
+                value={refundMethod}
+                onChange={(value) => setRefundMethod(value as RefundMethod)}
+                options={[
+                  { label: 'Chuyển khoản', value: 'bank_transfer' },
+                  { label: 'Hoàn vào ví', value: 'wallet' },
+                ]}
+              />
+              <Typography.Text strong>Ghi chú</Typography.Text>
+              <textarea
+                className="w-full rounded-md border border-slate-200 p-2 text-sm"
+                rows={3}
+                placeholder="Lý do hoàn hàng (tùy chọn)"
+                value={returnReason}
+                onChange={(event) => setReturnReason(event.target.value)}
+              />
+            </Space>
+          </Space>
+        )}
+      </Modal>
     </Card>
   )
 }

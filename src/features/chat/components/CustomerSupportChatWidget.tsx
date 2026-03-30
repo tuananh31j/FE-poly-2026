@@ -6,6 +6,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { Avatar, Badge, Button, Drawer, Input, Space, Spin, Typography, message } from 'antd'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCustomerSupportChat } from '../hooks/useCustomerSupportChat'
@@ -49,20 +50,18 @@ const groupMessages = (messages: ChatMessage[]) => {
 
 interface CustomerSupportChatWidgetProps {
   isAuthenticated: boolean
-  customerId?: string | null
 }
 
-export const CustomerSupportChatWidget = ({
-  isAuthenticated,
-  customerId,
-}: CustomerSupportChatWidgetProps) => {
+export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportChatWidgetProps) => {
     const [open, setOpen] = useState(false)
     const [inputValue, setInputValue] = useState('')
     const [unreadCount, setUnreadCount] = useState(0)
     const [drawerWidth, setDrawerWidth] = useState(420)
     const messageContainerRef = useRef<HTMLDivElement | null>(null)
+    const lastNotifiedMessageIdRef = useRef<string | null>(null)
 
-    const { messages, sendMessage, isReady, isLoading } = useCustomerSupportChat(open)
+  const { messages, sendMessage, isReady, isLoading, currentUserId, lastIncomingMessage } =
+    useCustomerSupportChat(open)
 
     useEffect(() => {
         if (typeof window === 'undefined') {
@@ -78,11 +77,7 @@ export const CustomerSupportChatWidget = ({
         return () => window.removeEventListener('resize', updateWidth)
     }, [])
 
-    useEffect(() => {
-        if (!open) {
-            setUnreadCount((prev) => (messages.length > 0 ? prev + 1 : prev))
-        }
-    }, [messages.length, open])
+    
 
     useEffect(() => {
         if (!open || !messageContainerRef.current) {
@@ -100,6 +95,25 @@ export const CustomerSupportChatWidget = ({
             setUnreadCount(0)
         }
     }, [open])
+    useEffect(() => {
+    if (!lastIncomingMessage || lastNotifiedMessageIdRef.current === lastIncomingMessage.id) {
+      return
+    }
+
+    lastNotifiedMessageIdRef.current = lastIncomingMessage.id
+
+    if (!open) {
+      setUnreadCount((prev) => prev + 1)
+    }
+
+    void message.info({
+      content:
+        lastIncomingMessage.content.length > 80
+          ? `Nhân viên vừa phản hồi: ${lastIncomingMessage.content.slice(0, 77)}...`
+          : `Nhân viên vừa phản hồi: ${lastIncomingMessage.content}`,
+      duration: 4,
+    })
+  }, [lastIncomingMessage, open])
 
     const groupedMessages = useMemo(() => groupMessages(messages), [messages])
 
@@ -215,7 +229,7 @@ export const CustomerSupportChatWidget = ({
               <div key={group.date} className="flex flex-col gap-3">
                 <div className="text-center text-xs text-slate-400">{formatTime(group.date)}</div>
                 {group.items.map((item) => {
-                  const isMine = customerId ? item.senderId === customerId : false
+                 const isMine = currentUserId ? item.senderId === currentUserId : false
                   return (
                     <div
                       key={item.id}

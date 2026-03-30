@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { env } from '@/shared/constants/env'
 import { useAppSelector } from '@/app/store/hooks'
+import { useMeQuery } from '@/features/auth/hooks/useMeQuery'
 
 import {
   joinSupportConversation,
@@ -60,150 +61,164 @@ const mergeIncomingMessage = (
 }
 
 export const useStaffSupportChat = () => {
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
-    const userId = useAppSelector((state) => state.auth.user?.id)
-    const socketRef = useRef<Socket | null>(null)
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
+  const authUserId = useAppSelector((state) => state.auth.user?.id)
+  const { data: meData } = useMeQuery()
+  const socketRef = useRef<Socket | null>(null)
 
-    const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
-    const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+const currentUserId = meData?.id ?? authUserId ?? null
 
-    const conversationsQuery = useQuery({
-        queryKey: ['support-conversations-staff', accessToken],
-        queryFn: () => listSupportConversationsAsStaff(1, 20),
-        enabled: Boolean(accessToken),
+  const conversationsQuery = useQuery({
+    queryKey: ['support-conversations-staff', accessToken],
+    queryFn: () => listSupportConversationsAsStaff(1, 20),
+    enabled: Boolean(accessToken),
+  })
+
+  const joinMutation = useMutation({ mutationFn: joinSupportConversation })
+  const sendMessageMutation = useMutation({ mutationFn: sendConversationMessage })
+
+  useEffect(() => {
+    if (!accessToken) {
+      socketRef.current?.disconnect()
+      socketRef.current = null
+      return
+    }
+
+    const socket = io(getSocketBaseUrl(), {
+      auth: { token: accessToken },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
     })
 
-    const joinMutation = useMutation({ mutationFn: joinSupportConversation })
-    const sendMessageMutation = useMutation({ mutationFn: sendConversationMessage })
+    socketRef.current = socket
 
-    useEffect(() => {
-        if (!accessToken) {
-            socketRef.current?.disconnect()
-            socketRef.current = null
-            return
-        }
+    return () => {
+      socket.removeAllListeners()
+      socket.disconnect()
+      if (socketRef.current === socket) {
+        socketRef.current = null
+      }
+    }
+  }, [accessToken])
 
-        const socket = io(getSocketBaseUrl(), {
-            auth: { token: accessToken },
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-        })
-
-        socketRef.current = socket
-
-        return () => {
-            socket.removeAllListeners()
-            socket.disconnect()
-            if (socketRef.current === socket) {
-                socketRef.current = null
-            }
-        }
-    }, [accessToken])
-
-    useEffect(() => {
-        if (!activeConversationId || !accessToken) {
-            setMessages([])
-            return
-        }
-
-        let cancelled = false
-
-        const load = async () => {
-            const data = await listConversationMessages(activeConversationId, 1, 50)
-            if (!cancelled) {
-                setMessages(sortMessages(data))
-            }
-        }
-
-        void load()
-
-        return () => {
-            cancelled = true
-        }
-    }, [activeConversationId, accessToken])
-
-    useEffect(() => {
-        const conversationId = activeConversationId
-        const socket = socketRef.current
-
-        if (!conversationId || !socket) {
-            return
-        }
-
-        const joinConversationRoom = () => {
-            socket.emit('room:join', { roomId: `conversation:${conversationId}` })
-        }
-
-        const handleMessage = (payload: { conversationId?: string; message?: ChatMessage }) => {
-            if (payload?.conversationId !== conversationId || !payload.message) {
-                return
-            }
-
-            setMessages((prev) => mergeIncomingMessage(prev, nextMessage, currentUserId))
-        }
-
-        joinConversationRoom()
-        socket.on('connect', joinConversationRoom)
-        socket.on('chat:message_created', handleMessage)
-
-        return () => {
-            socket.off('connect', joinConversationRoom)
-            socket.off('chat:message_created', handleMessage)
-        }
-    }, [activeConversationId, conversationsQuery, currentUserId])
-
-    const sendMessage = async (content: string) => {
-        if (!activeConversationId || !content.trim()) {
-            return
-        }
-
-        const optimisticMessage: ChatMessage = {
-            id: `temp-${Date.now()}`,
-            conversationId: activeConversationId,
-            senderId: userId ?? 'me',
-            content,
-            createdAt: new Date().toISOString(),
-        }
-
-        setMessages((prev) => [...prev, optimisticMessage])
-
-        try {
-            const saved = await sendMessageMutation.mutateAsync({
-                conversationId: activeConversationId,
-                content,
-            })
-
-            setMessages((prev) => {
-                const nextItems = prev.filter((item) => item.id !== optimisticMessage.id)
-                return mergeIncomingMessage(nextItems, saved, currentUserId)
-            })
-        } catch (error) {
-            setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id))
-            throw new Error('Không thể gửi tin nhắn')
-        }
+  useEffect(() => {
+    if (!activeConversationId || !accessToken) {
+      setMessages([])
+      return
     }
 
-    const conversations = useMemo<ChatConversation[]>(() => {
-        return conversationsQuery.data?.items ?? []
-    }, [conversationsQuery.data])
+    let cancelled = false
 
-    const selectConversation = async (conversationId: string) => {
-        if (!conversationId) {
-            return
-        }
-
-        if (conversationId !== activeConversationId) {
-            await joinMutation.mutateAsync(conversationId)
-            setActiveConversationId(conversationId)
-        }
+    const load = async () => {
+      const data = await listConversationMessages(activeConversationId, 1, 50)
+      if (!cancelled) {
+        const sorted = [...data].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        setMessages(sorted)
+      }
     }
 
-    return {
-        conversations,
-        messages,
-        activeConversationId,
-        selectConversation,
-        sendMessage,
-        isLoading: conversationsQuery.isLoading || joinMutation.isPending,
+    void load()
+
+    return () => {
+      cancelled = true
     }
+  }, [activeConversationId, accessToken])
+
+  useEffect(() => {
+    const conversationId = activeConversationId
+    const socket = socketRef.current
+
+    if (!conversationId || !socket) {
+      return
+    }
+
+    socket.emit('room:join', { roomId: `conversation:${conversationId}` })
+
+    const handleMessage = (payload: { conversationId?: string; message?: ChatMessage }) => {
+      const nextMessage = payload?.message
+
+      if (payload?.conversationId !== conversationId || !nextMessage) {
+        return
+      }
+
+      setMessages((prev) => {
+        const exists = prev.some((item) => item.id === nextMessage.id)
+        if (exists) {
+          return prev
+        }
+
+        return [...prev, nextMessage].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      })
+    }
+
+    socket.on('chat:message_created', handleMessage)
+
+     socket.on('staff:notification', (payload: { type?: string; metadata?: Record<string, unknown> }) => {
+      if (payload?.type !== 'chat_message') {
+        return
+      }
+
+      void conversationsQuery.refetch()
+    })
+
+    return () => {
+      socket.off('chat:message_created', handleMessage)
+    }
+     socket.off('staff:notification')
+  }, [activeConversationId, conversationsQuery])
+
+  const sendMessage = async (content: string) => {
+    if (!activeConversationId || !content.trim()) {
+      return
+    }
+
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      conversationId: activeConversationId,
+       senderId: currentUserId ?? 'me',
+      content,
+      createdAt: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, optimisticMessage])
+
+    try {
+      const saved = await sendMessageMutation.mutateAsync({
+        conversationId: activeConversationId,
+        content,
+      })
+
+      setMessages((prev) => prev.map((item) => (item.id === optimisticMessage.id ? saved : item)))
+    } catch {
+      setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id))
+      throw new Error('Không thể gửi tin nhắn')
+    }
+  }
+
+  const conversations = useMemo<ChatConversation[]>(() => {
+    return conversationsQuery.data?.items ?? []
+  }, [conversationsQuery.data])
+
+  const selectConversation = async (conversationId: string) => {
+    if (!conversationId) {
+      return
+    }
+
+    if (conversationId !== activeConversationId) {
+      await joinMutation.mutateAsync(conversationId)
+      setActiveConversationId(conversationId)
+    }
+  }
+
+  return {
+    conversations,
+    messages,
+    activeConversationId,
+     currentUserId,
+    selectConversation,
+    sendMessage,
+    isLoading: conversationsQuery.isLoading || joinMutation.isPending,
+  }
 }
