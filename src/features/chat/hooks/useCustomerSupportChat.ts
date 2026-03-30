@@ -21,6 +21,44 @@ const getSocketBaseUrl = () => {
   }
 }
 
+const sortMessages = (items: ChatMessage[]) => {
+  return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
+const mergeIncomingMessage = (
+  previous: ChatMessage[],
+  nextMessage: ChatMessage,
+  currentUserId?: string | null
+) => {
+    const nextIndex = previous.findIndex((item) => item.id === nextMessage.id)
+
+    if (nextIndex >= 0) {
+        const nextItems = [...previous]
+        nextItems[nextIndex] = nextMessage
+        return sortMessages(nextItems)
+    }
+
+    const optimisticIndex = previous.findIndex((item) => {
+        if (!item.id.startsWith('temp-')) {
+            return false
+        }
+
+        return (
+        item.conversationId === nextMessage.conversationId &&
+        item.senderId === (currentUserId ?? nextMessage.senderId) &&
+        item.content.trim() === nextMessage.content.trim()
+        )
+    })
+
+    if (optimisticIndex >= 0) {
+        const nextItems = [...previous]
+        nextItems[optimisticIndex] = nextMessage
+        return sortMessages(nextItems)
+    }
+
+    return sortMessages([...previous, nextMessage])
+}
+
 export const useCustomerSupportChat = (open: boolean) => {
     const accessToken = useAppSelector((state) => state.auth.accessToken)
     const userId = useAppSelector((state) => state.auth.user?.id)
@@ -94,27 +132,25 @@ export const useCustomerSupportChat = (open: boolean) => {
             return
         }
 
-        socket.emit('room:join', { roomId: `conversation:${conversationId}` })
+        const joinConversationRoom = () => {
+            socket.emit('room:join', { roomId: `conversation:${conversationId}` })
+        }
 
         const handleMessage = (payload: { conversationId?: string; message?: ChatMessage }) => {
             if (payload?.conversationId !== conversationId || !payload.message) {
                 return
             }
 
-            setMessages((prev) => {
-                const exists = prev.some((item) => item.id === payload.message?.id)
-                if (exists) {
-                    return prev
-                }
-
-                return [...prev, payload.message].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-            })
+            setMessages((prev) => mergeIncomingMessage(prev, nextMessage, currentUserId))
         }
 
+        joinConversationRoom()
+        socket.on('connect', joinConversationRoom)
         socket.on('chat:message_created', handleMessage)
 
         return () => {
-        socket.off('chat:message_created', handleMessage)
+            socket.off('connect', joinConversationRoom)
+            socket.off('chat:message_created', handleMessage)
         }
     }, [activeConversationId, open])
 
@@ -129,8 +165,7 @@ export const useCustomerSupportChat = (open: boolean) => {
         const load = async () => {
             const data = await listConversationMessages(activeConversationId, 1, 40)
             if (!cancelled) {
-                const sorted = [...data].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-                setMessages(sorted)
+                setMessages(sortMessages(data))
             }
         }
         void load()
@@ -161,9 +196,10 @@ export const useCustomerSupportChat = (open: boolean) => {
                 content,
             })
 
-            setMessages((prev) =>
-                prev.map((item) => (item.id === optimisticMessage.id ? saved : item))
-            )
+            setMessages((prev) => {
+                const nextItems = prev.filter((item) => item.id !== optimisticMessage.id)
+                return mergeIncomingMessage(nextItems, saved, currentUserId)
+            })
         } catch {
             setMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id))
             throw new Error('Không thể gửi tin nhắn lúc này')
