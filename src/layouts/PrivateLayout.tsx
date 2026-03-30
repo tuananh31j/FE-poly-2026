@@ -19,6 +19,7 @@ import {
   TrademarkOutlined,
   UnorderedListOutlined,
   CustomerServiceOutlined,
+  RobotOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Menu, message, Typography } from 'antd'
@@ -46,6 +47,7 @@ const MENU_KEYS = {
   REVIEWS: 'dashboard-reviews',
   COMMENTS: 'dashboard-comments',
   SUPPORT_CHAT: 'dashboard-support-chat',
+  CHATBOT_PRESETS: 'dashboard-chatbot-presets',
   PRODUCTS_LIST: 'dashboard-products-list',
   PRODUCTS_CREATE: 'dashboard-products-create',
   VOUCHERS: 'dashboard-vouchers',
@@ -90,6 +92,10 @@ export const PrivateLayout = () => {
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_COMMENTS)) {
       return MENU_KEYS.COMMENTS
+    }
+
+    if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS)) {
+      return MENU_KEYS.CHATBOT_PRESETS
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_REVIEWS)) {
@@ -361,6 +367,13 @@ export const PrivateLayout = () => {
                         key: MENU_KEYS.ACCOUNTS,
                         icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
+                      },
+                      {
+                        key: MENU_KEYS.CHATBOT_PRESETS,
+                        icon: <RobotOutlined />,
+                        label: (
+                          <Link to={ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS}>Kịch bản chatbot</Link>
+                        ),
                       },
                       {
                         key: MENU_KEYS.ROLES,

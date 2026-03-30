@@ -1,100 +1,42 @@
 import {
   CloseOutlined,
-  GiftOutlined,
   MessageOutlined,
-  OrderedListOutlined,
   ReloadOutlined,
   RobotOutlined,
-  SendOutlined,
-  ShoppingCartOutlined,
   ShoppingOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { useMutation } from '@tanstack/react-query'
-import { Avatar, Badge, Button, Divider, Drawer, Empty, Input, Space, Spin, Typography, message } from 'antd'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Avatar, Button, Drawer, Empty, Space, Spin, Typography, message } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { askChatbot } from '@/features/chatbot/api/chatbot.api'
-import type { ChatbotUiMessage } from '@/features/chatbot/model/chatbot.types'
-import { buildProductDetailPath, ROUTE_PATHS } from '@/shared/constants/routes'
-
-const { TextArea } = Input
-
-const CHATBOT_STORAGE_KEY = 'golden-billiards-chatbot:v1'
-const MAX_HISTORY_MESSAGES = 40
-const QUICK_PROMPTS = [
-  'Gợi ý sản phẩm bán chạy',
-  'Có phương thức thanh toán nào?',
-  'Làm sao theo dõi đơn hàng?',
-  'Chính sách đổi trả như thế nào?',
-]
-
-const QUICK_ACTIONS = [
-  {
-    label: 'Xem sản phẩm',
-    icon: <ShoppingOutlined />,
-    url: ROUTE_PATHS.PRODUCTS,
-  },
-  {
-    label: 'Xem giỏ hàng',
-    icon: <ShoppingCartOutlined />,
-    url: ROUTE_PATHS.CHECKOUT,
-  },
-  {
-    label: 'Theo dõi đơn hàng',
-    icon: <OrderedListOutlined />,
-    url: ROUTE_PATHS.ACCOUNT_ORDERS,
-  },
-  {
-    label: 'Ưu đãi hôm nay',
-    icon: <GiftOutlined />,
-    question: 'Có chương trình ưu đãi nào hôm nay không?',
-  },
-]
-
-const formatVndCurrency = (value: number) => {
-  return `${value.toLocaleString('vi-VN')} đ`
-}
+import { askChatbot, listChatbotPresets } from '@/features/chatbot/api/chatbot.api'
+import type {
+  ChatbotPresetOption,
+  ChatbotUiMessage,
+} from '@/features/chatbot/model/chatbot.types'
+import { queryKeys } from '@/shared/api/queryKeys'
+import { buildProductDetailPath } from '@/shared/constants/routes'
 
 const createMessageId = () => {
   return `chatbot-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
-const getDefaultMessages = (): ChatbotUiMessage[] => {
-  return [
-    {
-      id: createMessageId(),
-      role: 'assistant',
-      content:
-        'Xin chào, mình là trợ lý mua hàng của Golden Billiards. Bạn có thể hỏi về sản phẩm, thanh toán, vận chuyển hoặc đơn hàng.',
-      createdAt: new Date().toISOString(),
-      followUpQuestions: QUICK_PROMPTS,
-    },
-  ]
+const formatVndCurrency = (value: number) => {
+  return `${value.toLocaleString('vi-VN')} đ`
 }
 
-const loadPersistedMessages = () => {
-  if (typeof window === 'undefined') {
-    return getDefaultMessages()
-  }
-
-  try {
-    const raw = window.localStorage.getItem(CHATBOT_STORAGE_KEY)
-
-    if (!raw) {
-      return getDefaultMessages()
-    }
-
-    const parsed = JSON.parse(raw) as ChatbotUiMessage[]
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      return getDefaultMessages()
-    }
-
-    return parsed.slice(-MAX_HISTORY_MESSAGES)
-  } catch {
-    return getDefaultMessages()
+const buildWelcomeMessage = (presetOptions: ChatbotPresetOption[]): ChatbotUiMessage => {
+  return {
+    id: createMessageId(),
+    role: 'assistant',
+    content:
+      presetOptions.length > 0
+        ? 'Chọn một câu hỏi có sẵn để mình gợi ý đúng nhóm sản phẩm mà cửa hàng đã cấu hình.'
+        : 'Cửa hàng chưa cấu hình câu hỏi chatbot. Bạn có thể quay lại sau hoặc chat trực tiếp với nhân viên.',
+    createdAt: new Date().toISOString(),
+    followUpQuestions: presetOptions,
   }
 }
 
@@ -102,103 +44,46 @@ export const CustomerChatbotWidget = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
-  const [inputValue, setInputValue] = useState('')
-  const [messagesState, setMessagesState] = useState<ChatbotUiMessage[]>(() => loadPersistedMessages())
-  const [unreadCount, setUnreadCount] = useState(0)
   const [drawerWidth, setDrawerWidth] = useState(420)
   const messageContainerRef = useRef<HTMLDivElement | null>(null)
+  const initializedRef = useRef(false)
+
+  const presetsQuery = useQuery({
+    queryKey: queryKeys.chatbot.presets,
+    queryFn: listChatbotPresets,
+    staleTime: 60_000,
+  })
 
   const askMutation = useMutation({
     mutationFn: askChatbot,
   })
 
+  const presetOptions = presetsQuery.data ?? []
   const isWaitingAnswer = askMutation.isPending
-   const statusText = isWaitingAnswer ? 'Đang phản hồi...' : 'Sẵn sàng hỗ trợ'
+   const statusText = presetsQuery.isLoading
+    ? 'Đang tải câu hỏi mẫu...'
+    : isWaitingAnswer
+      ? 'Đang phản hồi...'
+      : 'Chỉ hỗ trợ theo câu hỏi mẫu'
 
   const appendMessage = (nextMessage: ChatbotUiMessage) => {
-    setMessagesState((prev) => [...prev, nextMessage].slice(-MAX_HISTORY_MESSAGES))
+    setMessagesState((prev) => [...prev, nextMessage])
   }
 
-  const appendAssistantReply = (nextMessage: ChatbotUiMessage) => {
-    appendMessage(nextMessage)
-
-    if (!open) {
-      setUnreadCount((prev) => Math.min(prev + 1, 99))
-    }
+  const resetConversation = () => {
+    setMessagesState([buildWelcomeMessage(presetOptions)])
+  }
   }
 
-  const sendQuestion = (rawQuestion?: string) => {
-    const question = (rawQuestion ?? inputValue).trim()
-
-    if (!question || isWaitingAnswer) {
-      return
-    }
-
-    const customerMessage: ChatbotUiMessage = {
-      id: createMessageId(),
-      role: 'customer',
-      content: question,
-      createdAt: new Date().toISOString(),
-    }
-
-    appendMessage(customerMessage)
-    setInputValue('')
-
-    askMutation.mutate(
-      {
-        question,
-        context: {
-          path: location.pathname,
-        },
-      },
-      {
-        onSuccess: (data) => {
-          appendAssistantReply({
-            id: createMessageId(),
-            role: 'assistant',
-            content: data.answer,
-            createdAt: new Date().toISOString(),
-            actions: data.actions,
-            followUpQuestions: data.followUpQuestions,
-            suggestedProducts: data.suggestedProducts,
-          })
-        },
-        onError: (error) => {
-          appendAssistantReply({
-            id: createMessageId(),
-            role: 'assistant',
-            content:
-              'Mình đang gặp sự cố tạm thời. Bạn vui lòng thử lại sau vài giây hoặc để lại câu hỏi ngắn gọn hơn.',
-            createdAt: new Date().toISOString(),
-          })
-          void message.error((error as Error).message)
-        },
-      }
-    )
-  }
-
-  const messages = useMemo(() => {
-    return messagesState
-  }, [messagesState])
-
-  const shouldShowQuickPromptPanel = messages.length <= 1
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (!presetsQuery.isSuccess || initializedRef.current) {
       return
     }
 
-    window.localStorage.setItem(CHATBOT_STORAGE_KEY, JSON.stringify(messages))
-  }, [messages])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
-    setUnreadCount(0)
-  }, [open])
-
+    initializedRef.current = true
+    setMessagesState([buildWelcomeMessage(presetOptions)])
+  }, [presetOptions, presetsQuery.isSuccess])
   useEffect(() => {
     if (typeof window === 'undefined') {
       return
@@ -225,7 +110,7 @@ export const CustomerChatbotWidget = () => {
       top: messageContainerRef.current.scrollHeight,
       behavior: 'smooth',
     })
-  }, [messages, open, isWaitingAnswer])
+  }, [messagesState, open, isWaitingAnswer])
 
   const handleNavigate = (targetUrl: string) => {
     const normalizedUrl = targetUrl?.trim()
@@ -248,31 +133,70 @@ export const CustomerChatbotWidget = () => {
     setOpen(false)
   }
 
-  const resetConversation = () => {
-    const nextMessages = getDefaultMessages()
-    setMessagesState(nextMessages)
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(CHATBOT_STORAGE_KEY, JSON.stringify(nextMessages))
+  const sendPresetQuestion = (preset: ChatbotPresetOption) => {
+    if (isWaitingAnswer) {
+      return
     }
+
+    appendMessage({
+      id: createMessageId(),
+      role: 'customer',
+      content: preset.question,
+      createdAt: new Date().toISOString(),
+    })
+
+    askMutation.mutate(
+      {
+        presetId: preset.id,
+        context: {
+          path: location.pathname,
+        },
+      },
+      {
+        onSuccess: (data) => {
+          appendMessage({
+            id: createMessageId(),
+            role: 'assistant',
+            content: data.answer,
+            createdAt: new Date().toISOString(),
+            actions: data.actions,
+            followUpQuestions: data.followUpQuestions,
+            suggestedProducts: data.suggestedProducts,
+          })
+        },
+        onError: (error) => {
+          appendMessage({
+            id: createMessageId(),
+            role: 'assistant',
+            content: 'Chatbot đang tạm thời gián đoạn. Bạn vui lòng thử lại sau ít phút.',
+            createdAt: new Date().toISOString(),
+            followUpQuestions: presetOptions,
+          })
+          void message.error((error as Error).message)
+        },
+      }
+    )
+  }
+
+  const messages = useMemo(() => messagesState, [messagesState])
+
+  
   }
 
   return (
     <>
       <div className="fixed bottom-6 right-6 z-[90]">
-        <Badge count={unreadCount} overflowCount={99} size="small">
-          <Button
-            type="primary"
-            className="!h-12 !rounded-full !px-4 shadow-lg"
-            icon={<MessageOutlined />}
-            aria-label="Mở chatbot hỗ trợ khách hàng"
-            onClick={() => {
-              setOpen(true)
-            }}
-          >
-            Trợ lý mua hàng
-          </Button>
-        </Badge>
+        <Button
+          type="primary"
+          className="!h-12 !rounded-full !px-4 shadow-lg"
+          icon={<MessageOutlined />}
+          aria-label="Mở chatbot hỗ trợ khách hàng"
+          onClick={() => {
+            setOpen(true)
+          }}
+        >
+          Trợ lý mua hàng
+        </Button>
       </div>
 
       <Drawer
@@ -302,88 +226,24 @@ export const CustomerChatbotWidget = () => {
           body: {
             padding: 12
           },
-          footer: {
-            padding: 12
-          }
+        
         }}
-        footer={
-          <Space direction="vertical" size={8} className="w-full">
-            <TextArea
-              autoSize={{ minRows: 2, maxRows: 4 }}
-              placeholder="Nhập câu hỏi cho chatbot..."
-              value={inputValue}
-              onChange={(event) => setInputValue(event.target.value)}
-              onPressEnter={(event) => {
-                if (event.shiftKey) {
-                  return
-                }
-
-                event.preventDefault()
-                sendQuestion()
-              }}
-            />
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              loading={isWaitingAnswer}
-              disabled={!inputValue.trim()}
-              className="w-full"
-              onClick={() => sendQuestion()}
-            >
-              Gửi
-            </Button>
-            <Typography.Text type="secondary" className="text-xs">
-              Mẹo: nhấn Enter để gửi, Shift + Enter để xuống dòng.
-            </Typography.Text>
-          </Space>
-        }
+        
       >
-        <div ref={messageContainerRef} className="flex max-h-[calc(100vh-300px)] flex-col gap-3 overflow-y-auto pr-1">
-          {shouldShowQuickPromptPanel && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <Typography.Text strong className="block">
-             Bắt đầu nhanh  
+        <div ref={messageContainerRef} className="flex max-h-[calc(100vh-180px)] flex-col gap-3 overflow-y-auto pr-1">
+          {presetsQuery.isLoading && messages.length === 0 ? (
+            <div className="flex items-center gap-2 px-2 text-slate-500">
+              <Spin size="small" />
+              <Typography.Text type="secondary" className="text-xs">
+                Đang tải câu hỏi mẫu...
               </Typography.Text>
-             <Typography.Text type="secondary" className="mb-3 block text-xs">
-                Chọn nhanh để khám phá sản phẩm hoặc hỏi trợ lý.
-              </Typography.Text>
-               <Space wrap size={[6, 6]} className="mb-3">
-                {QUICK_ACTIONS.map((action) => (
-                  <Button
-                    key={action.label}
-                    size="small"
-                    icon={action.icon}
-                    onClick={() => {
-                      if (action.url) {
-                        handleNavigate(action.url)
-                      } else if (action.question) {
-                        sendQuestion(action.question)
-                      }
-                    }}
-                  >
-                    {action.label}
-                  </Button>
-                ))}
-              </Space>
-              <Divider className="!my-2" />
-              <Space wrap size={[6, 6]}>
-                {QUICK_PROMPTS.map((question) => (
-                  <Button key={`prompt-${question}`} size="small" onClick={() => sendQuestion(question)}>
-                     <Button
-                    key={`prompt-${question}`}
-                    size="small"
-                    type="dashed"
-                    onClick={() => sendQuestion(question)}
-                  ></Button>
-                    {question}
-                  </Button>
-                ))}
-              </Space>
+               
+              
             </div>
-          )}
+          
 
-          {messages.length === 0 ? (
-            <Empty description="Chưa có tin nhắn" />
+          ) : messages.length === 0 ? (
+            <Empty description="Chưa có nội dung chatbot" />
           ) : (
             messages.map((item) => {
               const isAssistant = item.role === 'assistant'
@@ -409,7 +269,9 @@ export const CustomerChatbotWidget = () => {
                         >
                           {item.content}
                         </Typography.Paragraph>
-                        <Typography.Text className={`text-[11px] ${isAssistant ? 'text-slate-500' : '!text-blue-100'}`}>
+                        <Typography.Text
+                          className={`text-[11px] ${isAssistant ? 'text-slate-500' : '!text-blue-100'}`}
+                        >
                           {new Date(item.createdAt).toLocaleTimeString('vi-VN', {
                             hour: '2-digit',
                             minute: '2-digit',
@@ -419,10 +281,10 @@ export const CustomerChatbotWidget = () => {
 
                         {Array.isArray(item.suggestedProducts) && item.suggestedProducts.length > 0 && (
                           <div className="mb-2 flex flex-col gap-2">
-                            <Divider className="!my-2" />
-                            <Typography.Text strong className="text-xs">
-                              Gợi ý phù hợp
-                            </Typography.Text>
+                            <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                              <ShoppingOutlined />
+                              <span>Sản phẩm phù hợp</span>
+                            </div>
                             {item.suggestedProducts.map((product) => (
                               <button
                                 key={product.id}
@@ -434,10 +296,10 @@ export const CustomerChatbotWidget = () => {
                                   <img
                                     src={product.imageUrl}
                                     alt={product.name}
-                                    className="h-10 w-10 rounded-md object-cover"
+                                    className="h-12 w-12 rounded-md object-cover"
                                   />
                                 ) : (
-                                  <div className="h-10 w-10 rounded-md bg-slate-200" />
+                                  <div className="h-12 w-12 rounded-md bg-slate-200" />
                                 )}
 
                                 <div className="min-w-0">
@@ -459,7 +321,7 @@ export const CustomerChatbotWidget = () => {
                         )}
 
                         {Array.isArray(item.actions) && item.actions.length > 0 && (
-                          <Space wrap size={[6, 6]} className="mb-1">
+                          <Space wrap size={[6, 6]} className="mb-1 mt-3">
                             {item.actions.map((action) => (
                               <Button
                                 key={`${item.id}-${action.label}`}
@@ -474,15 +336,15 @@ export const CustomerChatbotWidget = () => {
                         )}
 
                         {Array.isArray(item.followUpQuestions) && item.followUpQuestions.length > 0 && (
-                          <Space wrap size={[6, 6]}>
+                          <Space wrap size={[6, 6]} className="mt-3">
                             {item.followUpQuestions.map((question) => (
                               <Button
-                                key={`${item.id}-${question}`}
+                                key={`${item.id}-${question.id}`}
                                 size="small"
                                 type="dashed"
-                                onClick={() => sendQuestion(question)}
+                                onClick={() => sendPresetQuestion(question)}
                               >
-                                {question}
+                                {question.question}
                               </Button>
                             ))}
                           </Space>
@@ -499,7 +361,7 @@ export const CustomerChatbotWidget = () => {
             <div className="flex items-center gap-2 px-2 text-slate-500">
               <Spin size="small" />
               <Typography.Text type="secondary" className="text-xs">
-                Đang phân tích yêu cầu và tìm gợi ý phù hợp...
+                Đang lấy danh sách sản phẩm phù hợp...
               </Typography.Text>
             </div>
           )}

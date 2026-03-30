@@ -1,4 +1,7 @@
 export const queryKeys = {
+    chatbot: {
+        presets: ['chatbot', 'presets'] as const,
+    },
     auth: {
         me: ['auth', 'me'] as const,
     },
@@ -27,6 +30,7 @@ export const queryKeys = {
             ['admin', 'products', filters ?? {}] as const,
         productVariants: (productId: string, filters?: Record<string, unknown>) =>
             ['admin', 'product-variants', productId, filters ?? {}] as const,
+        chatbotPresets: ['admin', 'chatbot-presets'] as const,
         productMeta: {
             categories: ['admin', 'product-meta', 'categories'] as const,
             brands: ['admin', 'product-meta', 'brands'] as const,
