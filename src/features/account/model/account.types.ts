@@ -63,6 +63,7 @@ export interface OrderItemSnapshot {
   quantity: number
   price: number
   total: number
+  isReviewed: boolean
 }
 
 export interface OrderStatusHistoryItem {
@@ -186,6 +187,14 @@ export interface CreateCancelRefundRequestPayload {
   accountNumber: string
   accountHolder: string
   note?: string
+}
+
+export interface CreateMyReviewPayload {
+  orderId: string
+  productId: string
+  rating: number
+  content?: string
+  images?: string[]
 }
 
 export interface VerifyVnpayReturnPayload {

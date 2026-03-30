@@ -1,3 +1,4 @@
+import { ShoppingCartOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import {
   Button,
@@ -12,11 +13,12 @@ import {
   Spin,
   Typography,
 } from 'antd'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { getProductFilters, getProducts } from '@/features/product/api/product.api'
 import { ProductCard } from '@/features/product/components/ProductCard'
 import { queryKeys } from '@/shared/api/queryKeys'
+import { ROUTE_PATHS } from '@/shared/constants/routes'
 
 const PAGE_SIZE = 8
 
@@ -30,6 +32,7 @@ const PRICE_RANGES = [
 
 export const ProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const categoryId = searchParams.get('categoryId')?.trim() ?? ''
   const brand = searchParams.get('brand')?.trim() ?? ''
@@ -243,6 +246,13 @@ export const ProductsPage = () => {
                 }}
               >
                 Xóa bộ lọc
+              </Button>
+              <Button
+                type="primary"
+                icon={<ShoppingCartOutlined />}
+                onClick={() => navigate(ROUTE_PATHS.CHECKOUT)}
+              >
+                Xem giỏ hàng
               </Button>
             </Space>
           </Card>
