@@ -19,6 +19,7 @@ import {
   TrademarkOutlined,
   UnorderedListOutlined,
   CustomerServiceOutlined,
+  RobotOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Menu, message, Typography } from 'antd'
@@ -34,6 +35,7 @@ import {
   buildDashboardProductsPath,
   ROUTE_PATHS,
 } from '@/shared/constants/routes'
+import { consumeAuthSuccessFlash } from '@/shared/utils/auth-success-flash'
 import { clearRefreshTokenCookie, getRefreshTokenCookie } from '@/shared/utils/cookie'
 
 const { Header, Content, Sider } = Layout
@@ -45,6 +47,7 @@ const MENU_KEYS = {
   REVIEWS: 'dashboard-reviews',
   COMMENTS: 'dashboard-comments',
   SUPPORT_CHAT: 'dashboard-support-chat',
+  CHATBOT_PRESETS: 'dashboard-chatbot-presets',
   PRODUCTS_LIST: 'dashboard-products-list',
   PRODUCTS_CREATE: 'dashboard-products-create',
   VOUCHERS: 'dashboard-vouchers',
@@ -89,6 +92,10 @@ export const PrivateLayout = () => {
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_COMMENTS)) {
       return MENU_KEYS.COMMENTS
+    }
+
+    if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS)) {
+      return MENU_KEYS.CHATBOT_PRESETS
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_REVIEWS)) {
@@ -145,15 +152,15 @@ export const PrivateLayout = () => {
   }, [location.pathname, location.search])
 
   useEffect(() => {
-    const state = location.state as { authSuccess?: 'login' | 'register' } | null
-    if (!state?.authSuccess) {
+    const authSuccess = consumeAuthSuccessFlash()
+
+    if (!authSuccess) {
       return
     }
 
-    const content = state.authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
+    const content = authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
     void message.success(content)
-    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
-  }, [location.pathname, location.search, location.state, navigate])
+    }, [location.key])
 
   const selectedKeys = useMemo(() => [selectedMenuKey], [selectedMenuKey])
   const [manualOpenKeys, setManualOpenKeys] = useState<string[]>([])
@@ -360,6 +367,13 @@ export const PrivateLayout = () => {
                         key: MENU_KEYS.ACCOUNTS,
                         icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
+                      },
+                      {
+                        key: MENU_KEYS.CHATBOT_PRESETS,
+                        icon: <RobotOutlined />,
+                        label: (
+                          <Link to={ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS}>Kịch bản chatbot</Link>
+                        ),
                       },
                       {
                         key: MENU_KEYS.ROLES,

@@ -36,10 +36,6 @@ const normalizeUserItem = (value: Record<string, unknown>): AdminUserItem => {
     phone: typeof value.phone === 'string' ? value.phone : undefined,
     role,
     avatarUrl: typeof value.avatarUrl === 'string' ? value.avatarUrl : undefined,
-    loyaltyPoints: typeof value.loyaltyPoints === 'number' ? value.loyaltyPoints : undefined,
-    membershipTier: typeof value.membershipTier === 'string' ? value.membershipTier : undefined,
-    staffDepartment:
-      typeof value.staffDepartment === 'string' ? value.staffDepartment : undefined,
     staffStartDate: typeof value.staffStartDate === 'string' ? value.staffStartDate : undefined,
     createdAt: String(value.createdAt ?? ''),
     updatedAt: String(value.updatedAt ?? ''),

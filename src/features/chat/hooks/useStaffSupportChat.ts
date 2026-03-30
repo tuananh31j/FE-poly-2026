@@ -22,6 +22,44 @@ const getSocketBaseUrl = () => {
   }
 }
 
+const sortMessages = (items: ChatMessage[]) => {
+  return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
+const mergeIncomingMessage = (
+  previous: ChatMessage[],
+  nextMessage: ChatMessage,
+  currentUserId?: string | null
+) => {
+    const nextIndex = previous.findIndex((item) => item.id === nextMessage.id)
+
+    if (nextIndex >= 0) {
+        const nextItems = [...previous]
+        nextItems[nextIndex] = nextMessage
+        return sortMessages(nextItems)
+    }
+
+    const optimisticIndex = previous.findIndex((item) => {
+        if (!item.id.startsWith('temp-')) {
+            return false
+        }
+
+        return (
+            item.conversationId === nextMessage.conversationId &&
+            item.senderId === (currentUserId ?? nextMessage.senderId) &&
+            item.content.trim() === nextMessage.content.trim()
+        )
+    })
+    
+    if (optimisticIndex >= 0) {
+        const nextItems = [...previous]
+        nextItems[optimisticIndex] = nextMessage
+        return sortMessages(nextItems)
+    }
+
+    return sortMessages([...previous, nextMessage])
+}
+
 export const useStaffSupportChat = () => {
   const accessToken = useAppSelector((state) => state.auth.accessToken)
   const authUserId = useAppSelector((state) => state.auth.user?.id)

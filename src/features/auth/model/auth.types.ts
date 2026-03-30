@@ -6,9 +6,6 @@ export interface AuthUser {
   phone?: string
   role: 'customer' | 'staff' | 'admin'
   avatarUrl?: string
-  loyaltyPoints?: number
-  membershipTier?: string
-  staffDepartment?: string
   staffStartDate?: string
   createdAt: string
   updatedAt: string

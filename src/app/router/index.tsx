@@ -15,6 +15,7 @@ import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { CheckoutPage } from '@/pages/checkout/CheckoutPage'
 import { AccountManagementPage } from '@/pages/dashboard/AccountManagementPage'
+import { ChatbotPresetManagementPage } from '@/pages/dashboard/ChatbotPresetManagementPage'
 import { CommentManagementPage } from '@/pages/dashboard/CommentManagementPage'
 import { DashboardCenterPage } from '@/pages/dashboard/DashboardCenterPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
@@ -148,6 +149,14 @@ export const router = createBrowserRouter([
       {
         path: 'support-chat',
         element: <SupportChatPage />,
+      },
+      {
+        path: 'chatbot-presets',
+        element: (
+          <RequireAdmin>
+            <ChatbotPresetManagementPage />
+          </RequireAdmin>
+        ),
       },
       {
         path: 'reviews',
