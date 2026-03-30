@@ -386,12 +386,7 @@ export const CheckoutPage = () => {
                 </Space>
               </Radio.Group>
 
-              {paymentMethod === 'zalopay' ? (
-              <Typography.Text type="secondary" className="mt-4 block text-sm">
-                  Khi chọn ZaloPay, hệ thống sẽ mở cổng ZaloPay chung để bạn tự chọn ví, thẻ
-                  hoặc ATM ở phía ZaloPay.
-                </Typography.Text>
-              ) : null}
+              
             </Card>
 
             <Card title={`Sản phẩm đã chọn (${selectedCartItems.length})`}>

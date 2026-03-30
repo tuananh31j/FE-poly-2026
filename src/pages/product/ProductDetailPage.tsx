@@ -564,6 +564,12 @@ export const ProductDetailPage = () => {
                       Hỗ trợ
                     </Tag>
                   </div>
+                  <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <Badge status="success" text="ZaloPay - Thanh toán online" />
+                    <Tag color="green" className="!m-0">
+                      Hỗ trợ
+                    </Tag>
+                  </div>
                 </Space>
                 <Typography.Paragraph className="!mb-0 !mt-2 text-xs" type="secondary">
                   Phương thức thanh toán được xác nhận ở bước đặt hàng.
