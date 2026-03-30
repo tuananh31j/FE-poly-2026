@@ -13,7 +13,6 @@ import {
   Card,
   Form,
   Input,
-  InputNumber,
   message,
   Modal,
   Popconfirm,
@@ -54,9 +53,6 @@ interface EditUserFormValues {
   role: AdminUserItem['role']
   isActive: boolean
   avatarUrl?: string
-  loyaltyPoints?: number
-  membershipTier?: 'bronze' | 'silver' | 'gold' | 'platinum'
-  staffDepartment?: string
 }
 
 interface ResetPasswordFormValues {
@@ -108,12 +104,6 @@ const editRoleOptions = [
   { label: 'Admin', value: 'admin', disabled: true },
 ]
 
-const membershipTierOptions = [
-  { label: 'Bronze', value: 'bronze' },
-  { label: 'Silver', value: 'silver' },
-  { label: 'Gold', value: 'gold' },
-  { label: 'Platinum', value: 'platinum' },
-]
 
 export const AccountManagementPage = () => {
   const queryClient = useQueryClient()
@@ -261,15 +251,6 @@ export const AccountManagementPage = () => {
                   role: record.role,
                   isActive: record.isActive,
                   avatarUrl: record.avatarUrl,
-                  loyaltyPoints: record.loyaltyPoints,
-                  membershipTier:
-                    record.membershipTier === 'bronze' ||
-                    record.membershipTier === 'silver' ||
-                    record.membershipTier === 'gold' ||
-                    record.membershipTier === 'platinum'
-                      ? record.membershipTier
-                      : undefined,
-                  staffDepartment: record.staffDepartment,
                 })
                 setEditModalOpen(true)
               }}
@@ -527,9 +508,6 @@ export const AccountManagementPage = () => {
               fullName: values.fullName,
               phone: values.phone,
               avatarUrl: values.avatarUrl,
-              loyaltyPoints: values.loyaltyPoints,
-              membershipTier: values.membershipTier,
-              staffDepartment: values.staffDepartment,
             }
 
             if (
@@ -597,23 +575,6 @@ export const AccountManagementPage = () => {
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Form.Item label="Loyalty points" name="loyaltyPoints">
-              <InputNumber className="w-full" min={0} placeholder="Nhập điểm tích lũy" />
-            </Form.Item>
-
-            <Form.Item label="Membership tier" name="membershipTier">
-              <Select
-                allowClear
-                placeholder="Chọn hạng thành viên"
-                options={membershipTierOptions}
-              />
-            </Form.Item>
-          </div>
-
-          <Form.Item label="Bộ phận nhân sự" name="staffDepartment">
-            <Input placeholder="Sales / Support / Warehouse..." />
-          </Form.Item>
         </Form>
       </Modal>
 
