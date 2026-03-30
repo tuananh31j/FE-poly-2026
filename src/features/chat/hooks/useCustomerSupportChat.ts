@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { env } from '@/shared/constants/env'
 import { useAppSelector } from '@/app/store/hooks'
-
+import { useMeQuery } from '@/features/auth/hooks/useMeQuery'
 import {
   createSupportConversation,
   listConversationMessages,
@@ -23,15 +23,19 @@ const getSocketBaseUrl = () => {
 
 export const useCustomerSupportChat = (open: boolean) => {
     const accessToken = useAppSelector((state) => state.auth.accessToken)
-    const userId = useAppSelector((state) => state.auth.user?.id)
+    const authUserId = useAppSelector((state) => state.auth.user?.id)
+  const { data: meData } = useMeQuery()
     const socketRef = useRef<Socket | null>(null)
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
     const [messages, setMessages] = useState<ChatMessage[]>([])
 
+    const [lastIncomingMessage, setLastIncomingMessage] = useState<ChatMessage | null>(null)
+  const currentUserId = meData?.id ?? authUserId ?? null
+
     const conversationsQuery = useQuery({
         queryKey: ['support-conversations', accessToken],
         queryFn: () => listSupportConversations(1, 1),
-        enabled: Boolean(open && accessToken),
+         enabled: Boolean(accessToken),
     })
 
     const createConversationMutation = useMutation({
@@ -46,7 +50,7 @@ export const useCustomerSupportChat = (open: boolean) => {
     })
 
     useEffect(() => {
-        if (!open || !accessToken) {
+           if (!accessToken) {
             socketRef.current?.disconnect()
             socketRef.current = null
             return
@@ -67,10 +71,10 @@ export const useCustomerSupportChat = (open: boolean) => {
                 socketRef.current = null
             }
         }
-    }, [accessToken, open])
+    }, [accessToken])
 
     useEffect(() => {
-        if (!open || !accessToken) {
+        if (!accessToken) {
             return
         }
 
@@ -84,13 +88,13 @@ export const useCustomerSupportChat = (open: boolean) => {
         if (conversationsQuery.isSuccess && !createConversationMutation.isPending) {
             createConversationMutation.mutate({})
         }
-    }, [open, accessToken, conversationsQuery.data, conversationsQuery.isSuccess])
+}, [accessToken, conversationsQuery.data, conversationsQuery.isSuccess])
 
     useEffect(() => {
         const conversationId = activeConversationId
         const socket = socketRef.current
 
-        if (!conversationId || !socket || !open) {
+     if (!conversationId || !socket) {
             return
         }
 
@@ -100,6 +104,10 @@ export const useCustomerSupportChat = (open: boolean) => {
             if (payload?.conversationId !== conversationId || !payload.message) {
                 return
             }
+
+             if (nextMessage.senderId !== currentUserId) {
+        setLastIncomingMessage(nextMessage)
+      }
 
             setMessages((prev) => {
                 const exists = prev.some((item) => item.id === payload.message?.id)
@@ -116,7 +124,7 @@ export const useCustomerSupportChat = (open: boolean) => {
         return () => {
         socket.off('chat:message_created', handleMessage)
         }
-    }, [activeConversationId, open])
+    }, [activeConversationId, currentUserId])
 
     useEffect(() => {
         if (!activeConversationId || !open) {
@@ -148,7 +156,7 @@ export const useCustomerSupportChat = (open: boolean) => {
         const optimisticMessage: ChatMessage = {
             id: `temp-${Date.now()}`,
             conversationId: activeConversationId,
-            senderId: userId ?? 'me',
+             senderId: currentUserId ?? 'me',
             content,
             createdAt: new Date().toISOString(),
         }
@@ -179,10 +187,11 @@ export const useCustomerSupportChat = (open: boolean) => {
         conversation,
         messages,
         sendMessage,
+        currentUserId,
+    lastIncomingMessage,
         isReady: Boolean(activeConversationId),
         isLoading:
-        conversationsQuery.isLoading ||
-        createConversationMutation.isPending ||
-        !activeConversationId,
+         open &&
+      (conversationsQuery.isLoading || createConversationMutation.isPending || !activeConversationId),
     }
 }
