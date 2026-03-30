@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
   Card,
+  ColorPicker,
   Form,
   Input,
   message,
@@ -127,6 +128,7 @@ export const MasterDataManagementPage = () => {
   const [brandForm] = Form.useForm<BrandFormValues>()
   const [colorForm] = Form.useForm<ColorFormValues>()
   const [sizeForm] = Form.useForm<SizeFormValues>()
+  const colorHexValue = Form.useWatch('hexCode', colorForm)
 
   const [categorySearchInput, setCategorySearchInput] = useState('')
   const [brandSearchInput, setBrandSearchInput] = useState('')
@@ -1285,9 +1287,36 @@ export const MasterDataManagementPage = () => {
               }
             />
           </Form.Item>
-          <Form.Item name="hexCode" label="Mã HEX (vd: #1D4ED8)">
-            <Input placeholder="#1D4ED8" />
-          </Form.Item>
+          <Form.Item label="Màu sắc">
+      <ColorPicker
+        value={colorHexValue}
+        format="hex"
+        allowClear
+        disabledAlpha
+        showText={(color) => color.toHexString().toUpperCase()}
+        onChange={(_, css) => {
+          colorForm.setFieldValue('hexCode', css.toUpperCase())
+        }}
+        onClear={() => {
+          colorForm.setFieldValue('hexCode', undefined)
+        }}
+      >
+        <Button className="!h-14 !w-full !justify-between !px-4 text-left">
+          <Space size={12}>
+            <span
+              className="inline-block h-5 w-5 rounded-full border border-slate-300"
+              style={{ backgroundColor: colorHexValue || 'transparent' }}
+            />
+            <span className={colorHexValue ? 'text-slate-900' : 'text-slate-400'}>
+              {colorHexValue ? colorHexValue.toUpperCase() : 'Chọn màu bằng ColorPicker'}
+            </span>
+          </Space>
+        </Button>
+      </ColorPicker>
+    </Form.Item>
+    <Form.Item name="hexCode" hidden>
+      <Input />
+    </Form.Item>
           <Form.Item name="isActive" label="Trạng thái" valuePropName="checked">
             <Switch checkedChildren="Đang dùng" unCheckedChildren="Ngừng dùng" />
           </Form.Item>
