@@ -5,7 +5,8 @@ import {
   SendOutlined,
   UserOutlined,
 } from '@ant-design/icons'
-import { Avatar, Badge, Button, Drawer, Input, Space, Spin, Typography, message, notification } from 'antd'
+import { Avatar, Badge, Button, Drawer, Input, Space, Spin, Typography, message } from 'antd'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { useCustomerSupportChat } from '../hooks/useCustomerSupportChat'
@@ -57,6 +58,7 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
     const [unreadCount, setUnreadCount] = useState(0)
     const [drawerWidth, setDrawerWidth] = useState(420)
     const messageContainerRef = useRef<HTMLDivElement | null>(null)
+    const lastNotifiedMessageIdRef = useRef<string | null>(null)
 
   const { messages, sendMessage, isReady, isLoading, currentUserId, lastIncomingMessage } =
     useCustomerSupportChat(open)
@@ -94,16 +96,21 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
         }
     }, [open])
     useEffect(() => {
-    if (!lastIncomingMessage || open) {
+    if (!lastIncomingMessage || lastNotifiedMessageIdRef.current === lastIncomingMessage.id) {
       return
     }
 
-    setUnreadCount((prev) => prev + 1)
-    notification.info({
-      key: `customer-chat-${lastIncomingMessage.id}`,
-      message: 'Tin nhắn mới từ nhân viên',
-      description: lastIncomingMessage.content,
-      placement: 'bottomRight',
+    lastNotifiedMessageIdRef.current = lastIncomingMessage.id
+
+    if (!open) {
+      setUnreadCount((prev) => prev + 1)
+    }
+
+    void message.info({
+      content:
+        lastIncomingMessage.content.length > 80
+          ? `Nhân viên vừa phản hồi: ${lastIncomingMessage.content.slice(0, 77)}...`
+          : `Nhân viên vừa phản hồi: ${lastIncomingMessage.content}`,
       duration: 4,
     })
   }, [lastIncomingMessage, open])
