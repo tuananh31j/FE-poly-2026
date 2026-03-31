@@ -13,66 +13,66 @@ const toId = (value: unknown) => {
 }
 
 const toRecord = (value: unknown): Record<string, unknown> | undefined => {
-    if (!value || typeof value !== 'object') {
-        return undefined
-    }
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
 
-    return value as Record<string, unknown>
+  return value as Record<string, unknown>
 }
 
 const normalizeProduct = (value: Record<string, unknown>): AdminChatbotPresetProduct => {
-    return {
-        id: toId(value.id ?? value._id),
-        name: String(value.name ?? ''),
-        brand: typeof value.brand === 'string' ? value.brand : 'Generic',
-        imageUrl: typeof value.imageUrl === 'string' ? value.imageUrl : null,
-        isAvailable: value.isAvailable !== false,
-    }
+  return {
+    id: toId(value.id ?? value._id),
+    name: String(value.name ?? ''),
+    brand: typeof value.brand === 'string' ? value.brand : 'Generic',
+    imageUrl: typeof value.imageUrl === 'string' ? value.imageUrl : null,
+    isAvailable: value.isAvailable !== false,
+  }
 }
 
 const normalizePreset = (value: Record<string, unknown>): AdminChatbotPresetItem => {
-    const rawProducts = Array.isArray(value.products) ? value.products : []
+  const rawProducts = Array.isArray(value.products) ? value.products : []
 
-    return {
-        id: toId(value.id ?? value._id),
-        question: String(value.question ?? ''),
-        answer: typeof value.answer === 'string' ? value.answer : undefined,
-        isActive: value.isActive !== false,
-        sortOrder: Number(value.sortOrder ?? 0),
-        createdAt: String(value.createdAt ?? ''),
-        updatedAt: String(value.updatedAt ?? ''),
-        products: rawProducts
-        .map((item) => toRecord(item))
-        .filter((item): item is Record<string, unknown> => Boolean(item))
-        .map((item) => normalizeProduct(item)),
-    }
+  return {
+    id: toId(value.id ?? value._id),
+    question: String(value.question ?? ''),
+    answer: typeof value.answer === 'string' ? value.answer : undefined,
+    isActive: value.isActive !== false,
+    sortOrder: Number(value.sortOrder ?? 0),
+    createdAt: String(value.createdAt ?? ''),
+    updatedAt: String(value.updatedAt ?? ''),
+    products: rawProducts
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizeProduct(item)),
+  }
 }
 
 export const listAdminChatbotPresets = async () => {
-    try {
-        const response = await httpClient.get<ApiSuccess<Record<string, unknown>[]>>('/chatbot/admin/presets')
-        const data = extractApiData(response)
+  try {
+    const response = await httpClient.get<ApiSuccess<Record<string, unknown>[]>>('/chatbot/admin/presets')
+    const data = extractApiData(response)
 
-        return (Array.isArray(data) ? data : [])
-        .map((item) => toRecord(item))
-        .filter((item): item is Record<string, unknown> => Boolean(item))
-        .map((item) => normalizePreset(item))
-    } catch (error) {
-        throw toApiClientError(error)
-    }
+    return (Array.isArray(data) ? data : [])
+      .map((item) => toRecord(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item))
+      .map((item) => normalizePreset(item))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
 }
 
 export const createAdminChatbotPreset = async (payload: UpsertAdminChatbotPresetPayload) => {
-    try {
-        const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
-        '/chatbot/admin/presets',
-        payload
-        )
+  try {
+    const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
+      '/chatbot/admin/presets',
+      payload
+    )
 
-        return normalizePreset(extractApiData(response))
-    } catch (error) {
-        throw toApiClientError(error)
-    }
+    return normalizePreset(extractApiData(response))
+  } catch (error) {
+    throw toApiClientError(error)
+  }
 }
 
 export const updateAdminChatbotPreset = async (
