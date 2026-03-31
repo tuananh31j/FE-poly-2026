@@ -16,10 +16,8 @@ export const ProductCarouselSection = ({
   loading = false,
 }: ProductCarouselSectionProps) => {
   const screens = Grid.useBreakpoint()
-  
 
   const cardsPerSlide = screens.lg ? 4 : screens.md ? 3 : screens.sm ? 2 : 1
-  
 
   return (
     <section className="space-y-4">
@@ -27,7 +25,6 @@ export const ProductCarouselSection = ({
         <Typography.Title level={3} className="!mb-0 !text-slate-900">
           {title}
         </Typography.Title>
-        
       </div>
 
       {loading ? (

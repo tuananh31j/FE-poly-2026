@@ -160,8 +160,6 @@ const normalizeFilterCategory = (item: Record<string, unknown>): ProductFilterCa
   return {
     id: toId(item.id ?? item._id),
     name: String(item.name ?? 'Danh mục'),
-    slug: String(item.slug ?? ''),
-    image: typeof item.image === 'string' ? item.image : undefined,
   }
 }
 
@@ -276,6 +274,7 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
       _id: typeof data._id === 'string' ? data._id : undefined,
       name: String(data.name ?? ''),
       categoryId: toId(data.categoryId),
+      brandId: data.brandId ? toId(data.brandId) : undefined,
       brand: typeof data.brand === 'string' ? data.brand : 'Generic',
       description: typeof data.description === 'string' ? data.description : undefined,
       attributes:
@@ -284,8 +283,6 @@ export const getProductDetail = async (productId: string): Promise<ProductDetail
           : undefined,
       images: toStringArray(data.images),
       isAvailable: Boolean(data.isAvailable),
-      metaTitle: typeof data.metaTitle === 'string' ? data.metaTitle : undefined,
-      metaDescription: typeof data.metaDescription === 'string' ? data.metaDescription : undefined,
       averageRating: Number(data.averageRating ?? 0),
       reviewCount: Number(data.reviewCount ?? 0),
       soldCount: Number(data.soldCount ?? 0),

@@ -47,13 +47,12 @@ export interface ProductDetailResponse {
   _id?: string
   name: string
   categoryId: string
+  brandId?: string
   brand: string
   description?: string
   attributes?: Record<string, unknown>
   images: string[]
   isAvailable: boolean
-  metaTitle?: string
-  metaDescription?: string
   averageRating: number
   reviewCount: number
   soldCount: number
@@ -108,8 +107,6 @@ export type NewestResponse = ProductCardItem[]
 export interface ProductFilterCategory {
   id: string
   name: string
-  slug: string
-  image?: string
 }
 
 export interface ProductFilterColor {
