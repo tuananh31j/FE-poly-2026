@@ -44,6 +44,7 @@ export const CustomerChatbotWidget = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [messagesState, setMessagesState] = useState<ChatbotUiMessage[]>([])
   const [drawerWidth, setDrawerWidth] = useState(420)
   const messageContainerRef = useRef<HTMLDivElement | null>(null)
   const initializedRef = useRef(false)
@@ -60,7 +61,7 @@ export const CustomerChatbotWidget = () => {
 
   const presetOptions = presetsQuery.data ?? []
   const isWaitingAnswer = askMutation.isPending
-   const statusText = presetsQuery.isLoading
+  const statusText = presetsQuery.isLoading
     ? 'Đang tải câu hỏi mẫu...'
     : isWaitingAnswer
       ? 'Đang phản hồi...'
@@ -73,8 +74,6 @@ export const CustomerChatbotWidget = () => {
   const resetConversation = () => {
     setMessagesState([buildWelcomeMessage(presetOptions)])
   }
-  }
-
 
   useEffect(() => {
     if (!presetsQuery.isSuccess || initializedRef.current) {
@@ -84,6 +83,7 @@ export const CustomerChatbotWidget = () => {
     initializedRef.current = true
     setMessagesState([buildWelcomeMessage(presetOptions)])
   }, [presetOptions, presetsQuery.isSuccess])
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return
@@ -180,9 +180,6 @@ export const CustomerChatbotWidget = () => {
 
   const messages = useMemo(() => messagesState, [messagesState])
 
-  
-  }
-
   return (
     <>
       <div className="fixed bottom-6 right-6 z-[90]">
@@ -224,11 +221,9 @@ export const CustomerChatbotWidget = () => {
         }
         styles={{
           body: {
-            padding: 12
+            padding: 12,
           },
-        
         }}
-        
       >
         <div ref={messageContainerRef} className="flex max-h-[calc(100vh-180px)] flex-col gap-3 overflow-y-auto pr-1">
           {presetsQuery.isLoading && messages.length === 0 ? (
@@ -237,11 +232,7 @@ export const CustomerChatbotWidget = () => {
               <Typography.Text type="secondary" className="text-xs">
                 Đang tải câu hỏi mẫu...
               </Typography.Text>
-               
-              
             </div>
-          
-
           ) : messages.length === 0 ? (
             <Empty description="Chưa có nội dung chatbot" />
           ) : (
@@ -264,7 +255,7 @@ export const CustomerChatbotWidget = () => {
                         className={isAssistant ? '' : '!bg-blue-700'}
                       />
                       <div>
-                         <Typography.Paragraph
+                        <Typography.Paragraph
                           className={`!mb-1 whitespace-pre-wrap ${isAssistant ? '' : '!text-white'}`}
                         >
                           {item.content}

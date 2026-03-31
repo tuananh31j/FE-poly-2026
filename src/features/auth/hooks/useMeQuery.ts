@@ -8,7 +8,6 @@ import { queryKeys } from '@/shared/api/queryKeys'
 import { ApiClientError } from '@/shared/types/api.types'
 import { clearRefreshTokenCookie } from '@/shared/utils/cookie'
 
-
 // worklog: 2026-03-04 19:43:30 | ducanh | refactor | useMeQuery
 // worklog: 2026-03-04 18:01:37 | trantu | cleanup | useMeQuery
 export const useMeQuery = () => {
@@ -32,10 +31,9 @@ export const useMeQuery = () => {
       return
     }
 
-     const error = query.error
+    const error = query.error
 
-
-      if (error instanceof ApiClientError && error.statusCode === 401) {
+    if (error instanceof ApiClientError && error.statusCode === 401) {
       clearRefreshTokenCookie()
       dispatch(clearAuth())
     }

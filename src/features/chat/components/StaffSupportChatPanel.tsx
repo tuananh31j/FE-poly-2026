@@ -1,9 +1,13 @@
-import { MessageOutlined, SearchOutlined, SendOutlined, UserOutlined } from '@ant-design/icons'
+import {
+  MessageOutlined,
+  SearchOutlined,
+  SendOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import { Avatar, Button, Input, List, Space, Tag, Typography, message } from 'antd'
 import { useMemo, useState } from 'react'
 
 import { useStaffSupportChat } from '../hooks/useStaffSupportChat'
-import { useAppSelector } from '@/app/store/hooks'
 
 import type { ChatConversation, ChatMessage } from '../model/chat.types'
 
@@ -111,7 +115,12 @@ export const StaffSupportChatPanel = () => {
               onClick={() => void selectConversation(conversation.id)}
             >
               <List.Item.Meta
-                avatar={<Avatar src={conversation.customer?.avatarUrl} icon={<UserOutlined />} />}
+                avatar={
+                  <Avatar
+                    src={conversation.customer?.avatarUrl}
+                    icon={<UserOutlined />}
+                  />
+                }
                 title={
                   <Space size={6}>
                     <Typography.Text>{renderConversationTitle(conversation)}</Typography.Text>
@@ -149,10 +158,10 @@ export const StaffSupportChatPanel = () => {
         <div className="flex-1 overflow-y-auto py-4">
           {activeConversationId ? (
             <div className="flex flex-col gap-3">
-             {messages.length === 0 ? (
+              {messages.length === 0 ? (
                 <Typography.Text type="secondary">Chưa có tin nhắn.</Typography.Text>
               ) : (
-                messages.map((item) => renderMessageBubble(item, item.senderId === currentUserId))  
+                messages.map((item) => renderMessageBubble(item, item.senderId === currentUserId))
               )}
             </div>
           ) : (
@@ -162,8 +171,8 @@ export const StaffSupportChatPanel = () => {
           )}
         </div>
 
-          <div className="border-t border-slate-100 pt-3">
-            <Space direction="vertical" className="w-full" size={8}>
+        <div className="border-t border-slate-100 pt-3">
+          <Space direction="vertical" className="w-full" size={8}>
             <TextArea
               autoSize={{ minRows: 2, maxRows: 4 }}
               placeholder="Nhập phản hồi cho khách hàng..."
