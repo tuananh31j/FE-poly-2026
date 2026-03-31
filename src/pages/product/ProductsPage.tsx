@@ -21,7 +21,6 @@ import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 
 const PAGE_SIZE = 8
-
 const PRICE_RANGES = [
   { value: '0-2000000', label: 'Dưới 2.000.000đ' },
   { value: '2000000-5000000', label: '2.000.000đ - 5.000.000đ' },
@@ -182,7 +181,7 @@ export const ProductsPage = () => {
                       brands: values.map((value) => String(value)),
                     })
                   }}
-                  >
+                >
                   {brands.map((item) => (
                     <Checkbox key={item} value={item}>
                       {item}
@@ -190,7 +189,8 @@ export const ProductsPage = () => {
                   ))}
                 </Checkbox.Group>
               </div>
-<div>
+
+              <div>
                 <Typography.Text strong>Màu sắc</Typography.Text>
                 <Checkbox.Group
                   className="mt-3 flex w-full flex-col gap-2"
@@ -247,6 +247,7 @@ export const ProductsPage = () => {
               >
                 Xóa bộ lọc
               </Button>
+
               <Button
                 type="primary"
                 icon={<ShoppingCartOutlined />}
