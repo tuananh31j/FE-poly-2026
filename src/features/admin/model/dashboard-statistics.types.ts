@@ -1,5 +1,14 @@
 import type { AdminOrderStatus, AdminPaymentMethod } from './order-management.types'
 
+export type DashboardStatisticsPeriod = 'rolling' | 'day' | 'week' | 'month' | 'custom'
+
+export interface DashboardStatisticsFilters extends Record<string, unknown> {
+  days?: number
+  period?: Exclude<DashboardStatisticsPeriod, 'rolling'>
+  fromDate?: string
+  toDate?: string
+}
+
 export interface DashboardSummary {
   totalOrders: number
   deliveredOrders: number
@@ -11,11 +20,17 @@ export interface DashboardSummary {
   totalItemsSold: number
   totalUsers: number
   customersCount: number
+  newCustomersCount: number
+  purchasingCustomers: number
   staffCount: number
   adminCount: number
   activeUsers: number
   inactiveUsers: number
+  totalCategories: number
+  categoriesWithOrders: number
   totalProducts: number
+  soldProducts: number
+  soldVariants: number
   availableProducts: number
   outOfStockVariants: number
   lowStockVariants: number
@@ -23,7 +38,7 @@ export interface DashboardSummary {
   totalComments: number
 }
 
-  export interface DashboardDailyRevenueItem {
+export interface DashboardDailyRevenueItem {
   date: string
   revenue: number
   orders: number
@@ -32,6 +47,8 @@ export interface DashboardSummary {
 
 export interface DashboardTrends {
   days: number
+  period: DashboardStatisticsPeriod
+  label: string
   fromDate: string
   toDate: string
   dailyRevenue: DashboardDailyRevenueItem[]
@@ -49,9 +66,19 @@ export interface DashboardPaymentMethodBreakdownItem {
   revenue: number
 }
 
+export interface DashboardCategoryBreakdownItem {
+  categoryId: string | null
+  categoryName: string
+  orders: number
+  deliveredOrders: number
+  items: number
+  revenue: number
+}
+
 export interface DashboardBreakdowns {
   byStatus: DashboardStatusBreakdownItem[]
   byPaymentMethod: DashboardPaymentMethodBreakdownItem[]
+  byCategory: DashboardCategoryBreakdownItem[]
 }
 
 export interface DashboardTopProductItem {
@@ -71,14 +98,13 @@ export interface DashboardTopVariantItem {
   productName: string
   variantSku: string
   variantColor: string
-  size: string 
+  size: string
   soldCount: number
   revenue: number
   stockQuantity: number
   isAvailable: boolean
   thumbnailUrl: string | null
 }
-
 
 export interface DashboardStatisticsResponse {
   summary: DashboardSummary

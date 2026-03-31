@@ -57,8 +57,6 @@ const normalizeAdminProduct = (value: Record<string, unknown>): AdminProductItem
         : undefined,
     images: toStringArray(value.images),
     isAvailable: Boolean(value.isAvailable),
-    metaTitle: typeof value.metaTitle === 'string' ? value.metaTitle : undefined,
-    metaDescription: typeof value.metaDescription === 'string' ? value.metaDescription : undefined,
     averageRating: Number(value.averageRating ?? 0),
     reviewCount: Number(value.reviewCount ?? 0),
     soldCount: Number(value.soldCount ?? 0),
@@ -179,7 +177,6 @@ const normalizeCategory = (value: Record<string, unknown>): AdminCategoryOption 
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     isActive: typeof value.isActive === 'boolean' ? value.isActive : undefined,
   }
 }
@@ -188,7 +185,6 @@ const normalizeBrand = (value: Record<string, unknown>): AdminBrandOption => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     isActive: typeof value.isActive === 'boolean' ? value.isActive : undefined,
   }
 }
@@ -197,7 +193,6 @@ const normalizeColor = (value: Record<string, unknown>): AdminColorOption => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     hexCode: typeof value.hexCode === 'string' ? value.hexCode : undefined,
     isActive: typeof value.isActive === 'boolean' ? value.isActive : undefined,
   }
@@ -207,7 +202,6 @@ const normalizeSize = (value: Record<string, unknown>): AdminSizeOption => {
   return {
     id: toId(value.id ?? value._id),
     name: String(value.name ?? ''),
-    slug: String(value.slug ?? ''),
     isActive: typeof value.isActive === 'boolean' ? value.isActive : undefined,
   }
 }

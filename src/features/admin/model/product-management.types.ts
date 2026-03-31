@@ -16,8 +16,6 @@ export interface AdminProductItem {
   attributes?: Record<string, unknown>
   images: string[]
   isAvailable: boolean
-  metaTitle?: string
-  metaDescription?: string
   averageRating: number
   reviewCount: number
   soldCount: number
@@ -54,21 +52,18 @@ export type AdminProductVariantListResponse = PaginatedResponse<AdminProductVari
 export interface AdminCategoryOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 
 export interface AdminBrandOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 
 export interface AdminColorOption {
   id: string
   name: string
-  slug: string
   hexCode?: string
   isActive?: boolean
 }
@@ -76,7 +71,6 @@ export interface AdminColorOption {
 export interface AdminSizeOption {
   id: string
   name: string
-  slug: string
   isActive?: boolean
 }
 
@@ -99,8 +93,6 @@ export interface CreateAdminProductPayload {
   attributes?: Record<string, unknown>
   images?: string[]
   isAvailable?: boolean
-  metaTitle?: string
-  metaDescription?: string
 }
 
 export type UpdateAdminProductPayload = Partial<CreateAdminProductPayload>
@@ -111,7 +103,7 @@ export interface ListAdminProductVariantsParams {
 }
 
 export interface UpsertAdminProductVariantPayload {
-  sku: string
+  sku?: string
   colorId?: string | null
   sizeId?: string | null
   size?: string
