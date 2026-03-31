@@ -80,12 +80,22 @@ body {
   }
 }
 
+.product-variant-carousel .slick-list {
+  margin-inline: -4px;
+  padding-block: 4px 12px;
+}
+
 .product-variant-carousel .slick-slide {
-  padding-inline: 2px;
+  height: inherit;
+  padding-inline: 4px;
+}
+
+.product-variant-carousel .slick-slide > div {
+  height: 100%;
 }
 
 .product-variant-carousel .product-variant-option {
-  min-height: 110px;
+  min-height: 156px;
   align-items: stretch;
 }
 
@@ -182,4 +192,3 @@ body {
   padding-left: 0.75rem;
   color: #334155;
 }
-

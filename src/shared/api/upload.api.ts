@@ -5,31 +5,31 @@ import type { ApiSuccess } from '@/shared/types/api.types'
 export type UploadFolder = 'avatars' | 'products' | 'categories' | 'others'
 
 export interface UploadImageResult {
-    url: string
-    publicId: string
-    width: number
-    height: number
-    format: string
-    size: number
+  url: string
+  publicId: string
+  width: number
+  height: number
+  format: string
+  size: number
 }
 
 export const uploadImage = async (
-    file: File,
-    folder: UploadFolder = 'others'
+  file: File,
+  folder: UploadFolder = 'others'
 ): Promise<UploadImageResult> => {
-    try {
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('folder', folder)
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('folder', folder)
 
-        const response = await httpClient.post<ApiSuccess<UploadImageResult>>('/upload/image', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        })
+    const response = await httpClient.post<ApiSuccess<UploadImageResult>>('/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
 
-        return extractApiData(response)
-    } catch (error) {
-        throw toApiClientError(error)
-    }
+    return extractApiData(response)
+  } catch (error) {
+    throw toApiClientError(error)
+  }
 }
