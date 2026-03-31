@@ -1,4 +1,5 @@
 import {
+  BellOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   BgColorsOutlined,
@@ -8,7 +9,6 @@ import {
   MessageOutlined,
   OrderedListOutlined,
   PlusSquareOutlined,
-  SafetyCertificateOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
   ShoppingOutlined,
@@ -22,7 +22,7 @@ import {
   RobotOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Layout, Menu, message, Typography } from 'antd'
+import { Badge, Button, Empty, Layout, List, Menu, message, Popover, Space, Tag, Typography } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -30,6 +30,7 @@ import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
 import { logout } from '@/features/auth/api/auth.api'
 import { useMeQuery } from '@/features/auth/hooks/useMeQuery'
 import { clearAuth } from '@/features/auth/store/auth.slice'
+import { useBackofficeRealtimeNotifications } from '@/features/notifications/hooks/useBackofficeRealtimeNotifications'
 import {
   buildDashboardMasterDataPath,
   buildDashboardProductsPath,
@@ -39,6 +40,7 @@ import { consumeAuthSuccessFlash } from '@/shared/utils/auth-success-flash'
 import { clearRefreshTokenCookie, getRefreshTokenCookie } from '@/shared/utils/cookie'
 
 const { Header, Content, Sider } = Layout
+const SIDER_WIDTH = 240
 
 const MENU_KEYS = {
   CENTER: 'dashboard-center',
@@ -56,7 +58,6 @@ const MENU_KEYS = {
   ATTRIBUTE_COLORS: 'dashboard-attribute-colors',
   ATTRIBUTE_SIZES: 'dashboard-attribute-sizes',
   ACCOUNTS: 'dashboard-accounts',
-  ROLES: 'dashboard-roles',
 } as const
 
 const SUBMENU_KEYS = {
@@ -75,9 +76,22 @@ export const PrivateLayout = () => {
   const queryClient = useQueryClient()
 
   const cachedUser = useAppSelector((state) => state.auth.user)
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
   const { data: meData } = useMeQuery()
 
   const user = meData ?? cachedUser
+  const {
+    items: notificationItems,
+    unreadCount,
+    isConnected: isNotificationConnected,
+    permission: notificationPermission,
+    requestPermission: requestNotificationPermission,
+    markAsRead: markNotificationAsRead,
+    markAllAsRead: markAllNotificationsAsRead,
+  } = useBackofficeRealtimeNotifications({
+    accessToken,
+    role: user?.role,
+  })
 
   const selectedMenuKey = useMemo(() => {
     const params = new URLSearchParams(location.search)
@@ -141,7 +155,7 @@ export const PrivateLayout = () => {
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD_USERS)) {
-      return MENU_KEYS.ROLES
+      return MENU_KEYS.ACCOUNTS
     }
 
     if (location.pathname.startsWith(ROUTE_PATHS.DASHBOARD)) {
@@ -160,9 +174,10 @@ export const PrivateLayout = () => {
 
     const content = authSuccess === 'register' ? 'Đăng ký thành công' : 'Đăng nhập thành công'
     void message.success(content)
-    }, [location.key])
+  }, [location.key])
 
   const selectedKeys = useMemo(() => [selectedMenuKey], [selectedMenuKey])
+  const [isSiderCollapsed, setIsSiderCollapsed] = useState(false)
   const [manualOpenKeys, setManualOpenKeys] = useState<string[]>([])
   const openKeys = useMemo(() => {
     const next = new Set(manualOpenKeys)
@@ -189,7 +204,7 @@ export const PrivateLayout = () => {
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_COLORS ||
       selectedMenuKey === MENU_KEYS.ATTRIBUTE_SIZES
     const shouldOpenSystem =
-      selectedMenuKey === MENU_KEYS.ACCOUNTS || selectedMenuKey === MENU_KEYS.ROLES
+      selectedMenuKey === MENU_KEYS.ACCOUNTS || selectedMenuKey === MENU_KEYS.CHATBOT_PRESETS
 
     if (shouldOpenOverview) {
       next.add(SUBMENU_KEYS.OVERVIEW)
@@ -232,9 +247,101 @@ export const PrivateLayout = () => {
     navigate(ROUTE_PATHS.LOGIN, { replace: true })
   }
 
+  const notificationListContent = (
+    <div className="w-[360px]">
+      <div className="mb-3 flex items-center justify-between">
+        <Typography.Text strong>Thông báo</Typography.Text>
+        <Space size={8}>
+          <Tag color={isNotificationConnected ? 'green' : 'orange'}>
+            {isNotificationConnected ? 'Online' : 'Offline'}
+          </Tag>
+          <Button
+            size="small"
+            type="link"
+            className="!px-0"
+            onClick={() => markAllNotificationsAsRead()}
+          >
+            Đánh dấu đã đọc
+          </Button>
+        </Space>
+      </div>
+
+      {notificationPermission === 'default' && (
+        <Button
+          size="small"
+          className="mb-3"
+          onClick={() => {
+            void requestNotificationPermission()
+          }}
+        >
+          Bật thông báo trình duyệt
+        </Button>
+      )}
+
+      {notificationPermission === 'denied' && (
+        <Typography.Text type="secondary" className="mb-3 block text-xs">
+          Bạn đã chặn quyền Notification. Hãy bật lại trong cài đặt trình duyệt để nhận thông báo
+          service worker khi tab đang ẩn/offline.
+        </Typography.Text>
+      )}
+
+      <List
+        size="small"
+        locale={{
+          emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Chưa có thông báo" />,
+        }}
+        dataSource={notificationItems.slice(0, 15)}
+        renderItem={(item) => (
+          <List.Item
+            className="cursor-pointer"
+            onClick={() => {
+              markNotificationAsRead(item.id)
+              navigate(item.url)
+            }}
+          >
+            <List.Item.Meta
+              title={
+                <Space size={8}>
+                  <Typography.Text strong={!item.isRead}>{item.title}</Typography.Text>
+                  {!item.isRead && <Tag color="blue">Mới</Tag>}
+                </Space>
+              }
+              description={
+                <Space direction="vertical" size={2} className="w-full">
+                  <Typography.Text type="secondary" className="text-xs">
+                    {item.body}
+                  </Typography.Text>
+                  <Typography.Text type="secondary" className="text-[11px]">
+                    {new Date(item.createdAt).toLocaleString('vi-VN', { hour12: false })}
+                  </Typography.Text>
+                </Space>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </div>
+  )
+
   return (
     <Layout className="min-h-screen">
-      <Sider breakpoint="lg" collapsedWidth="0" theme="light" width={240}>
+      <Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        theme="light"
+        width={SIDER_WIDTH}
+        onBreakpoint={(broken) => setIsSiderCollapsed(broken)}
+        onCollapse={(collapsed) => setIsSiderCollapsed(collapsed)}
+        style={{
+          position: 'fixed',
+          insetInlineStart: 0,
+          top: 0,
+          bottom: 0,
+          height: '100vh',
+          zIndex: 100,
+          overflow: 'auto',
+        }}
+      >
         <div className="border-b border-slate-200 px-5 py-4">
           <Link to="/">
             <Typography.Title level={4} className="!mb-0 !text-blue-700">
@@ -254,11 +361,7 @@ export const PrivateLayout = () => {
               icon: <DashboardOutlined />,
               label: <Link to={ROUTE_PATHS.DASHBOARD_CENTER}>Trung tâm</Link>,
             },
-            {
-              key: MENU_KEYS.STATISTICS,
-              icon: <BarChartOutlined />,
-              label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
-            },
+
             {
               key: SUBMENU_KEYS.SALES,
               icon: <ShoppingCartOutlined />,
@@ -376,9 +479,9 @@ export const PrivateLayout = () => {
                         ),
                       },
                       {
-                        key: MENU_KEYS.ROLES,
-                        icon: <SafetyCertificateOutlined />,
-                        label: <Link to={ROUTE_PATHS.DASHBOARD_USERS}>Phân quyền</Link>,
+                        key: MENU_KEYS.STATISTICS,
+                        icon: <BarChartOutlined />,
+                        label: <Link to={ROUTE_PATHS.DASHBOARD_STATISTICS}>Thống kê</Link>,
                       },
                     ],
                   },
@@ -389,14 +492,33 @@ export const PrivateLayout = () => {
         />
       </Sider>
 
-      <Layout>
+      <Layout
+        style={{
+          marginLeft: isSiderCollapsed ? 0 : SIDER_WIDTH,
+          transition: 'margin-left 0.2s ease',
+        }}
+      >
         <Header className="flex items-center justify-between border-b border-slate-200 bg-white px-6">
           <Typography.Text strong>
-            {user?.fullName || user?.email || 'Authenticated user'}
+            Xin chào, {user?.fullName || user?.email || 'Authenticated user'}
           </Typography.Text>
-          <Button type="default" onClick={handleLogout}>
-            Đăng xuất
-          </Button>
+          <Space size={12}>
+            {(user?.role === 'staff' || user?.role === 'admin') && (
+              <Popover
+                placement="bottomRight"
+                trigger="click"
+                content={notificationListContent}
+                overlayClassName="max-w-[90vw]"
+              >
+                <Badge count={unreadCount} size="small" overflowCount={99}>
+                  <Button icon={<BellOutlined />} />
+                </Badge>
+              </Popover>
+            )}
+            <Button type="default" onClick={handleLogout}>
+              Đăng xuất
+            </Button>
+          </Space>
         </Header>
 
         <Content className="p-6">

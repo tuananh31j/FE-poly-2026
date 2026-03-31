@@ -8,32 +8,32 @@ import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { AppSpinner } from './AppSpinner'
 
 interface RequireAuthProps {
-    children?: ReactNode
+  children?: ReactNode
 }
 
 export const RequireAuth = ({ children }: RequireAuthProps) => {
-    const location = useLocation()
-    const accessToken = useAppSelector((state) => state.auth.accessToken)
-    const user = useAppSelector((state) => state.auth.user)
-    const authStatus = useAppSelector((state) => state.auth.status)
-    const meQuery = useMeQuery()
+  const location = useLocation()
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
+  const user = useAppSelector((state) => state.auth.user)
+  const authStatus = useAppSelector((state) => state.auth.status)
+  const meQuery = useMeQuery()
 
-    if (authStatus === 'idle' || authStatus === 'loading') {
-        return <AppSpinner fullScreen />
-    }
+  if (authStatus === 'idle' || authStatus === 'loading') {
+    return <AppSpinner fullScreen />
+  }
 
-    if (!accessToken) {
-        const redirect = `${location.pathname}${location.search}${location.hash}`
-         return <Navigate to={`${ROUTE_PATHS.LOGIN}?redirect=${encodeURIComponent(redirect)}`} replace />
-    }
+  if (!accessToken) {
+    const redirect = `${location.pathname}${location.search}${location.hash}`
+    return <Navigate to={`${ROUTE_PATHS.LOGIN}?redirect=${encodeURIComponent(redirect)}`} replace />
+  }
 
-    if (!user && meQuery.isLoading) {
-        return <AppSpinner fullScreen />
-    }
+  if (!user && meQuery.isLoading) {
+    return <AppSpinner fullScreen />
+  }
 
-    if (children) {
-        return <>{children}</>
-    }
+  if (children) {
+    return <>{children}</>
+  }
 
-    return <Outlet />
+  return <Outlet />
 }

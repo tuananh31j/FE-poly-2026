@@ -127,7 +127,6 @@ export const CommentManagementPage = () => {
               {record.target?.name || 'N/A'}
             </Typography.Text>
           </Space>
-        
           <Typography.Text type="secondary" className="text-xs">
             Target ID: {record.targetId}
           </Typography.Text>

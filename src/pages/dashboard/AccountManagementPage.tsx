@@ -3,9 +3,11 @@ import {
   EditOutlined,
   LockOutlined,
   PlusOutlined,
+  UploadOutlined,
   UnlockOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { UploadProps } from 'antd'
 import {
   Avatar,
   Badge,
@@ -22,6 +24,7 @@ import {
   Table,
   Tag,
   Typography,
+  Upload,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useCallback, useMemo, useState } from 'react'
@@ -38,6 +41,7 @@ import type {
   UpdateAdminUserPayload,
 } from '@/features/admin/model/user-management.types'
 import { queryKeys } from '@/shared/api/queryKeys'
+import { uploadImage } from '@/shared/api/upload.api'
 import { formatDateTime } from '@/shared/utils/date'
 
 type RoleFilter = AdminUserItem['role'] | 'all'
@@ -104,12 +108,12 @@ const editRoleOptions = [
   { label: 'Admin', value: 'admin', disabled: true },
 ]
 
-
 export const AccountManagementPage = () => {
   const queryClient = useQueryClient()
   const [createForm] = Form.useForm<CreateUserFormValues>()
   const [editForm] = Form.useForm<EditUserFormValues>()
   const [resetPasswordForm] = Form.useForm<ResetPasswordFormValues>()
+  const editAvatarUrl = Form.useWatch('avatarUrl', editForm) as string | undefined
 
   const [page, setPage] = useState(1)
   const [searchValue, setSearchValue] = useState('')
@@ -154,6 +158,17 @@ export const AccountManagementPage = () => {
       updateAdminUser(userId, payload),
   })
 
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (file: File) => uploadImage(file, 'avatars'),
+    onSuccess: (data) => {
+      editForm.setFieldValue('avatarUrl', data.url)
+      void message.success('Tải ảnh thành công. Nhấn "Lưu thay đổi" để cập nhật tài khoản.')
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
+
   const deleteUserMutation = useMutation({
     mutationFn: deleteAdminUser,
   })
@@ -162,6 +177,21 @@ export const AccountManagementPage = () => {
   const activeUsers = usersQuery.data?.items.filter((item) => item.isActive).length ?? 0
   const inactiveUsers = usersQuery.data?.items.filter((item) => !item.isActive).length ?? 0
 
+  const handleAvatarBeforeUpload: UploadProps['beforeUpload'] = (file) => {
+    if (!file.type.startsWith('image/')) {
+      void message.error('Chỉ chấp nhận file ảnh')
+      return Upload.LIST_IGNORE
+    }
+
+    if (file.size / 1024 / 1024 > 5) {
+      void message.error('Kích thước ảnh tối đa là 5MB')
+      return Upload.LIST_IGNORE
+    }
+
+    uploadAvatarMutation.mutate(file as File)
+    return Upload.LIST_IGNORE
+  }
+
   const columns: ColumnsType<AdminUserItem> = useMemo(
     () => [
       {
@@ -169,7 +199,7 @@ export const AccountManagementPage = () => {
         key: 'account',
         render: (_, record) => (
           <div className="flex w-full items-center gap-3">
-            <Avatar src={record.avatarUrl} size={40}>
+            <Avatar src={record.avatarUrl} size={40} className="shrink-0">
               {record.email.slice(0, 1).toUpperCase()}
             </Avatar>
             <Space direction="vertical" size={0} className="min-w-0">
@@ -545,11 +575,27 @@ export const AccountManagementPage = () => {
             <Input placeholder="09xxxxxxxx" />
           </Form.Item>
 
-          <Form.Item
-            label="Avatar URL"
-            name="avatarUrl"
-            rules={[{ type: 'url', warningOnly: true }]}
-          >
+          <Form.Item label="Ảnh đại diện">
+            <Space size={16} align="center" wrap>
+              <Avatar size={72} src={editAvatarUrl}>
+                {(selectedUser?.fullName ?? selectedUser?.email ?? 'U').charAt(0).toUpperCase()}
+              </Avatar>
+
+              <Space direction="vertical" size={6}>
+                <Upload accept="image/*" showUploadList={false} beforeUpload={handleAvatarBeforeUpload}>
+                  <Button icon={<UploadOutlined />} loading={uploadAvatarMutation.isPending}>
+                    Tải ảnh lên
+                  </Button>
+                </Upload>
+
+                <Typography.Text type="secondary" className="text-xs">
+                  Hỗ trợ JPG/PNG/WebP, tối đa 5MB.
+                </Typography.Text>
+              </Space>
+            </Space>
+          </Form.Item>
+
+          <Form.Item name="avatarUrl" hidden rules={[{ type: 'url', message: 'Ảnh đại diện không hợp lệ' }]}>
             <Input placeholder="https://..." />
           </Form.Item>
 

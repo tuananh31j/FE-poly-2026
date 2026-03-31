@@ -20,7 +20,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { use, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import {
   createAdminVoucher,
@@ -283,9 +283,10 @@ export const VoucherManagementPage = () => {
   )
 
   const discountTypeValue = Form.useWatch('discountType', form) ?? 'percentage'
+
   useEffect(() => {
-    if (discountTypeValue === 'percentage') {
-      form.setFieldsValue('maxDiscountAmount', undefined)
+    if (discountTypeValue !== 'percentage') {
+      form.setFieldValue('maxDiscountAmount', undefined)
     }
   }, [discountTypeValue, form])
 
@@ -497,7 +498,7 @@ export const VoucherManagementPage = () => {
                 {
                   validator: async (_, value) => {
                     const discountType = form.getFieldValue('discountType')
-                     const discountValue = form.getFieldValue('discountValue')
+                    const discountValue = form.getFieldValue('discountValue')
 
                     if (
                       discountType === 'fixed_amount' &&
