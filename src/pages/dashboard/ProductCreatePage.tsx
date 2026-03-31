@@ -1,9 +1,4 @@
-import {
-  ArrowLeftOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from '@ant-design/icons'
+import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
 import {
@@ -41,6 +36,8 @@ import { uploadImage } from '@/shared/api/upload.api'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { RichTextEditor } from '@/shared/ui/RichTextEditor'
 import { normalizeRichTextValue } from '@/shared/utils/rich-text'
+
+const MAX_PRODUCT_VARIANTS = 8
 
 const normalizeStringArray = (value: unknown) => {
   if (!Array.isArray(value)) {
@@ -400,6 +397,12 @@ export const ProductCreatePage = () => {
                   }
 
                   const normalizedVariants = value as ProductVariantFormValues[]
+                  if (normalizedVariants.length > MAX_PRODUCT_VARIANTS) {
+                    throw new Error(
+                      `Mỗi sản phẩm chỉ được thêm tối đa ${MAX_PRODUCT_VARIANTS} biến thể`
+                    )
+                  }
+
                   const seenKeys = new Map<string, number>()
                   const duplicateErrors: string[] = []
                   const missingImageErrors: string[] = []
@@ -440,6 +443,13 @@ export const ProductCreatePage = () => {
           >
             {(fields, { add, remove }, { errors }) => (
               <div className="space-y-3">
+                {fields.length > 0 ? (
+                  <Typography.Text type="secondary">
+                    Tối đa {MAX_PRODUCT_VARIANTS} biến thể cho mỗi sản phẩm. Hiện có {fields.length}
+                    /{MAX_PRODUCT_VARIANTS}.
+                  </Typography.Text>
+                ) : null}
+
                 {fields.map((field, index) => {
                   const variantIndex = Number(field.name)
                   const variantImages = normalizeStringArray(variantValues[variantIndex]?.images)
@@ -586,7 +596,15 @@ export const ProductCreatePage = () => {
                 <Button
                   type="dashed"
                   icon={<PlusOutlined />}
+                  disabled={fields.length >= MAX_PRODUCT_VARIANTS}
                   onClick={() => {
+                    if (fields.length >= MAX_PRODUCT_VARIANTS) {
+                      void message.warning(
+                        `Mỗi sản phẩm chỉ được thêm tối đa ${MAX_PRODUCT_VARIANTS} biến thể`
+                      )
+                      return
+                    }
+
                     add({
                       stockQuantity: 0,
                       isAvailable: true,

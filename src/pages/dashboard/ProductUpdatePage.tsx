@@ -1,9 +1,4 @@
-import {
-  ArrowLeftOutlined,
-  DeleteOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from '@ant-design/icons'
+import { ArrowLeftOutlined, DeleteOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
 import {
@@ -54,6 +49,7 @@ import { normalizeRichTextValue } from '@/shared/utils/rich-text'
 
 const VARIANT_PAGE_SIZE = 20
 const PRODUCT_PLACEHOLDER = '/images/product-placeholder.svg'
+const MAX_PRODUCT_VARIANTS = 8
 
 const normalizeStringArray = (value: unknown) => {
   if (!Array.isArray(value)) {
@@ -145,6 +141,8 @@ export const ProductUpdatePage = () => {
         limit: VARIANT_PAGE_SIZE,
       }),
   })
+  const currentVariantCount = variantsQuery.data?.totalItems ?? 0
+  const hasReachedVariantLimit = currentVariantCount >= MAX_PRODUCT_VARIANTS
 
   useEffect(() => {
     if (!productQuery.data) {
@@ -262,8 +260,12 @@ export const ProductUpdatePage = () => {
   })
 
   const updateVariantMutation = useMutation({
-    mutationFn: (payload: Partial<UpsertAdminProductVariantPayload> & { colorId?: string | null; sizeId?: string | null }) =>
-      updateAdminProductVariant(String(productId), String(editingVariant?.id), payload),
+    mutationFn: (
+      payload: Partial<UpsertAdminProductVariantPayload> & {
+        colorId?: string | null
+        sizeId?: string | null
+      }
+    ) => updateAdminProductVariant(String(productId), String(editingVariant?.id), payload),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -282,8 +284,7 @@ export const ProductUpdatePage = () => {
   })
 
   const deleteVariantMutation = useMutation({
-    mutationFn: (variantId: string) =>
-      deleteAdminProductVariant(String(productId), variantId),
+    mutationFn: (variantId: string) => deleteAdminProductVariant(String(productId), variantId),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -451,6 +452,11 @@ export const ProductUpdatePage = () => {
       return
     }
 
+    if (hasReachedVariantLimit) {
+      void message.error(`Mỗi sản phẩm chỉ được thêm tối đa ${MAX_PRODUCT_VARIANTS} biến thể`)
+      return
+    }
+
     createVariantMutation.mutate(payload)
   }
 
@@ -598,7 +604,15 @@ export const ProductUpdatePage = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
+            disabled={hasReachedVariantLimit}
             onClick={() => {
+              if (hasReachedVariantLimit) {
+                void message.warning(
+                  `Mỗi sản phẩm chỉ được thêm tối đa ${MAX_PRODUCT_VARIANTS} biến thể`
+                )
+                return
+              }
+
               setEditingVariant(null)
               variantForm.resetFields()
               variantForm.setFieldsValue({
@@ -612,6 +626,11 @@ export const ProductUpdatePage = () => {
           </Button>
         }
       >
+        <Typography.Text type="secondary" className="mb-3 block">
+          Tối đa {MAX_PRODUCT_VARIANTS} biến thể cho mỗi sản phẩm. Hiện có {currentVariantCount}/
+          {MAX_PRODUCT_VARIANTS}.
+        </Typography.Text>
+
         <Table
           rowKey="id"
           columns={variantColumns}
@@ -650,7 +669,11 @@ export const ProductUpdatePage = () => {
           onFinish={submitVariantForm}
         >
           <Form.Item label="SKU">
-            <Input disabled value={editingVariant?.sku} placeholder="SKU sẽ được hệ thống tự động tạo" />
+            <Input
+              disabled
+              value={editingVariant?.sku}
+              placeholder="SKU sẽ được hệ thống tự động tạo"
+            />
           </Form.Item>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -705,7 +728,12 @@ export const ProductUpdatePage = () => {
 
           <Form.Item label="Ảnh variant (upload file)">
             <Space direction="vertical" size={10} className="w-full">
-              <Upload multiple accept="image/*" showUploadList={false} beforeUpload={variantFormImageBeforeUpload}>
+              <Upload
+                multiple
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={variantFormImageBeforeUpload}
+              >
                 <Button icon={<UploadOutlined />} loading={uploadingCount > 0}>
                   Tải ảnh variant
                 </Button>
@@ -761,7 +789,11 @@ export const ProductUpdatePage = () => {
             >
               Hủy
             </Button>
-            <Button type="primary" htmlType="submit" loading={createVariantMutation.isPending || updateVariantMutation.isPending}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={createVariantMutation.isPending || updateVariantMutation.isPending}
+            >
               {editingVariant ? 'Lưu thay đổi' : 'Tạo biến thể'}
             </Button>
           </div>
