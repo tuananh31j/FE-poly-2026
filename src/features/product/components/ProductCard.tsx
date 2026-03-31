@@ -74,7 +74,7 @@ export const ProductCard = ({ product, compact = false, highlightText }: Product
           </Typography.Text>
 
           <div className="flex items-center justify-between gap-2">
-            <Rate disabled allowHalf value={product.averageRating} className="!text-[14px]" />
+            <Rate disabled allowHalf value={product.averageRating} className="!text-[10px]" />
             <Typography.Text type="secondary">Đã bán: {product.soldCount}</Typography.Text>
           </div>
         </div>

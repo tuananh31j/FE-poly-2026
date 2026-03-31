@@ -1,10 +1,9 @@
 import {
-  DeleteOutlined,
   EditOutlined,
   LockOutlined,
   PlusOutlined,
-  UploadOutlined,
   UnlockOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
@@ -17,7 +16,6 @@ import {
   Input,
   message,
   Modal,
-  Popconfirm,
   Select,
   Space,
   Switch,
@@ -310,30 +308,6 @@ export const AccountManagementPage = () => {
             >
               {record.isActive ? 'Khóa' : 'Mở'}
             </Button>
-
-            <Popconfirm
-              title={`Xóa tài khoản ${record.email}?`}
-              description="Hành động này không thể hoàn tác."
-              okText="Xóa"
-              cancelText="Hủy"
-              disabled={record.role === 'admin'}
-              onConfirm={async () => {
-                try {
-                  await deleteUserMutation.mutateAsync(record.id)
-                  await invalidateUsers()
-                  void message.success('Đã xóa tài khoản')
-                } catch (error) {
-                  void message.error((error as Error).message)
-                }
-              }}
-            >
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={deleteUserMutation.isPending}
-                disabled={record.role === 'admin'}
-              ></Button>
-            </Popconfirm>
           </Space>
         ),
       },
@@ -582,7 +556,11 @@ export const AccountManagementPage = () => {
               </Avatar>
 
               <Space direction="vertical" size={6}>
-                <Upload accept="image/*" showUploadList={false} beforeUpload={handleAvatarBeforeUpload}>
+                <Upload
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={handleAvatarBeforeUpload}
+                >
                   <Button icon={<UploadOutlined />} loading={uploadAvatarMutation.isPending}>
                     Tải ảnh lên
                   </Button>
@@ -595,7 +573,11 @@ export const AccountManagementPage = () => {
             </Space>
           </Form.Item>
 
-          <Form.Item name="avatarUrl" hidden rules={[{ type: 'url', message: 'Ảnh đại diện không hợp lệ' }]}>
+          <Form.Item
+            name="avatarUrl"
+            hidden
+            rules={[{ type: 'url', message: 'Ảnh đại diện không hợp lệ' }]}
+          >
             <Input placeholder="https://..." />
           </Form.Item>
 
@@ -620,7 +602,6 @@ export const AccountManagementPage = () => {
               />
             </Form.Item>
           </div>
-
         </Form>
       </Modal>
 
