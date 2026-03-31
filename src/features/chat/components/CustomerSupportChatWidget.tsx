@@ -137,7 +137,7 @@ export const CustomerSupportChatWidget = ({ isAuthenticated }: CustomerSupportCh
 
   return (
     <>
-      <div className="fixed bottom-24 right-6 z-[90]">
+      <div className="fixed bottom-6 right-6 z-[90]">
         <Badge count={unreadCount} overflowCount={99} size="small">
           <Button
             type="primary"

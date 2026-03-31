@@ -1,21 +1,17 @@
 import {
   CloseOutlined,
-  MessageOutlined,
   ReloadOutlined,
   RobotOutlined,
   ShoppingOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Avatar, Button, Drawer, Empty, Space, Spin, Typography, message } from 'antd'
+import { Avatar, Button, Drawer, Empty, message, Space, Spin, Typography } from 'antd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { askChatbot, listChatbotPresets } from '@/features/chatbot/api/chatbot.api'
-import type {
-  ChatbotPresetOption,
-  ChatbotUiMessage,
-} from '@/features/chatbot/model/chatbot.types'
+import type { ChatbotPresetOption, ChatbotUiMessage } from '@/features/chatbot/model/chatbot.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { buildProductDetailPath } from '@/shared/constants/routes'
 
@@ -182,7 +178,7 @@ export const CustomerChatbotWidget = () => {
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-[90]">
+      {/* <div className="fixed bottom-6 right-6 z-[90]">
         <Button
           type="primary"
           className="!h-12 !rounded-full !px-4 shadow-lg"
@@ -194,7 +190,7 @@ export const CustomerChatbotWidget = () => {
         >
           Trợ lý mua hàng
         </Button>
-      </div>
+      </div> */}
 
       <Drawer
         title={
@@ -225,7 +221,10 @@ export const CustomerChatbotWidget = () => {
           },
         }}
       >
-        <div ref={messageContainerRef} className="flex max-h-[calc(100vh-180px)] flex-col gap-3 overflow-y-auto pr-1">
+        <div
+          ref={messageContainerRef}
+          className="flex max-h-[calc(100vh-180px)] flex-col gap-3 overflow-y-auto pr-1"
+        >
           {presetsQuery.isLoading && messages.length === 0 ? (
             <div className="flex items-center gap-2 px-2 text-slate-500">
               <Spin size="small" />
@@ -240,7 +239,10 @@ export const CustomerChatbotWidget = () => {
               const isAssistant = item.role === 'assistant'
 
               return (
-                <div key={item.id} className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}>
+                <div
+                  key={item.id}
+                  className={`flex ${isAssistant ? 'justify-start' : 'justify-end'}`}
+                >
                   <div
                     className={`max-w-[92%] rounded-2xl px-3 py-2 ${
                       isAssistant
@@ -270,46 +272,47 @@ export const CustomerChatbotWidget = () => {
                           })}
                         </Typography.Text>
 
-                        {Array.isArray(item.suggestedProducts) && item.suggestedProducts.length > 0 && (
-                          <div className="mb-2 flex flex-col gap-2">
-                            <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500">
-                              <ShoppingOutlined />
-                              <span>Sản phẩm phù hợp</span>
-                            </div>
-                            {item.suggestedProducts.map((product) => (
-                              <button
-                                key={product.id}
-                                type="button"
-                                className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left"
-                                onClick={() => handleNavigate(product.url)}
-                              >
-                                {product.imageUrl ? (
-                                  <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="h-12 w-12 rounded-md object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-12 w-12 rounded-md bg-slate-200" />
-                                )}
-
-                                <div className="min-w-0">
-                                  <Typography.Text strong className="block truncate">
-                                    {product.name}
-                                  </Typography.Text>
-                                  <Typography.Text type="secondary" className="text-xs">
-                                    {product.brand} · Đã bán {product.soldCount}
-                                  </Typography.Text>
-                                  {typeof product.priceFrom === 'number' && (
-                                    <Typography.Text className="block text-xs text-blue-700">
-                                      Từ {formatVndCurrency(product.priceFrom)}
-                                    </Typography.Text>
+                        {Array.isArray(item.suggestedProducts) &&
+                          item.suggestedProducts.length > 0 && (
+                            <div className="mb-2 flex flex-col gap-2">
+                              <div className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                <ShoppingOutlined />
+                                <span>Sản phẩm phù hợp</span>
+                              </div>
+                              {item.suggestedProducts.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-2 text-left"
+                                  onClick={() => handleNavigate(product.url)}
+                                >
+                                  {product.imageUrl ? (
+                                    <img
+                                      src={product.imageUrl}
+                                      alt={product.name}
+                                      className="h-12 w-12 rounded-md object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-12 w-12 rounded-md bg-slate-200" />
                                   )}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+
+                                  <div className="min-w-0">
+                                    <Typography.Text strong className="block truncate">
+                                      {product.name}
+                                    </Typography.Text>
+                                    <Typography.Text type="secondary" className="text-xs">
+                                      {product.brand} · Đã bán {product.soldCount}
+                                    </Typography.Text>
+                                    {typeof product.priceFrom === 'number' && (
+                                      <Typography.Text className="block text-xs text-blue-700">
+                                        Từ {formatVndCurrency(product.priceFrom)}
+                                      </Typography.Text>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
 
                         {Array.isArray(item.actions) && item.actions.length > 0 && (
                           <Space wrap size={[6, 6]} className="mb-1 mt-3">
@@ -326,20 +329,21 @@ export const CustomerChatbotWidget = () => {
                           </Space>
                         )}
 
-                        {Array.isArray(item.followUpQuestions) && item.followUpQuestions.length > 0 && (
-                          <Space wrap size={[6, 6]} className="mt-3">
-                            {item.followUpQuestions.map((question) => (
-                              <Button
-                                key={`${item.id}-${question.id}`}
-                                size="small"
-                                type="dashed"
-                                onClick={() => sendPresetQuestion(question)}
-                              >
-                                {question.question}
-                              </Button>
-                            ))}
-                          </Space>
-                        )}
+                        {Array.isArray(item.followUpQuestions) &&
+                          item.followUpQuestions.length > 0 && (
+                            <Space wrap size={[6, 6]} className="mt-3">
+                              {item.followUpQuestions.map((question) => (
+                                <Button
+                                  key={`${item.id}-${question.id}`}
+                                  size="small"
+                                  type="dashed"
+                                  onClick={() => sendPresetQuestion(question)}
+                                >
+                                  {question.question}
+                                </Button>
+                              ))}
+                            </Space>
+                          )}
                       </div>
                     </Space>
                   </div>

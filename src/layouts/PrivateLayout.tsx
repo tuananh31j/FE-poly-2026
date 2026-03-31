@@ -471,13 +471,13 @@ export const PrivateLayout = () => {
                         icon: <TeamOutlined />,
                         label: <Link to={ROUTE_PATHS.DASHBOARD_ACCOUNTS}>Tài khoản</Link>,
                       },
-                      {
-                        key: MENU_KEYS.CHATBOT_PRESETS,
-                        icon: <RobotOutlined />,
-                        label: (
-                          <Link to={ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS}>Kịch bản chatbot</Link>
-                        ),
-                      },
+                      // {
+                      //   key: MENU_KEYS.CHATBOT_PRESETS,
+                      //   icon: <RobotOutlined />,
+                      //   label: (
+                      //     <Link to={ROUTE_PATHS.DASHBOARD_CHATBOT_PRESETS}>Kịch bản chatbot</Link>
+                      //   ),
+                      // },
                       {
                         key: MENU_KEYS.STATISTICS,
                         icon: <BarChartOutlined />,
