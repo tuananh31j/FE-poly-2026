@@ -72,8 +72,8 @@ const ORDER_STATUS_TRANSITIONS: Record<AdminOrderStatus, AdminOrderStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipping', 'cancelled'],
   shipping: ['delivered'],
-  delivered: ['completed'],
-  completed: ['returned'],
+  delivered: [],
+  completed: [],
   cancelled: [],
   returned: [],
 }
