@@ -90,7 +90,7 @@ const getPaymentMethodLabel = (order: MyOrderItem) => {
     return 'ZaloPay - Ví'
   }
 
-  return 'ZaloPay - Cổng chung'
+  return 'ZaloPay '
 }
 
 const PAYMENT_STATUS_LABEL: Record<MyOrderItem['paymentStatus'], string> = {

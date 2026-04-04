@@ -381,12 +381,9 @@ export const CheckoutPage = () => {
               >
                 <Space direction="vertical" size={10}>
                   <Radio value="cod">COD - Thanh toán khi nhận hàng</Radio>
-                  <Radio value="vnpay">VNPay - Thanh toán online</Radio>
                   <Radio value="zalopay">ZaloPay - Thanh toán online</Radio>
                 </Space>
               </Radio.Group>
-
-              
             </Card>
 
             <Card title={`Sản phẩm đã chọn (${selectedCartItems.length})`}>
@@ -426,7 +423,9 @@ export const CheckoutPage = () => {
                             ) : null}
                             {item.variant?.size &&
                             item.variant.size.trim() &&
-                            !['standard', 'n/a'].includes(item.variant.size.trim().toLowerCase()) ? (
+                            !['standard', 'n/a'].includes(
+                              item.variant.size.trim().toLowerCase()
+                            ) ? (
                               <Tag className="!m-0 text-xs">Size: {item.variant.size.trim()}</Tag>
                             ) : null}
                           </Space>

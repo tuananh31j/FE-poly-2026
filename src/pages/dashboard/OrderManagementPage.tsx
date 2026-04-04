@@ -106,7 +106,7 @@ const getPaymentMethodLabel = (order: AdminOrderItem) => {
     return 'ZaloPay - Ví'
   }
 
-  return 'ZaloPay - Cổng chung'
+  return 'ZaloPay '
 }
 
 const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
@@ -463,7 +463,7 @@ export const OrderManagementPage = () => {
   const handleSubmitReturnRequest = (
     orderId: string,
     request: AdminReturnRequest,
-    values: UpdateReturnRequestFormValues,
+    values: UpdateReturnRequestFormValues
   ) => {
     const effectiveRefundMethod = values.refundMethod ?? request.refundMethod
 
@@ -478,7 +478,9 @@ export const OrderManagementPage = () => {
 
     const trimmedNote = values.note?.trim() || undefined
     const descriptionParts = [
-      effectiveRefundMethod ? `Phương thức hoàn: ${REFUND_METHOD_LABEL[effectiveRefundMethod]}` : '',
+      effectiveRefundMethod
+        ? `Phương thức hoàn: ${REFUND_METHOD_LABEL[effectiveRefundMethod]}`
+        : '',
       trimmedNote ? `Ghi chú: ${trimmedNote}` : '',
     ].filter(Boolean)
 
@@ -506,7 +508,7 @@ export const OrderManagementPage = () => {
   const handleSubmitCancelRefund = (
     orderId: string,
     request: AdminCancelRefundRequest,
-    values: UpdateCancelRefundFormValues,
+    values: UpdateCancelRefundFormValues
   ) => {
     if (values.status === 'refunded' && cancelRefundEvidenceImages.length === 0) {
       void message.error('Cần upload bill chuyển khoản trước khi xác nhận hoàn tiền')
@@ -1327,7 +1329,7 @@ export const OrderManagementPage = () => {
               handleSubmitCancelRefund(
                 cancelRefundContext.orderId,
                 cancelRefundContext.request,
-                values,
+                values
               )
             })
             .catch(() => undefined)
