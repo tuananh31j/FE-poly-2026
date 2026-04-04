@@ -80,6 +80,20 @@ body {
   }
 }
 
+.product-detail-gallery-thumbnails {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.5) transparent;
+}
+
+.product-detail-gallery-thumbnails::-webkit-scrollbar {
+  height: 6px;
+}
+
+.product-detail-gallery-thumbnails::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.45);
+  border-radius: 999px;
+}
+
 .product-variant-carousel .slick-list {
   margin-inline: -4px;
   padding-block: 4px 12px;
@@ -95,7 +109,7 @@ body {
 }
 
 .product-variant-carousel .product-variant-option {
-  min-height: 132px;
+  min-height: 238px;
   align-items: stretch;
 }
 
@@ -106,6 +120,14 @@ body {
 .product-variant-carousel .product-variant-option > span:last-child {
   width: 100%;
   padding-inline-start: 0;
+}
+
+.product-variant-carousel .slick-dots {
+  bottom: -4px;
+}
+
+.product-variant-carousel .slick-dots li button {
+  border-radius: 999px;
 }
 
 .home-product-carousel .slick-list {
