@@ -6,6 +6,7 @@ import type { ApiSuccess } from '@/shared/types/api.types'
 import type {
   AddressItem,
   AppliedOrderVoucher,
+  CancelMyOrderPayload,
   CancelRefundRequest,
   ChangePasswordPayload,
   CheckoutVoucherItem,
@@ -415,11 +416,13 @@ export const getMyOrderById = async (orderId: string) => {
   }
 }
 
-export const cancelMyOrder = async (orderId: string, note?: string) => {
+export const cancelMyOrder = async (orderId: string, payload: CancelMyOrderPayload) => {
   try {
     const response = await httpClient.post<ApiSuccess<Record<string, unknown>>>(
       `/orders/${orderId}/cancel`,
-      note?.trim() ? { note: note.trim() } : undefined
+      {
+        note: payload.note.trim(),
+      }
     )
 
     return normalizeOrder(extractApiData(response))

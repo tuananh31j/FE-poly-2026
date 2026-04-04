@@ -201,6 +201,10 @@ export interface CreateCancelRefundRequestPayload {
   note?: string
 }
 
+export interface CancelMyOrderPayload {
+  note: string
+}
+
 export interface CreateMyReviewPayload {
   orderId: string
   productId: string

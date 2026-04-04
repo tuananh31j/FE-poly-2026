@@ -30,6 +30,7 @@ import {
   retryMyVnpayPayment,
 } from '@/features/account/api/account.api'
 import type {
+  CancelMyOrderPayload,
   CancelRefundRequestStatus,
   CreateCancelRefundRequestPayload,
   MyOrderItem,
@@ -162,6 +163,14 @@ const canRequestCancelRefund = (order: MyOrderItem) => {
   return !order.cancelRefundRequest || order.cancelRefundRequest.status === 'rejected'
 }
 
+const getCancelOrderNote = (order: MyOrderItem) => {
+  const cancelledHistory = [...order.statusHistory]
+    .reverse()
+    .find((history) => history.status === 'cancelled')
+
+  return cancelledHistory?.note?.trim() || undefined
+}
+
 // worklog: 2026-03-04 12:32:16 | trantu | refactor | MyOrdersPage
 // worklog: 2026-03-04 14:54:15 | ducanh | refactor | MyOrdersPage
 // worklog: 2026-03-04 10:16:25 | quochuy | cleanup | MyOrdersPage
@@ -169,6 +178,7 @@ const canRequestCancelRefund = (order: MyOrderItem) => {
 export const MyOrdersPage = () => {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
+  const [cancelOrderForm] = Form.useForm<CancelMyOrderPayload>()
   const [cancelRefundForm] = Form.useForm<CreateCancelRefundRequestPayload>()
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
@@ -179,6 +189,8 @@ export const MyOrdersPage = () => {
   const [selectedReviewProductId, setSelectedReviewProductId] = useState<string | null>(null)
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewContent, setReviewContent] = useState('')
+  const [cancelOrderModalOpen, setCancelOrderModalOpen] = useState(false)
+  const [cancelOrderTarget, setCancelOrderTarget] = useState<MyOrderItem | null>(null)
   const [cancelRefundModalOpen, setCancelRefundModalOpen] = useState(false)
   const [cancelRefundOrder, setCancelRefundOrder] = useState<MyOrderItem | null>(null)
   const [detailOrder, setDetailOrder] = useState<MyOrderItem | null>(null)
@@ -201,12 +213,16 @@ export const MyOrdersPage = () => {
   })
 
   const cancelOrderMutation = useMutation({
-    mutationFn: (orderId: string) => cancelMyOrder(orderId),
+    mutationFn: (payload: { orderId: string; body: CancelMyOrderPayload }) =>
+      cancelMyOrder(payload.orderId, payload.body),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.account.orders(),
       })
       void message.success('Đã hủy đơn hàng')
+      setCancelOrderModalOpen(false)
+      setCancelOrderTarget(null)
+      cancelOrderForm.resetFields()
     },
     onError: (error) => {
       void message.error(error.message)
@@ -320,6 +336,17 @@ export const MyOrdersPage = () => {
       })
     },
     [cancelRefundForm]
+  )
+
+  const openCancelOrderModal = useCallback(
+    (order: MyOrderItem) => {
+      setCancelOrderTarget(order)
+      setCancelOrderModalOpen(true)
+      cancelOrderForm.setFieldsValue({
+        note: '',
+      })
+    },
+    [cancelOrderForm]
   )
 
   const openReviewModal = useCallback((order: MyOrderItem) => {
@@ -578,6 +605,15 @@ export const MyOrdersPage = () => {
                 </Tag>
               ),
             },
+            ...(record.status === 'cancelled' && getCancelOrderNote(record)
+              ? [
+                  {
+                    key: 'cancelNote',
+                    label: 'Lý do hủy',
+                    children: getCancelOrderNote(record),
+                  },
+                ]
+              : []),
             {
               key: 'totalAmount',
               label: 'Tổng tiền',
@@ -731,23 +767,16 @@ export const MyOrdersPage = () => {
               ) : null}
 
               {allowCancel ? (
-                <Popconfirm
-                  title="Bạn muốn hủy đơn hàng này?"
-                  description={
-                    record.paymentStatus === 'paid' && record.paymentMethod !== 'cod'
-                      ? 'Sau khi hủy đơn, bạn có thể gửi yêu cầu hoàn tiền và cung cấp thông tin tài khoản ngân hàng.'
-                      : undefined
-                  }
-                  okText="Hủy đơn"
-                  cancelText="Đóng"
-                  onConfirm={() => {
-                    cancelOrderMutation.mutate(record.id)
+                <Button
+                  size="small"
+                  danger
+                  loading={cancelOrderMutation.isPending && cancelOrderTarget?.id === record.id}
+                  onClick={() => {
+                    openCancelOrderModal(record)
                   }}
                 >
-                  <Button size="small" danger loading={cancelOrderMutation.isPending}>
-                    Hủy đơn
-                  </Button>
-                </Popconfirm>
+                  Hủy đơn
+                </Button>
               ) : null}
 
               {allowCancelRefund ? (
@@ -771,7 +800,9 @@ export const MyOrdersPage = () => {
     ],
     [
       cancelOrderMutation,
+      cancelOrderTarget?.id,
       confirmReceivedMutation,
+      openCancelOrderModal,
       openCancelRefundModal,
       openReviewModal,
       repayOrderMutation,
@@ -884,6 +915,74 @@ export const MyOrdersPage = () => {
         }}
       >
         {detailOrder ? renderOrderDetailContent(detailOrder, true) : null}
+      </Modal>
+
+      <Modal
+        open={cancelOrderModalOpen}
+        title={`Hủy đơn hàng${cancelOrderTarget ? ` · ${cancelOrderTarget.orderCode}` : ''}`}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        confirmLoading={cancelOrderMutation.isPending}
+        onCancel={() => {
+          setCancelOrderModalOpen(false)
+          setCancelOrderTarget(null)
+          cancelOrderForm.resetFields()
+        }}
+        onOk={() => {
+          if (!cancelOrderTarget) {
+            return
+          }
+
+          cancelOrderForm
+            .validateFields()
+            .then((values) => {
+              cancelOrderMutation.mutate({
+                orderId: cancelOrderTarget.id,
+                body: {
+                  note: values.note.trim(),
+                },
+              })
+            })
+            .catch(() => undefined)
+        }}
+      >
+        <Space direction="vertical" size={16} className="w-full">
+          {cancelOrderTarget ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              <Typography.Text strong className="block text-slate-900">
+                {cancelOrderTarget.orderCode}
+              </Typography.Text>
+              <Typography.Text className="block">
+                Tổng tiền: {formatVndCurrency(cancelOrderTarget.totalAmount)}
+              </Typography.Text>
+              {cancelOrderTarget.paymentStatus === 'paid' &&
+              cancelOrderTarget.paymentMethod !== 'cod' ? (
+                <Typography.Text type="secondary" className="mt-1 block text-xs">
+                  Sau khi hủy đơn, bạn có thể gửi yêu cầu hoàn tiền và cung cấp thông tin tài khoản
+                  ngân hàng.
+                </Typography.Text>
+              ) : null}
+            </div>
+          ) : null}
+
+          <Form<CancelMyOrderPayload> form={cancelOrderForm} layout="vertical">
+            <Form.Item
+              label="Lý do hủy đơn"
+              name="note"
+              rules={[
+                { required: true, message: 'Vui lòng nhập lý do hủy đơn' },
+                { max: 255, message: 'Lý do hủy tối đa 255 ký tự' },
+              ]}
+            >
+              <Input.TextArea
+                rows={4}
+                maxLength={255}
+                showCount
+                placeholder="Ví dụ: tôi muốn đổi địa chỉ nhận hàng, đặt nhầm sản phẩm hoặc cần đổi phương thức thanh toán"
+              />
+            </Form.Item>
+          </Form>
+        </Space>
       </Modal>
 
       <Modal
