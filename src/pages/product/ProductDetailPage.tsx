@@ -529,67 +529,6 @@ export const ProductDetailPage = () => {
                 ? `Đang xem: ${getVariantLabel(selectedVariant)}`
                 : 'Chọn biến thể để đồng bộ ảnh theo đúng phiên bản.'}
             </Typography.Paragraph>
-          </div>
-        </Card>
-
-        <Card className="!rounded-[28px] !border-slate-200/80 !shadow-[0_24px_60px_-48px_rgba(15,23,42,0.55)]">
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <Space size={[8, 8]} wrap>
-                <Tag color="blue">{product.brand}</Tag>
-                {displayedVariant ? (
-                  <Tag color={displayedVariant.isAvailable ? 'green' : 'default'}>
-                    {getVariantAvailabilityLabel(displayedVariant)}
-                  </Tag>
-                ) : null}
-              </Space>
-
-              <Typography.Title
-                level={2}
-                className="!mb-0 !text-3xl !leading-tight md:!text-[42px]"
-              >
-                {product.name}
-              </Typography.Title>
-
-              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
-                {selectedVariant
-                  ? `Biến thể đang chọn: ${getVariantLabel(selectedVariant)} • SKU ${selectedVariant.sku}`
-                  : 'Chọn biến thể phù hợp bên dưới trước khi thêm vào giỏ hàng.'}
-              </Typography.Paragraph>
-            </div>
-
-            <div className="space-y-2 rounded-[24px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,0.75),_rgba(255,255,255,0.96)_60%)] p-5">
-              <Typography.Title level={2} className="!mb-0 !text-blue-700">
-                {displayedVariant
-                  ? formatVndCurrency(displayedVariant.price)
-                  : formatPriceRange(product.variants)}
-              </Typography.Title>
-              {displayedVariant?.originalPrice &&
-              displayedVariant.originalPrice > displayedVariant.price ? (
-                <Space size={10} wrap>
-                  <Typography.Text type="secondary" delete>
-                    {formatVndCurrency(displayedVariant.originalPrice)}
-                  </Typography.Text>
-                  <Tag color="red" className="!m-0">
-                    Tiết kiệm {formatVndCurrency(displayedVariantSavings)}
-                  </Tag>
-                </Space>
-              ) : null}
-              <Space size={[12, 8]} wrap>
-                <Rate disabled allowHalf value={product.averageRating} className="!text-sm" />
-                <Typography.Text type="secondary" className="text-sm">
-                  {product.reviewCount} đánh giá
-                </Typography.Text>
-                <Typography.Text type="secondary" className="text-sm">
-                  Đã bán {product.soldCount}
-                </Typography.Text>
-              </Space>
-              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
-                {displayedVariant
-                  ? `SKU: ${displayedVariant.sku} • Tồn kho: ${displayedVariant.stockQuantity}`
-                  : `Cập nhật: ${formatDateTime(product.updatedAt)}`}
-              </Typography.Paragraph>
-            </div>
 
             <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5">
               <div className="space-y-4">
@@ -704,6 +643,67 @@ export const ProductDetailPage = () => {
                   </Radio.Group>
                 )}
               </div>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="!rounded-[28px] !border-slate-200/80 !shadow-[0_24px_60px_-48px_rgba(15,23,42,0.55)]">
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <Space size={[8, 8]} wrap>
+                <Tag color="blue">{product.brand}</Tag>
+                {displayedVariant ? (
+                  <Tag color={displayedVariant.isAvailable ? 'green' : 'default'}>
+                    {getVariantAvailabilityLabel(displayedVariant)}
+                  </Tag>
+                ) : null}
+              </Space>
+
+              <Typography.Title
+                level={2}
+                className="!mb-0 !text-3xl !leading-tight md:!text-[42px]"
+              >
+                {product.name}
+              </Typography.Title>
+
+              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
+                {selectedVariant
+                  ? `Biến thể đang chọn: ${getVariantLabel(selectedVariant)} • SKU ${selectedVariant.sku}`
+                  : 'Chọn biến thể phù hợp bên dưới trước khi thêm vào giỏ hàng.'}
+              </Typography.Paragraph>
+            </div>
+
+            <div className="space-y-2 rounded-[24px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,0.75),_rgba(255,255,255,0.96)_60%)] p-5">
+              <Typography.Title level={2} className="!mb-0 !text-blue-700">
+                {displayedVariant
+                  ? formatVndCurrency(displayedVariant.price)
+                  : formatPriceRange(product.variants)}
+              </Typography.Title>
+              {displayedVariant?.originalPrice &&
+              displayedVariant.originalPrice > displayedVariant.price ? (
+                <Space size={10} wrap>
+                  <Typography.Text type="secondary" delete>
+                    {formatVndCurrency(displayedVariant.originalPrice)}
+                  </Typography.Text>
+                  <Tag color="red" className="!m-0">
+                    Tiết kiệm {formatVndCurrency(displayedVariantSavings)}
+                  </Tag>
+                </Space>
+              ) : null}
+              <Space size={[12, 8]} wrap>
+                <Rate disabled allowHalf value={product.averageRating} className="!text-sm" />
+                <Typography.Text type="secondary" className="text-sm">
+                  {product.reviewCount} đánh giá
+                </Typography.Text>
+                <Typography.Text type="secondary" className="text-sm">
+                  Đã bán {product.soldCount}
+                </Typography.Text>
+              </Space>
+              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
+                {displayedVariant
+                  ? `SKU: ${displayedVariant.sku} • Tồn kho: ${displayedVariant.stockQuantity}`
+                  : `Cập nhật: ${formatDateTime(product.updatedAt)}`}
+              </Typography.Paragraph>
             </div>
 
             <div className="rounded-[24px] border border-slate-200 bg-white p-5">
