@@ -6,6 +6,7 @@ import type {
   ProductDetailResponse,
   ProductFilterCategory,
   ProductFilterColor,
+  ProductFilterSize,
   ProductFiltersResponse,
   ProductListResponse,
   ProductVariantItem,
@@ -22,6 +23,7 @@ interface ProductListQuery {
   categoryId?: string
   brand?: string
   colorIds?: string[]
+  sizeIds?: string[]
   priceRanges?: string[]
   search?: string
   isAvailable?: boolean
@@ -171,6 +173,13 @@ const normalizeFilterColor = (item: Record<string, unknown>): ProductFilterColor
   }
 }
 
+const normalizeFilterSize = (item: Record<string, unknown>): ProductFilterSize => {
+  return {
+    id: toId(item.id ?? item._id),
+    name: String(item.name ?? 'Kích thước'),
+  }
+}
+
 export const getProductFilters = async (): Promise<ProductFiltersResponse> => {
   try {
     const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>('/products/filters')
@@ -178,18 +187,28 @@ export const getProductFilters = async (): Promise<ProductFiltersResponse> => {
     const rawCategories = Array.isArray(data.categories) ? data.categories : []
     const rawBrands = Array.isArray(data.brands) ? data.brands : []
     const rawColors = Array.isArray(data.colors) ? data.colors : []
+    const rawSizes = Array.isArray(data.sizes) ? data.sizes : []
 
     return {
       categories: rawCategories
-        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .filter(
+          (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object'
+        )
         .map((item) => normalizeFilterCategory(item)),
       brands: rawBrands
         .filter((item): item is string => typeof item === 'string')
         .map((item) => item.trim())
         .filter(Boolean),
       colors: rawColors
-        .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object')
+        .filter(
+          (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object'
+        )
         .map((item) => normalizeFilterColor(item)),
+      sizes: rawSizes
+        .filter(
+          (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object'
+        )
+        .map((item) => normalizeFilterSize(item)),
     }
   } catch (error) {
     throw toApiClientError(error)
@@ -238,12 +257,15 @@ export const getProducts = async (params: ProductListQuery = {}): Promise<Produc
   try {
     const colorIds =
       params.colorIds && params.colorIds.length > 0 ? params.colorIds.join(',') : undefined
+    const sizeIds =
+      params.sizeIds && params.sizeIds.length > 0 ? params.sizeIds.join(',') : undefined
     const priceRanges =
       params.priceRanges && params.priceRanges.length > 0 ? params.priceRanges.join(',') : undefined
     const response = await httpClient.get<ApiSuccess<Record<string, unknown>>>('/products', {
       params: {
         ...params,
         colorIds,
+        sizeIds,
         priceRanges,
       },
     })

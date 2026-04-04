@@ -115,8 +115,14 @@ export interface ProductFilterColor {
   hexCode?: string
 }
 
+export interface ProductFilterSize {
+  id: string
+  name: string
+}
+
 export interface ProductFiltersResponse {
   categories: ProductFilterCategory[]
   brands: string[]
   colors: ProductFilterColor[]
+  sizes: ProductFilterSize[]
 }

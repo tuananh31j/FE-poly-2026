@@ -35,8 +35,17 @@ export const ProductsPage = () => {
 
   const categoryId = searchParams.get('categoryId')?.trim() ?? ''
   const brand = searchParams.get('brand')?.trim() ?? ''
-  const selectedBrands = brand ? brand.split(',').map((item) => item.trim()).filter(Boolean) : []
+  const selectedBrands = brand
+    ? brand
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : []
   const selectedColorIds = (searchParams.get('colorIds') ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const selectedSizeIds = (searchParams.get('sizeIds') ?? '')
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
@@ -60,6 +69,7 @@ export const ProductsPage = () => {
       categoryId,
       brand,
       colorIds: selectedColorIds,
+      sizeIds: selectedSizeIds,
       priceRanges: selectedPriceRanges,
       search,
       isAvailable: true,
@@ -71,6 +81,7 @@ export const ProductsPage = () => {
         categoryId: categoryId || undefined,
         brand: selectedBrands.length > 0 ? selectedBrands.join(',') : undefined,
         colorIds: selectedColorIds,
+        sizeIds: selectedSizeIds,
         priceRanges: selectedPriceRanges,
         search: search || undefined,
         isAvailable: true,
@@ -81,11 +92,13 @@ export const ProductsPage = () => {
   const categories = filtersQuery.data?.categories ?? []
   const brands = filtersQuery.data?.brands ?? []
   const colors = filtersQuery.data?.colors ?? []
+  const sizes = filtersQuery.data?.sizes ?? []
 
   const handleFilterChange = (next: {
     categoryId?: string
     brands?: string[]
     colorIds?: string[]
+    sizeIds?: string[]
     priceRanges?: string[]
     page?: string
   }) => {
@@ -94,6 +107,7 @@ export const ProductsPage = () => {
     const nextCategoryId = next.categoryId ?? categoryId
     const nextBrands = next.brands ?? selectedBrands
     const nextColorIds = next.colorIds ?? selectedColorIds
+    const nextSizeIds = next.sizeIds ?? selectedSizeIds
     const nextPriceRanges = next.priceRanges ?? selectedPriceRanges
     const nextPage = next.page ?? '1'
 
@@ -113,6 +127,12 @@ export const ProductsPage = () => {
       params.set('colorIds', nextColorIds.join(','))
     } else {
       params.delete('colorIds')
+    }
+
+    if (nextSizeIds.length > 0) {
+      params.set('sizeIds', nextSizeIds.join(','))
+    } else {
+      params.delete('sizeIds')
     }
 
     if (nextPriceRanges.length > 0) {
@@ -137,9 +157,11 @@ export const ProductsPage = () => {
     selectedBrands.length > 0 ? `${selectedBrands.length} thương hiệu` : 'Tất cả thương hiệu'
   const selectedColorName =
     selectedColorIds.length > 0 ? `${selectedColorIds.length} màu` : 'Tất cả màu'
+  const selectedSizeName =
+    selectedSizeIds.length > 0 ? `${selectedSizeIds.length} kích thước` : 'Tất cả kích thước'
   const selectedPriceName =
     selectedPriceRanges.length > 0 ? `${selectedPriceRanges.length} mức giá` : 'Tất cả giá'
-  const summaryText = `${selectedCategoryName} • ${selectedBrandName} • ${selectedColorName} • ${selectedPriceName}`
+  const summaryText = `${selectedCategoryName} • ${selectedBrandName} • ${selectedColorName} • ${selectedSizeName} • ${selectedPriceName}`
 
   return (
     <div className="space-y-6 py-6">
@@ -216,6 +238,25 @@ export const ProductsPage = () => {
               </div>
 
               <div>
+                <Typography.Text strong>Kích thước</Typography.Text>
+                <Checkbox.Group
+                  className="mt-3 flex w-full flex-col gap-2"
+                  value={selectedSizeIds}
+                  onChange={(values) => {
+                    handleFilterChange({
+                      sizeIds: values.map((value) => String(value)),
+                    })
+                  }}
+                >
+                  {sizes.map((item) => (
+                    <Checkbox key={item.id} value={item.id}>
+                      {item.name}
+                    </Checkbox>
+                  ))}
+                </Checkbox.Group>
+              </div>
+
+              <div>
                 <Typography.Text strong>Khoảng giá</Typography.Text>
                 <Checkbox.Group
                   className="mt-3 flex w-full flex-col gap-2"
@@ -240,6 +281,7 @@ export const ProductsPage = () => {
                   params.delete('categoryId')
                   params.delete('brand')
                   params.delete('colorIds')
+                  params.delete('sizeIds')
                   params.delete('priceRanges')
                   params.delete('page')
                   setSearchParams(params)
@@ -261,9 +303,7 @@ export const ProductsPage = () => {
 
         <Col xs={24} lg={17} xl={18}>
           <Space direction="vertical" size="middle" className="w-full">
-            <Typography.Text type="secondary">
-              Bộ lọc hiện tại: {summaryText}
-            </Typography.Text>
+            <Typography.Text type="secondary">Bộ lọc hiện tại: {summaryText}</Typography.Text>
 
             {productsQuery.isLoading ? (
               <div className="py-16 text-center">
