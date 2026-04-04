@@ -49,6 +49,7 @@ const PAGE_SIZE = 10
 const ITEM_PLACEHOLDER = '/images/product-placeholder.svg'
 
 const ORDER_STATUS_LABEL: Record<AdminOrderStatus, string> = {
+  awaiting_payment: 'Chờ thanh toán',
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
   shipping: 'Đang giao',
@@ -59,6 +60,7 @@ const ORDER_STATUS_LABEL: Record<AdminOrderStatus, string> = {
 }
 
 const ORDER_STATUS_COLOR: Record<AdminOrderStatus, string> = {
+  awaiting_payment: 'orange',
   pending: 'gold',
   confirmed: 'blue',
   shipping: 'cyan',
@@ -69,6 +71,7 @@ const ORDER_STATUS_COLOR: Record<AdminOrderStatus, string> = {
 }
 
 const ORDER_STATUS_TRANSITIONS: Record<AdminOrderStatus, AdminOrderStatus[]> = {
+  awaiting_payment: ['cancelled'],
   pending: ['confirmed', 'cancelled'],
   confirmed: ['shipping', 'cancelled'],
   shipping: ['delivered'],
@@ -241,8 +244,7 @@ export const OrderManagementPage = () => {
         note?: string
         refundEvidenceImages?: string[]
       }
-    }) =>
-      updateAdminReturnRequest(payload.orderId, payload.returnRequestId, payload.payload),
+    }) => updateAdminReturnRequest(payload.orderId, payload.returnRequestId, payload.payload),
     onSuccess: async (updatedOrder) => {
       await queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
       void message.success('Đã cập nhật hoàn hàng')
@@ -364,7 +366,8 @@ export const OrderManagementPage = () => {
       setCancelRefundEvidenceImages((prev) => [...prev, uploaded.url])
       void message.success('Tải bill chuyển khoản thành công')
     } catch (error) {
-      const messageText = error instanceof Error ? error.message : 'Upload bill chuyển khoản thất bại'
+      const messageText =
+        error instanceof Error ? error.message : 'Upload bill chuyển khoản thất bại'
       void message.error(messageText)
     } finally {
       setUploadingCancelRefundEvidence(false)
@@ -488,6 +491,7 @@ export const OrderManagementPage = () => {
 
   const orders = ordersQuery.data?.items ?? []
   const totalRevenue = sumBy(orders, (order) => order.totalAmount)
+  const awaitingPaymentCount = orders.filter((order) => order.status === 'awaiting_payment').length
   const pendingCount = orders.filter((order) => order.status === 'pending').length
 
   const sortedStatusHistory = useMemo(() => {
@@ -521,9 +525,12 @@ export const OrderManagementPage = () => {
         </Typography.Text>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <Statistic title="Tổng đơn (theo filter)" value={ordersQuery.data?.totalItems ?? 0} />
+        </Card>
+        <Card>
+          <Statistic title="Đơn chờ thanh toán" value={awaitingPaymentCount} />
         </Card>
         <Card>
           <Statistic title="Đơn chờ xác nhận (trang hiện tại)" value={pendingCount} />
@@ -578,16 +585,17 @@ export const OrderManagementPage = () => {
           <Select
             value={statusFilter}
             className="w-full md:w-56"
-              options={[
-                { label: 'Tất cả trạng thái', value: 'all' },
-                { label: ORDER_STATUS_LABEL.pending, value: 'pending' },
-                { label: ORDER_STATUS_LABEL.confirmed, value: 'confirmed' },
-                { label: ORDER_STATUS_LABEL.shipping, value: 'shipping' },
-                { label: ORDER_STATUS_LABEL.delivered, value: 'delivered' },
-                { label: ORDER_STATUS_LABEL.completed, value: 'completed' },
-                { label: ORDER_STATUS_LABEL.cancelled, value: 'cancelled' },
-                { label: ORDER_STATUS_LABEL.returned, value: 'returned' },
-              ]}
+            options={[
+              { label: 'Tất cả trạng thái', value: 'all' },
+              { label: ORDER_STATUS_LABEL.awaiting_payment, value: 'awaiting_payment' },
+              { label: ORDER_STATUS_LABEL.pending, value: 'pending' },
+              { label: ORDER_STATUS_LABEL.confirmed, value: 'confirmed' },
+              { label: ORDER_STATUS_LABEL.shipping, value: 'shipping' },
+              { label: ORDER_STATUS_LABEL.delivered, value: 'delivered' },
+              { label: ORDER_STATUS_LABEL.completed, value: 'completed' },
+              { label: ORDER_STATUS_LABEL.cancelled, value: 'cancelled' },
+              { label: ORDER_STATUS_LABEL.returned, value: 'returned' },
+            ]}
             onChange={(value) => {
               setPage(1)
               setStatusFilter(value as AdminOrderStatus | 'all')
@@ -886,7 +894,10 @@ export const OrderManagementPage = () => {
                         {formatVndCurrency(cancelRefundRequest.refundAmount)}
                       </Typography.Text>
                     </Space>
-                    <Button size="small" onClick={() => openCancelRefundModal(detailOrder.id, cancelRefundRequest)}>
+                    <Button
+                      size="small"
+                      onClick={() => openCancelRefundModal(detailOrder.id, cancelRefundRequest)}
+                    >
                       Xử lý hoàn tiền
                     </Button>
                   </div>
@@ -963,7 +974,13 @@ export const OrderManagementPage = () => {
                       </Typography.Text>
                       <div className="flex flex-wrap gap-2">
                         {cancelRefundRequest.refundEvidenceImages.map((url) => (
-                          <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block"
+                          >
                             <img
                               src={url}
                               alt="Bill chuyển khoản"

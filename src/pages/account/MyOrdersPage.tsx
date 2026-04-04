@@ -18,7 +18,7 @@ import {
   Typography,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import {
@@ -44,6 +44,7 @@ const ORDER_PAGE_SIZE = 8
 const ITEM_PLACEHOLDER = '/images/product-placeholder.svg'
 
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  awaiting_payment: 'Chờ thanh toán',
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
   shipping: 'Đang giao',
@@ -54,6 +55,7 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 const ORDER_STATUS_COLOR: Record<OrderStatus, string> = {
+  awaiting_payment: 'orange',
   pending: 'gold',
   confirmed: 'blue',
   shipping: 'cyan',
@@ -114,7 +116,7 @@ const CANCEL_REFUND_STATUS_COLOR: Record<CancelRefundRequestStatus, string> = {
 // worklog: 2026-03-04 21:16:19 | ducanh | cleanup | canCancelOrder
 // worklog: 2026-03-04 12:58:05 | trantu | fix | canCancelOrder
 const canCancelOrder = (status: OrderStatus) => {
-  return status === 'pending' || status === 'confirmed'
+  return status === 'awaiting_payment' || status === 'pending' || status === 'confirmed'
 }
 
 const canConfirmReceived = (status: OrderStatus) => {
@@ -128,7 +130,7 @@ const canReviewOrder = (order: MyOrderItem) => {
 const canRetryVnpay = (order: MyOrderItem) => {
   return (
     (order.paymentMethod === 'vnpay' || order.paymentMethod === 'zalopay') &&
-    order.status === 'pending' &&
+    order.status === 'awaiting_payment' &&
     (order.paymentStatus === 'pending' || order.paymentStatus === 'failed')
   )
 }
@@ -208,7 +210,7 @@ export const MyOrdersPage = () => {
         return
       }
 
-      void message.warning('Không tạo được liên kết thanh toán VNPay')
+      void message.warning('Không tạo được liên kết thanh toán')
     },
     onError: (error) => {
       void message.error(error.message)
@@ -277,15 +279,19 @@ export const MyOrdersPage = () => {
       return
     }
 
-    setExpandedOrderIds((current) =>
-      current.includes(focusOrderId) ? current : [...current, focusOrderId]
-    )
-    setDetailOrder(focusedOrder)
-    setDetailModalOpen(true)
-    setHasHandledFocusOrder(true)
+    const timer = window.setTimeout(() => {
+      setExpandedOrderIds((current) =>
+        current.includes(focusOrderId) ? current : [...current, focusOrderId]
+      )
+      setDetailOrder(focusedOrder)
+      setDetailModalOpen(true)
+      setHasHandledFocusOrder(true)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [focusOrderId, hasHandledFocusOrder, ordersQuery.data?.items])
 
-  const openCancelRefundModal = (order: MyOrderItem) => {
+  const openCancelRefundModal = useCallback((order: MyOrderItem) => {
     setCancelRefundOrder(order)
     setCancelRefundModalOpen(true)
     const existingRequest = order.cancelRefundRequest
@@ -296,9 +302,9 @@ export const MyOrdersPage = () => {
       accountHolder: existingRequest?.accountHolder,
       note: existingRequest?.note,
     })
-  }
+  }, [cancelRefundForm])
 
-  const openReviewModal = (order: MyOrderItem) => {
+  const openReviewModal = useCallback((order: MyOrderItem) => {
     const firstPendingReviewItem = order.items.find((item) => !item.isReviewed)
 
     setReviewOrder(order)
@@ -308,7 +314,7 @@ export const MyOrdersPage = () => {
     setReviewRating(0)
     setReviewContent('')
     setReviewModalOpen(true)
-  }
+  }, [])
 
   const selectedReviewItem =
     reviewOrder?.items.find((item) => item.productId === selectedReviewProductId) ?? null
@@ -715,6 +721,7 @@ export const MyOrdersPage = () => {
           className="w-full md:w-52"
           options={[
             { label: 'Tất cả trạng thái', value: 'all' },
+            { label: ORDER_STATUS_LABEL.awaiting_payment, value: 'awaiting_payment' },
             { label: ORDER_STATUS_LABEL.pending, value: 'pending' },
             { label: ORDER_STATUS_LABEL.confirmed, value: 'confirmed' },
             { label: ORDER_STATUS_LABEL.shipping, value: 'shipping' },
@@ -774,6 +781,18 @@ export const MyOrdersPage = () => {
         open={detailModalOpen}
         title={`Chi tiết đơn hàng${detailOrder ? ` · ${detailOrder.orderCode}` : ''}`}
         footer={[
+          detailOrder && canRetryVnpay(detailOrder) ? (
+            <Button
+              key="repay"
+              type="primary"
+              loading={repayOrderMutation.isPending}
+              onClick={() => {
+                repayOrderMutation.mutate(detailOrder.id)
+              }}
+            >
+              Thanh toán lại
+            </Button>
+          ) : null,
           <Button
             key="close"
             onClick={() => {

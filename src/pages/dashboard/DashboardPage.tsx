@@ -46,6 +46,7 @@ const PERIOD_OPTIONS = [
 ] satisfies { label: string; value: StatisticsFilterMode }[]
 
 const ORDER_STATUS_LABELS: Record<string, string> = {
+  awaiting_payment: 'Chờ thanh toán',
   pending: 'Chờ xác nhận',
   confirmed: 'Đã xác nhận',
   shipping: 'Đang giao',
@@ -56,6 +57,7 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
+  awaiting_payment: 'orange',
   pending: 'default',
   confirmed: 'blue',
   shipping: 'geekblue',
@@ -364,8 +366,6 @@ export const DashboardPage = () => {
     stats?.breakdowns.byStatus.map((item) => ORDER_STATUS_LABELS[item.status]) ?? []
   const hasStatusData = statusSeries.some((value) => value > 0)
   const hasCategoryData = (stats?.breakdowns.byCategory.length ?? 0) > 0
-  const paymentMethodUsedCount =
-    stats?.breakdowns.byPaymentMethod.filter((item) => item.count > 0).length ?? 0
 
   return (
     <div className="space-y-6">

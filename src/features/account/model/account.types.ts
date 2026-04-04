@@ -38,6 +38,7 @@ export interface UpsertAddressPayload {
 export type UpdateAddressPayload = Partial<UpsertAddressPayload>
 
 export type OrderStatus =
+  | 'awaiting_payment'
   | 'pending'
   | 'confirmed'
   | 'shipping'

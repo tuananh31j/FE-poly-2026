@@ -3,9 +3,9 @@ import { extractApiData, toApiClientError } from '@/shared/api/response'
 import type { ApiSuccess } from '@/shared/types/api.types'
 
 import type {
-  DashboardStatisticsFilters,
   DashboardBreakdowns,
   DashboardDailyRevenueItem,
+  DashboardStatisticsFilters,
   DashboardStatisticsResponse,
   DashboardSummary,
   DashboardTopProductItem,
@@ -27,7 +27,8 @@ const toRecord = (value: unknown): Record<string, unknown> | undefined => {
 }
 
 const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
-  return value === 'confirmed' ||
+  return value === 'awaiting_payment' ||
+    value === 'confirmed' ||
     value === 'shipping' ||
     value === 'delivered' ||
     value === 'completed' ||
@@ -38,10 +39,7 @@ const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
 }
 
 const normalizePaymentMethod = (value: unknown): AdminPaymentMethod => {
-  return value === 'banking' ||
-    value === 'momo' ||
-    value === 'vnpay' ||
-    value === 'zalopay'
+  return value === 'banking' || value === 'momo' || value === 'vnpay' || value === 'zalopay'
     ? value
     : 'cod'
 }
@@ -173,7 +171,9 @@ const normalizeTopVariant = (value: Record<string, unknown>): DashboardTopVarian
   }
 }
 
-const normalizeDashboardStatistics = (value: Record<string, unknown>): DashboardStatisticsResponse => {
+const normalizeDashboardStatistics = (
+  value: Record<string, unknown>
+): DashboardStatisticsResponse => {
   const summaryRecord = toRecord(value.summary)
   const trendsRecord = toRecord(value.trends)
   const breakdownsRecord = toRecord(value.breakdowns)

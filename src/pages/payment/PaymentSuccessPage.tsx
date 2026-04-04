@@ -1,9 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, Card, message, Result, Space, Spin, Typography } from 'antd'
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
-import { verifyVnpayReturn, verifyZalopayRedirect } from '@/features/account/api/account.api'
+import {
+  retryMyVnpayPayment,
+  verifyVnpayReturn,
+  verifyZalopayRedirect,
+} from '@/features/account/api/account.api'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { ROUTE_PATHS } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
@@ -84,26 +88,30 @@ export const PaymentSuccessPage = () => {
     retry: false,
   })
 
-  if (!hasVnpReturnData && !hasZalopayReturnData) {
-    return (
-      <Card className="mx-auto mt-8 max-w-2xl">
-        <Result
-          status="warning"
-          title="Không có dữ liệu thanh toán"
-          subTitle="Liên kết thanh toán không hợp lệ hoặc đã hết hạn."
-          extra={
-            <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ACCOUNT_ORDERS)}>
-              Đến đơn hàng của tôi
-            </Button>
-          }
-        />
-      </Card>
-    )
-  }
+  const retryPaymentMutation = useMutation({
+    mutationFn: (orderId: string) => retryMyVnpayPayment(orderId),
+    onSuccess: (nextOrder) => {
+      if (nextOrder.paymentUrl) {
+        window.location.assign(nextOrder.paymentUrl)
+        return
+      }
+
+      void message.warning('Không tạo được liên kết thanh toán')
+    },
+    onError: (error) => {
+      void message.error(error.message)
+    },
+  })
 
   const activeGateway = hasVnpReturnData ? 'vnpay' : 'zalopay'
   const activeQuery = activeGateway === 'vnpay' ? verifyVnpayQuery : verifyZalopayQuery
   const verifyResult = activeQuery.data
+  const order = verifyResult?.order
+  const isPaymentSuccess = verifyResult?.isSuccess ?? false
+  const isAwaitingPayment = order?.status === 'awaiting_payment'
+  const isWaitingForPaymentConfirmation = isAwaitingPayment && order?.paymentStatus === 'pending'
+  const canRetryPayment =
+    isAwaitingPayment && (order?.paymentStatus === 'pending' || order?.paymentStatus === 'failed')
 
   useEffect(() => {
     if (!verifyResult) {
@@ -117,7 +125,14 @@ export const PaymentSuccessPage = () => {
     }
 
     notifiedSuccessKeyRef.current = notificationKey
-    void message.info(verifyResult.isSuccess ? 'Thanh toán thành công' : 'Thanh toán chưa thành công')
+    void message.info(
+      verifyResult.isSuccess
+        ? 'Thanh toán thành công'
+        : verifyResult.order.status === 'awaiting_payment' &&
+            verifyResult.order.paymentStatus === 'pending'
+          ? 'Đơn hàng đang chờ thanh toán'
+          : 'Thanh toán chưa thành công'
+    )
   }, [activeGateway, verifyResult])
 
   useEffect(() => {
@@ -135,9 +150,6 @@ export const PaymentSuccessPage = () => {
     void message.error(activeQuery.error.message)
   }, [activeGateway, activeQuery.error])
 
-  const order = verifyResult?.order
-  const isPaymentSuccess = verifyResult?.isSuccess ?? false
-
   useEffect(() => {
     if (!isPaymentSuccess || !order?.id) {
       return
@@ -149,6 +161,23 @@ export const PaymentSuccessPage = () => {
 
     return () => window.clearTimeout(timer)
   }, [isPaymentSuccess, navigate, order?.id])
+
+  if (!hasVnpReturnData && !hasZalopayReturnData) {
+    return (
+      <Card className="mx-auto mt-8 max-w-2xl">
+        <Result
+          status="warning"
+          title="Không có dữ liệu thanh toán"
+          subTitle="Liên kết thanh toán không hợp lệ hoặc đã hết hạn."
+          extra={
+            <Button type="primary" onClick={() => navigate(ROUTE_PATHS.ACCOUNT_ORDERS)}>
+              Đến đơn hàng của tôi
+            </Button>
+          }
+        />
+      </Card>
+    )
+  }
 
   if (activeQuery.isPending || activeQuery.fetchStatus === 'fetching') {
     return (
@@ -206,21 +235,37 @@ export const PaymentSuccessPage = () => {
   return (
     <Card className="mx-auto mt-8 max-w-2xl">
       <Result
-        status={isPaymentSuccess ? 'success' : 'error'}
+        status={
+          isPaymentSuccess ? 'success' : isWaitingForPaymentConfirmation ? 'warning' : 'error'
+        }
         title={
           isPaymentSuccess
             ? activeGateway === 'zalopay'
               ? 'Thanh toán ZaloPay thành công'
               : 'Thanh toán VNPay thành công'
-            : activeGateway === 'zalopay'
-              ? 'Thanh toán ZaloPay thất bại'
-              : 'Thanh toán VNPay thất bại'
+            : isWaitingForPaymentConfirmation
+              ? 'Đơn hàng đang chờ thanh toán'
+              : activeGateway === 'zalopay'
+                ? 'Thanh toán ZaloPay thất bại'
+                : 'Thanh toán VNPay thất bại'
         }
         subTitle={`Đơn hàng ${order.orderCode} - ${formatVndCurrency(order.totalAmount)}`}
         extra={[
+          canRetryPayment ? (
+            <Button
+              key="repay"
+              type="primary"
+              loading={retryPaymentMutation.isPending}
+              onClick={() => {
+                retryPaymentMutation.mutate(order.id)
+              }}
+            >
+              Thanh toán lại
+            </Button>
+          ) : null,
           <Button
             key="orders"
-            type="primary"
+            type={canRetryPayment ? 'default' : 'primary'}
             onClick={() => {
               navigate(ROUTE_PATHS.ACCOUNT_ORDERS)
             }}
