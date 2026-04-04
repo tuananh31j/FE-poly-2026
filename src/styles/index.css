@@ -103,6 +103,33 @@ body {
   padding-inline-start: 0;
 }
 
+.product-variant-carousel .slick-list {
+  margin-inline: -6px;
+  padding-block: 4px 12px;
+}
+
+.product-variant-carousel .slick-slide {
+  height: inherit;
+  padding-inline: 6px;
+}
+
+.product-variant-carousel .slick-slide > div {
+  height: 100%;
+}
+
+.product-variant-carousel .product-variant-option {
+  min-height: 220px;
+  align-items: stretch;
+}
+
+.product-variant-carousel .slick-dots {
+  bottom: -6px;
+}
+
+.product-variant-carousel .slick-dots li button {
+  border-radius: 999px;
+}
+
 .home-product-carousel .slick-list {
   margin-inline: -6px;
 }
