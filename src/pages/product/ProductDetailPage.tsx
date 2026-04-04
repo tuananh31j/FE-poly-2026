@@ -620,18 +620,6 @@ export const ProductDetailPage = () => {
     })
   }
 
-  const selectedColorFilterLabel =
-    activeColorFilter === 'all'
-      ? 'Tất cả màu'
-      : availableColorFilters.find((option) => option.value === activeColorFilter)?.label ??
-        'Tất cả màu'
-
-  const selectedSizeFilterLabel =
-    activeSizeFilter === 'all'
-      ? 'Tất cả kích thước'
-      : availableSizeFilters.find((option) => option.value === activeSizeFilter)?.label ??
-        'Tất cả kích thước'
-
   const hasActiveVariantFilters = activeColorFilter !== 'all' || activeSizeFilter !== 'all'
   const displayedVariantSavings =
     displayedVariant?.originalPrice && displayedVariant.originalPrice > displayedVariant.price
@@ -664,33 +652,14 @@ export const ProductDetailPage = () => {
     <div className="space-y-8 py-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <Card className="!overflow-hidden !rounded-[28px] !border-slate-200/80 !shadow-[0_24px_60px_-48px_rgba(15,23,42,0.55)]">
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-1">
-                <Typography.Text className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                  Bộ sưu tập ảnh
-                </Typography.Text>
-                <Typography.Title level={4} className="!mb-0 !text-xl md:!text-[28px]">
-                  Xem chi tiết từng góc sản phẩm
-                </Typography.Title>
-              </div>
-
-              <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                {displayedVariant ? (
-                  <Tag
-                    className={`!m-0 !rounded-full !border-0 !px-3 !py-1 !text-xs !font-medium ${
-                      displayedVariant.isAvailable
-                        ? '!bg-emerald-50 !text-emerald-700'
-                        : '!bg-slate-100 !text-slate-500'
-                    }`}
-                  >
-                    {getVariantAvailabilityLabel(displayedVariant)}
-                  </Tag>
-                ) : null}
-                <Typography.Text type="secondary" className="text-xs">
-                  {resolvedActiveImageIndex + 1}/{gallery.length} ảnh
-                </Typography.Text>
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <Typography.Title level={4} className="!mb-0 !text-xl md:!text-[28px]">
+                Ảnh sản phẩm
+              </Typography.Title>
+              <Typography.Text type="secondary" className="text-xs">
+                {resolvedActiveImageIndex + 1}/{gallery.length}
+              </Typography.Text>
             </div>
 
             <Carousel
@@ -744,67 +713,16 @@ export const ProductDetailPage = () => {
               })}
             </div>
 
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <Typography.Text className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                    Biến thể đang xem
-                  </Typography.Text>
-                  <Typography.Title level={5} className="!mb-0 !text-lg">
-                    {displayedVariant
-                      ? getVariantLabel(displayedVariant)
-                      : 'Sản phẩm chưa có biến thể'}
-                  </Typography.Title>
-                </div>
-                {displayedVariant ? (
-                  <Typography.Text type="secondary" className="text-sm">
-                    SKU: {displayedVariant.sku}
-                  </Typography.Text>
-                ) : null}
-              </div>
-
-              {displayedVariant ? (
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                    <Typography.Text type="secondary" className="text-xs">
-                      Màu sắc
-                    </Typography.Text>
-                    <div className="mt-2 flex items-center gap-2">
-                      {displayedVariant.colorHex ? (
-                        <span
-                          className="inline-block h-4 w-4 rounded-full border border-slate-200"
-                          style={{ backgroundColor: displayedVariant.colorHex }}
-                        />
-                      ) : null}
-                      <Typography.Text strong>{displayedVariant.color}</Typography.Text>
-                    </div>
-                  </div>
-
-                  <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                    <Typography.Text type="secondary" className="text-xs">
-                      Kích thước
-                    </Typography.Text>
-                    <Typography.Text strong className="mt-2 block">
-                      {displayedVariant.size}
-                    </Typography.Text>
-                  </div>
-
-                  <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                    <Typography.Text type="secondary" className="text-xs">
-                      Tồn kho khả dụng
-                    </Typography.Text>
-                    <Typography.Text strong className="mt-2 block">
-                      {displayedVariant.stockQuantity} sản phẩm
-                    </Typography.Text>
-                  </div>
-                </div>
-              ) : null}
-            </div>
+            <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
+              {selectedVariant
+                ? `Đang xem: ${getVariantLabel(selectedVariant)}`
+                : 'Chọn biến thể để đồng bộ ảnh theo đúng phiên bản.'}
+            </Typography.Paragraph>
           </div>
         </Card>
 
         <Card className="!rounded-[28px] !border-slate-200/80 !shadow-[0_24px_60px_-48px_rgba(15,23,42,0.55)]">
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="space-y-3">
               <Space size={[8, 8]} wrap>
                 <Tag color="blue">{product.brand}</Tag>
@@ -813,7 +731,6 @@ export const ProductDetailPage = () => {
                     {getVariantAvailabilityLabel(displayedVariant)}
                   </Tag>
                 ) : null}
-                <Tag color="default">Cập nhật {formatDateTime(product.updatedAt)}</Tag>
               </Space>
 
               <Typography.Title
@@ -823,94 +740,44 @@ export const ProductDetailPage = () => {
                 {product.name}
               </Typography.Title>
 
-              <Typography.Paragraph className="!mb-0 max-w-3xl text-sm text-slate-500">
+              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
                 {selectedVariant
                   ? `Biến thể đang chọn: ${getVariantLabel(selectedVariant)} • SKU ${selectedVariant.sku}`
-                  : 'Chọn biến thể phù hợp bên dưới để đồng bộ ảnh, giá bán và số lượng tồn kho trước khi thêm vào giỏ.'}
+                  : 'Chọn biến thể phù hợp bên dưới trước khi thêm vào giỏ hàng.'}
               </Typography.Paragraph>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Đánh giá
-                </Typography.Text>
-                <Typography.Title level={4} className="!mb-0 !mt-2 !text-xl">
-                  {product.averageRating.toFixed(1)}
-                </Typography.Title>
-                <Typography.Text type="secondary" className="text-xs">
-                  {product.reviewCount} lượt đánh giá
-                </Typography.Text>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Đã bán
-                </Typography.Text>
-                <Typography.Title level={4} className="!mb-0 !mt-2 !text-xl">
-                  {product.soldCount}
-                </Typography.Title>
-                <Typography.Text type="secondary" className="text-xs">
-                  Sản phẩm thành công
-                </Typography.Text>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Tồn kho
-                </Typography.Text>
-                <Typography.Title level={4} className="!mb-0 !mt-2 !text-xl">
-                  {displayedVariant?.stockQuantity ?? 0}
-                </Typography.Title>
-                <Typography.Text type="secondary" className="text-xs">
-                  Theo biến thể đang xem
-                </Typography.Text>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Thanh toán
-                </Typography.Text>
-                <Typography.Title level={4} className="!mb-0 !mt-2 !text-xl">
-                  3+
-                </Typography.Title>
-                <Typography.Text type="secondary" className="text-xs">
-                  COD, VNPay, ZaloPay
-                </Typography.Text>
-              </div>
-            </div>
-
-            <div className="rounded-[28px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,0.9),_rgba(255,255,255,0.95)_55%)] p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <Typography.Text className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-500">
-                    Giá đang áp dụng
+            <div className="space-y-2 rounded-[24px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,0.75),_rgba(255,255,255,0.96)_60%)] p-5">
+              <Typography.Title level={2} className="!mb-0 !text-blue-700">
+                {displayedVariant
+                  ? formatVndCurrency(displayedVariant.price)
+                  : formatPriceRange(product.variants)}
+              </Typography.Title>
+              {displayedVariant?.originalPrice &&
+              displayedVariant.originalPrice > displayedVariant.price ? (
+                <Space size={10} wrap>
+                  <Typography.Text type="secondary" delete>
+                    {formatVndCurrency(displayedVariant.originalPrice)}
                   </Typography.Text>
-                  <Typography.Title level={2} className="!mb-0 !mt-2 !text-blue-700">
-                    {displayedVariant
-                      ? formatVndCurrency(displayedVariant.price)
-                      : formatPriceRange(product.variants)}
-                  </Typography.Title>
-                  {displayedVariant?.originalPrice &&
-                  displayedVariant.originalPrice > displayedVariant.price ? (
-                    <Space size={10} wrap className="!mt-2">
-                      <Typography.Text type="secondary" delete>
-                        {formatVndCurrency(displayedVariant.originalPrice)}
-                      </Typography.Text>
-                      <Tag color="red" className="!m-0">
-                        Tiết kiệm {formatVndCurrency(displayedVariantSavings)}
-                      </Tag>
-                    </Space>
-                  ) : null}
-                </div>
-
-                <div className="rounded-2xl border border-white/80 bg-white/80 px-4 py-3 shadow-sm">
-                  <Rate disabled allowHalf value={product.averageRating} className="!text-sm" />
-                  <Typography.Text type="secondary" className="mt-1 block text-xs">
-                    {product.reviewCount} đánh giá • {product.soldCount} lượt bán
-                  </Typography.Text>
-                </div>
-              </div>
+                  <Tag color="red" className="!m-0">
+                    Tiết kiệm {formatVndCurrency(displayedVariantSavings)}
+                  </Tag>
+                </Space>
+              ) : null}
+              <Space size={[12, 8]} wrap>
+                <Rate disabled allowHalf value={product.averageRating} className="!text-sm" />
+                <Typography.Text type="secondary" className="text-sm">
+                  {product.reviewCount} đánh giá
+                </Typography.Text>
+                <Typography.Text type="secondary" className="text-sm">
+                  Đã bán {product.soldCount}
+                </Typography.Text>
+              </Space>
+              <Typography.Paragraph className="!mb-0 text-sm text-slate-500">
+                {displayedVariant
+                  ? `SKU: ${displayedVariant.sku} • Tồn kho: ${displayedVariant.stockQuantity}`
+                  : `Cập nhật: ${formatDateTime(product.updatedAt)}`}
+              </Typography.Paragraph>
             </div>
 
             <div className="rounded-[24px] border border-slate-200 bg-white p-5">
@@ -978,32 +845,11 @@ export const ProductDetailPage = () => {
               </div>
             </div>
 
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-5">
-              <Typography.Text strong>Phương thức thanh toán hỗ trợ</Typography.Text>
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                  <Badge status="processing" text="COD" />
-                  <Typography.Paragraph className="!mb-0 !mt-2 text-xs text-slate-500">
-                    Thanh toán khi nhận hàng.
-                  </Typography.Paragraph>
-                </div>
-                <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                  <Badge status="success" text="VNPay" />
-                  <Typography.Paragraph className="!mb-0 !mt-2 text-xs text-slate-500">
-                    Cổng thanh toán online.
-                  </Typography.Paragraph>
-                </div>
-                <div className="rounded-2xl border border-white bg-white px-4 py-3">
-                  <Badge status="success" text="ZaloPay" />
-                  <Typography.Paragraph className="!mb-0 !mt-2 text-xs text-slate-500">
-                    Ví điện tử và ngân hàng.
-                  </Typography.Paragraph>
-                </div>
-              </div>
-              <Typography.Paragraph className="!mb-0 !mt-3 text-xs text-slate-500">
-                Phương thức thanh toán được xác nhận ở bước đặt hàng.
-              </Typography.Paragraph>
-            </div>
+            <Space size={[8, 8]} wrap>
+              <Badge status="processing" text="COD" />
+              <Badge status="success" text="VNPay" />
+              <Badge status="success" text="ZaloPay" />
+            </Space>
           </div>
         </Card>
       </div>
@@ -1021,10 +867,6 @@ export const ProductDetailPage = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500">
-                {selectedColorFilterLabel} • {selectedSizeFilterLabel}
-              </div>
-
               {hasMultipleVariantSlides ? (
                 <Space size={8}>
                   <Button
@@ -1051,9 +893,6 @@ export const ProductDetailPage = () => {
           <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
               <div>
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Lọc theo màu
-                </Typography.Text>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="small"
@@ -1086,9 +925,6 @@ export const ProductDetailPage = () => {
               </div>
 
               <div>
-                <Typography.Text type="secondary" className="text-xs uppercase tracking-[0.16em]">
-                  Lọc theo kích thước
-                </Typography.Text>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     size="small"
@@ -1230,38 +1066,11 @@ export const ProductDetailPage = () => {
                                         <Typography.Text type="secondary" className="block !text-sm">
                                           SKU: {variant.sku}
                                         </Typography.Text>
-
-                                        <div className="grid gap-2 sm:grid-cols-2">
-                                          <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                                            <Typography.Text
-                                              type="secondary"
-                                              className="block text-[11px] uppercase tracking-[0.12em]"
-                                            >
-                                              Màu
-                                            </Typography.Text>
-                                            <div className="mt-1 flex items-center gap-2">
-                                              {variant.colorHex ? (
-                                                <span
-                                                  className="inline-block h-3.5 w-3.5 rounded-full border border-slate-200"
-                                                  style={{ backgroundColor: variant.colorHex }}
-                                                />
-                                              ) : null}
-                                              <Typography.Text>{variant.color}</Typography.Text>
-                                            </div>
-                                          </div>
-
-                                          <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                                            <Typography.Text
-                                              type="secondary"
-                                              className="block text-[11px] uppercase tracking-[0.12em]"
-                                            >
-                                              Kích thước
-                                            </Typography.Text>
-                                            <Typography.Text className="mt-1 block">
-                                              {variant.size}
-                                            </Typography.Text>
-                                          </div>
-                                        </div>
+                                        <Typography.Text type="secondary" className="block !text-sm">
+                                          {variant.color}
+                                          {' • '}
+                                          {variant.size}
+                                        </Typography.Text>
                                       </div>
                                     </div>
 
