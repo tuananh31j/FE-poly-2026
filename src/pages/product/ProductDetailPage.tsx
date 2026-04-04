@@ -15,6 +15,7 @@ import {
   Col,
   Empty,
   Grid,
+  InputNumber,
   List,
   message,
   Radio,
@@ -319,6 +320,26 @@ export const ProductDetailPage = () => {
       const nextValue = prev + 1
       return Math.min(nextValue, selectedVariant.stockQuantity)
     })
+  }
+
+  const handlePurchaseQuantityChange = (value: number | null) => {
+    if (value === null) {
+      return
+    }
+
+    const normalizedValue = Math.max(1, Math.trunc(value))
+
+    if (!selectedVariant) {
+      setPurchaseQuantity(normalizedValue)
+      return
+    }
+
+    if (selectedVariant.stockQuantity <= 0) {
+      setPurchaseQuantity(1)
+      return
+    }
+
+    setPurchaseQuantity(Math.min(normalizedValue, selectedVariant.stockQuantity))
   }
 
   const handleAddToCart = async () => {
@@ -715,9 +736,20 @@ export const ProductDetailPage = () => {
                         !selectedVariant || purchaseQuantity <= 1 || addToCartMutation.isPending
                       }
                     />
-                    <Typography.Text className="inline-block min-w-8 text-center">
-                      {purchaseQuantity}
-                    </Typography.Text>
+                    <InputNumber
+                      min={1}
+                      max={selectedVariant?.stockQuantity ?? 1}
+                      controls={false}
+                      precision={0}
+                      value={purchaseQuantity}
+                      disabled={
+                        !selectedVariant ||
+                        selectedVariant.stockQuantity <= 0 ||
+                        addToCartMutation.isPending
+                      }
+                      onChange={handlePurchaseQuantityChange}
+                      className="w-20"
+                    />
                     <Button
                       icon={<PlusOutlined />}
                       onClick={handleIncreaseQuantity}
