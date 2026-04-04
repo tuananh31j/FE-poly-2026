@@ -116,6 +116,21 @@ const PAYMENT_STATUS_LABEL: Record<AdminOrderItem['paymentStatus'], string> = {
   refunded: 'Hoàn tiền',
 }
 
+const formatVoucherSummary = (order: AdminOrderItem) => {
+  if (!order.voucher) {
+    return 'Không áp dụng'
+  }
+
+  const baseValue =
+    order.voucher.discountType === 'percentage'
+      ? `${order.voucher.discountValue}%`
+      : formatVndCurrency(order.voucher.discountValue)
+
+  return order.voucher.maxDiscountAmount
+    ? `${baseValue} · tối đa ${formatVndCurrency(order.voucher.maxDiscountAmount)}`
+    : baseValue
+}
+
 const RETURN_STATUS_LABEL: Record<AdminReturnRequestStatus, string> = {
   pending: 'Chờ xử lý',
   approved: 'Đã duyệt',
@@ -744,6 +759,30 @@ export const OrderManagementPage = () => {
                   children: PAYMENT_STATUS_LABEL[detailOrder.paymentStatus],
                 },
                 {
+                  key: 'voucher',
+                  label: 'Voucher áp dụng',
+                  span: 2,
+                  children: detailOrder.voucher ? (
+                    <Space direction="vertical" size={2}>
+                      <Space size={[8, 8]} wrap>
+                        <Tag color="purple" className="!m-0">
+                          {detailOrder.voucher.code}
+                        </Tag>
+                        <Typography.Text strong>
+                          {formatVoucherSummary(detailOrder)}
+                        </Typography.Text>
+                      </Space>
+                      {detailOrder.voucher.description ? (
+                        <Typography.Text type="secondary" className="text-xs">
+                          {detailOrder.voucher.description}
+                        </Typography.Text>
+                      ) : null}
+                    </Space>
+                  ) : (
+                    'Không áp dụng'
+                  ),
+                },
+                {
                   key: 'createdAt',
                   label: 'Ngày tạo',
                   children: formatDateTime(detailOrder.createdAt),
@@ -752,6 +791,28 @@ export const OrderManagementPage = () => {
                   key: 'updatedAt',
                   label: 'Cập nhật gần nhất',
                   children: formatDateTime(detailOrder.updatedAt),
+                },
+                {
+                  key: 'paymentTxnRef',
+                  label: 'Mã giao dịch hệ thống',
+                  children: detailOrder.paymentTxnRef ?? '—',
+                },
+                {
+                  key: 'paymentTransactionNo',
+                  label: 'Mã giao dịch cổng thanh toán',
+                  children: detailOrder.paymentTransactionNo ?? '—',
+                },
+                {
+                  key: 'paymentGatewayResponseCode',
+                  label: 'Mã phản hồi cổng thanh toán',
+                  children: detailOrder.paymentGatewayResponseCode ?? '—',
+                },
+                {
+                  key: 'paidAt',
+                  label: 'Thời gian thanh toán',
+                  children: detailOrder.paidAt
+                    ? formatDateTime(detailOrder.paidAt)
+                    : 'Chưa thanh toán',
                 },
                 {
                   key: 'amount',

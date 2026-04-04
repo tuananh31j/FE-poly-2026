@@ -5,6 +5,7 @@ import type { ApiSuccess } from '@/shared/types/api.types'
 
 import type {
   AddressItem,
+  AppliedOrderVoucher,
   CancelRefundRequest,
   ChangePasswordPayload,
   CheckoutVoucherItem,
@@ -55,6 +56,18 @@ const toStringArray = (value: unknown) => {
 
 const normalizeVoucherDiscountType = (value: unknown): CheckoutVoucherItem['discountType'] => {
   return value === 'fixed_amount' ? 'fixed_amount' : 'percentage'
+}
+
+const normalizeAppliedOrderVoucher = (value: Record<string, unknown>): AppliedOrderVoucher => {
+  return {
+    id: toId(value.id ?? value._id),
+    code: String(value.code ?? ''),
+    description: typeof value.description === 'string' ? value.description : undefined,
+    discountType: normalizeVoucherDiscountType(value.discountType),
+    discountValue: Number(value.discountValue ?? 0),
+    maxDiscountAmount:
+      typeof value.maxDiscountAmount === 'number' ? value.maxDiscountAmount : undefined,
+  }
 }
 
 const normalizeAuthUser = (value: Record<string, unknown>): AuthUser => {
@@ -217,6 +230,7 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
   const rawStatusHistory = Array.isArray(value.statusHistory) ? value.statusHistory : []
   const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
   const rawCancelRefundRequest = toRecord(value.cancelRefundRequest)
+  const rawVoucher = toRecord(value.voucher)
 
   return {
     id: toId(value.id ?? value._id),
@@ -260,6 +274,7 @@ const normalizeOrder = (value: Record<string, unknown>): MyOrderItem => {
     paidAt: typeof value.paidAt === 'string' ? value.paidAt : undefined,
     refundedAt: typeof value.refundedAt === 'string' ? value.refundedAt : undefined,
     voucherId: value.voucherId ? toId(value.voucherId) : undefined,
+    voucher: rawVoucher ? normalizeAppliedOrderVoucher(rawVoucher) : undefined,
     status:
       value.status === 'awaiting_payment' ||
       value.status === 'confirmed' ||

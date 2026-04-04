@@ -100,6 +100,21 @@ const PAYMENT_STATUS_LABEL: Record<MyOrderItem['paymentStatus'], string> = {
   refunded: 'Hoàn tiền',
 }
 
+const formatVoucherSummary = (order: MyOrderItem) => {
+  if (!order.voucher) {
+    return 'Không áp dụng'
+  }
+
+  const baseValue =
+    order.voucher.discountType === 'percentage'
+      ? `${order.voucher.discountValue}%`
+      : formatVndCurrency(order.voucher.discountValue)
+
+  return order.voucher.maxDiscountAmount
+    ? `${baseValue} · tối đa ${formatVndCurrency(order.voucher.maxDiscountAmount)}`
+    : baseValue
+}
+
 const CANCEL_REFUND_STATUS_LABEL: Record<CancelRefundRequestStatus, string> = {
   pending: 'Chờ xử lý',
   rejected: 'Từ chối',
@@ -291,18 +306,21 @@ export const MyOrdersPage = () => {
     return () => window.clearTimeout(timer)
   }, [focusOrderId, hasHandledFocusOrder, ordersQuery.data?.items])
 
-  const openCancelRefundModal = useCallback((order: MyOrderItem) => {
-    setCancelRefundOrder(order)
-    setCancelRefundModalOpen(true)
-    const existingRequest = order.cancelRefundRequest
-    cancelRefundForm.setFieldsValue({
-      bankCode: existingRequest?.bankCode,
-      bankName: existingRequest?.bankName,
-      accountNumber: existingRequest?.accountNumber,
-      accountHolder: existingRequest?.accountHolder,
-      note: existingRequest?.note,
-    })
-  }, [cancelRefundForm])
+  const openCancelRefundModal = useCallback(
+    (order: MyOrderItem) => {
+      setCancelRefundOrder(order)
+      setCancelRefundModalOpen(true)
+      const existingRequest = order.cancelRefundRequest
+      cancelRefundForm.setFieldsValue({
+        bankCode: existingRequest?.bankCode,
+        bankName: existingRequest?.bankName,
+        accountNumber: existingRequest?.accountNumber,
+        accountHolder: existingRequest?.accountHolder,
+        note: existingRequest?.note,
+      })
+    },
+    [cancelRefundForm]
+  )
 
   const openReviewModal = useCallback((order: MyOrderItem) => {
     const firstPendingReviewItem = order.items.find((item) => !item.isReviewed)
@@ -516,6 +534,42 @@ export const MyOrdersPage = () => {
               ),
             },
             {
+              key: 'voucher',
+              label: 'Voucher áp dụng',
+              children: record.voucher ? (
+                <Space direction="vertical" size={2}>
+                  <Space size={[8, 8]} wrap>
+                    <Tag color="purple" className="!m-0">
+                      {record.voucher.code}
+                    </Tag>
+                    <Typography.Text strong>{formatVoucherSummary(record)}</Typography.Text>
+                  </Space>
+                  {record.voucher.description ? (
+                    <Typography.Text type="secondary" className="text-xs">
+                      {record.voucher.description}
+                    </Typography.Text>
+                  ) : null}
+                </Space>
+              ) : (
+                'Không áp dụng'
+              ),
+            },
+            {
+              key: 'subtotal',
+              label: 'Tạm tính',
+              children: formatVndCurrency(record.subtotal),
+            },
+            {
+              key: 'shippingFee',
+              label: 'Phí vận chuyển',
+              children: formatVndCurrency(record.shippingFee),
+            },
+            {
+              key: 'discountAmount',
+              label: 'Giảm giá thực tế',
+              children: formatVndCurrency(record.discountAmount),
+            },
+            {
               key: 'status',
               label: 'Trạng thái đơn',
               children: (
@@ -528,6 +582,26 @@ export const MyOrdersPage = () => {
               key: 'totalAmount',
               label: 'Tổng tiền',
               children: formatVndCurrency(record.totalAmount),
+            },
+            {
+              key: 'paymentTxnRef',
+              label: 'Mã giao dịch hệ thống',
+              children: record.paymentTxnRef ?? '—',
+            },
+            {
+              key: 'paymentTransactionNo',
+              label: 'Mã giao dịch cổng thanh toán',
+              children: record.paymentTransactionNo ?? '—',
+            },
+            {
+              key: 'paymentGatewayResponseCode',
+              label: 'Mã phản hồi cổng thanh toán',
+              children: record.paymentGatewayResponseCode ?? '—',
+            },
+            {
+              key: 'paidAt',
+              label: 'Thời gian thanh toán',
+              children: record.paidAt ? formatDateTime(record.paidAt) : 'Chưa thanh toán',
             },
           ]}
         />

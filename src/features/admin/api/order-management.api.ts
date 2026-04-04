@@ -3,6 +3,7 @@ import { extractApiData, toApiClientError } from '@/shared/api/response'
 import type { ApiSuccess } from '@/shared/types/api.types'
 
 import type {
+  AdminAppliedOrderVoucher,
   AdminCancelRefundRequest,
   AdminOrderItem,
   AdminOrderItemSnapshot,
@@ -38,6 +39,10 @@ const toStringArray = (value: unknown): string[] => {
     : []
 }
 
+const normalizeVoucherDiscountType = (value: unknown): AdminAppliedOrderVoucher['discountType'] => {
+  return value === 'fixed_amount' ? 'fixed_amount' : 'percentage'
+}
+
 const normalizeOrderStatus = (value: unknown): AdminOrderStatus => {
   return value === 'awaiting_payment' ||
     value === 'confirmed' ||
@@ -60,6 +65,18 @@ const normalizeOrderUser = (value: Record<string, unknown>): AdminOrderUser => {
     fullName: typeof value.fullName === 'string' ? value.fullName : undefined,
     email: typeof value.email === 'string' ? value.email : undefined,
     role: normalizeUserRole(value.role),
+  }
+}
+
+const normalizeAppliedOrderVoucher = (value: Record<string, unknown>): AdminAppliedOrderVoucher => {
+  return {
+    id: toId(value.id ?? value._id),
+    code: String(value.code ?? ''),
+    description: typeof value.description === 'string' ? value.description : undefined,
+    discountType: normalizeVoucherDiscountType(value.discountType),
+    discountValue: Number(value.discountValue ?? 0),
+    maxDiscountAmount:
+      typeof value.maxDiscountAmount === 'number' ? value.maxDiscountAmount : undefined,
   }
 }
 
@@ -154,6 +171,7 @@ const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
   const rawReturnRequests = Array.isArray(value.returnRequests) ? value.returnRequests : []
   const rawCancelRefundRequest = toRecord(value.cancelRefundRequest)
   const rawUser = toRecord(value.user)
+  const rawVoucher = toRecord(value.voucher)
 
   return {
     id: toId(value.id ?? value._id),
@@ -187,7 +205,17 @@ const normalizeOrder = (value: Record<string, unknown>): AdminOrderItem => {
       value.zalopayChannel === 'atm'
         ? value.zalopayChannel
         : undefined,
+    paymentTxnRef: typeof value.paymentTxnRef === 'string' ? value.paymentTxnRef : undefined,
+    paymentTransactionNo:
+      typeof value.paymentTransactionNo === 'string' ? value.paymentTransactionNo : undefined,
+    paymentGatewayResponseCode:
+      typeof value.paymentGatewayResponseCode === 'string'
+        ? value.paymentGatewayResponseCode
+        : undefined,
+    paidAt: typeof value.paidAt === 'string' ? value.paidAt : undefined,
+    refundedAt: typeof value.refundedAt === 'string' ? value.refundedAt : undefined,
     voucherId: value.voucherId ? toId(value.voucherId) : undefined,
+    voucher: rawVoucher ? normalizeAppliedOrderVoucher(rawVoucher) : undefined,
     status: normalizeOrderStatus(value.status),
     items: rawItems
       .map((item) => toRecord(item))

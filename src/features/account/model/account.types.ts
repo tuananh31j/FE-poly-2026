@@ -50,9 +50,19 @@ export type OrderStatus =
 export type PaymentMethod = 'cod' | 'banking' | 'momo' | 'vnpay' | 'zalopay'
 export type ZalopayChannel = 'gateway' | 'wallet' | 'bank_card' | 'atm'
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+export type VoucherDiscountType = 'percentage' | 'fixed_amount'
 export type ReturnRequestStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
 export type CancelRefundRequestStatus = 'pending' | 'rejected' | 'refunded'
 export type RefundMethod = 'bank_transfer' | 'wallet'
+
+export interface AppliedOrderVoucher {
+  id: string
+  code: string
+  description?: string
+  discountType: VoucherDiscountType
+  discountValue: number
+  maxDiscountAmount?: number
+}
 
 export interface OrderItemSnapshot {
   productId: string
@@ -136,6 +146,7 @@ export interface MyOrderItem {
   paidAt?: string
   refundedAt?: string
   voucherId?: string
+  voucher?: AppliedOrderVoucher
   status: OrderStatus
   items: OrderItemSnapshot[]
   statusHistory: OrderStatusHistoryItem[]
@@ -226,8 +237,6 @@ export interface VerifyZalopayRedirectResponse {
 }
 
 export type UpdateMyProfileResponse = AuthUser
-
-export type VoucherDiscountType = 'percentage' | 'fixed_amount'
 
 export interface CheckoutVoucherItem {
   id: string
