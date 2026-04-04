@@ -83,7 +83,7 @@ const renderVariantPrice = (variant: ProductVariantItem) => {
   if (variant.originalPrice && variant.originalPrice > variant.price) {
     return (
       <Space direction="vertical" size={0}>
-        <Typography.Text strong className="!text-lg !leading-6 !text-blue-700">
+        <Typography.Text strong className="!text-base !leading-6 !text-blue-700 sm:!text-lg">
           {formatVndCurrency(variant.price)}
         </Typography.Text>
         <Typography.Text type="secondary" delete className="text-xs leading-4">
@@ -94,7 +94,7 @@ const renderVariantPrice = (variant: ProductVariantItem) => {
   }
 
   return (
-    <Typography.Text strong className="!text-lg !leading-6 !text-blue-700">
+    <Typography.Text strong className="!text-base !leading-6 !text-blue-700 sm:!text-lg">
       {formatVndCurrency(variant.price)}
     </Typography.Text>
   )
@@ -238,7 +238,7 @@ export const ProductDetailPage = () => {
 
     return selectedVariant ?? product.variants[0]
   }, [product, selectedVariant])
-  const variantCardsPerSlide = screens.sm ? 2 : 1
+  const variantCardsPerSlide = screens.md ? 2 : 1
   const variantGapPx = 16
   const variantItemWidth = useMemo(() => {
     if (variantCardsPerSlide <= 1) {
@@ -267,19 +267,18 @@ export const ProductDetailPage = () => {
     return slideIndexMap
   }, [variantSlides])
   const hasMultipleVariantSlides = variantSlides.length > 1
+  const maxVariantSlideIndex = Math.max(variantSlides.length - 1, 0)
+  const resolvedActiveVariantSlide = Math.min(activeVariantSlide, maxVariantSlideIndex)
 
   const relatedProducts = (relatedProductsQuery.data?.items ?? [])
     .filter((item) => item.id !== productId)
     .slice(0, 8)
 
   useEffect(() => {
-    const maxSlideIndex = Math.max(variantSlides.length - 1, 0)
-
-    if (activeVariantSlide > maxSlideIndex) {
-      setActiveVariantSlide(maxSlideIndex)
-      variantCarouselRef.current?.goTo(maxSlideIndex)
+    if (activeVariantSlide > maxVariantSlideIndex) {
+      variantCarouselRef.current?.goTo(maxVariantSlideIndex)
     }
-  }, [activeVariantSlide, variantSlides.length])
+  }, [activeVariantSlide, maxVariantSlideIndex])
 
   // worklog: 2026-03-04 21:11:32 | quochuy | refactor | handleSelectVariant
   // worklog: 2026-03-04 18:01:37 | trantu | cleanup | handleSelectVariant
@@ -404,25 +403,27 @@ export const ProductDetailPage = () => {
   return (
     <div className="space-y-8 py-6">
       <Row gutter={[24, 24]}>
-        <Col xs={24} lg={13}>
+        <Col xs={24} lg={11}>
           <Card className="h-full">
-            <Carousel ref={carouselRef} draggable>
-              {gallery.map((image, index) => (
-                <div key={`${image}-${index}`}>
-                  <div className="aspect-[4/3] overflow-hidden rounded-lg bg-slate-100">
-                    <img
-                      src={image}
-                      alt={`${product.name}-${index + 1}`}
-                      className="h-full w-full object-cover"
-                    />
+            <div className="mx-auto w-full max-w-[540px]">
+              <Carousel ref={carouselRef} draggable>
+                {gallery.map((image, index) => (
+                  <div key={`${image}-${index}`}>
+                    <div className="aspect-[5/4] overflow-hidden rounded-2xl bg-slate-100 md:aspect-[4/3]">
+                      <img
+                        src={image}
+                        alt={`${product.name}-${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </Carousel>
+                ))}
+              </Carousel>
+            </div>
             <div className="w-full border-t border-slate-200 pt-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <Typography.Title level={4} className="!mb-0 !text-xl md:!text-[30px]">
+                  <Typography.Title level={4} className="!mb-0 !text-xl md:!text-[26px]">
                     Phiên bản sản phẩm
                   </Typography.Title>
                   <Typography.Text type="secondary">
@@ -436,7 +437,7 @@ export const ProductDetailPage = () => {
                       shape="circle"
                       icon={<LeftOutlined />}
                       aria-label="Xem phiên bản trước"
-                      disabled={activeVariantSlide <= 0}
+                      disabled={resolvedActiveVariantSlide <= 0}
                       onClick={handleVariantSlidePrev}
                     />
                     <Button
@@ -445,7 +446,7 @@ export const ProductDetailPage = () => {
                       ghost
                       icon={<RightOutlined />}
                       aria-label="Xem phiên bản tiếp theo"
-                      disabled={activeVariantSlide >= variantSlides.length - 1}
+                      disabled={resolvedActiveVariantSlide >= variantSlides.length - 1}
                       onClick={handleVariantSlideNext}
                     />
                   </Space>
@@ -500,15 +501,15 @@ export const ProductDetailPage = () => {
                                 >
                                   <Radio
                                     value={variant.id}
-                                    className={`product-variant-option !m-0 !flex !h-full flex-1 !w-full items-stretch rounded-[24px] border bg-white p-4 transition-all duration-200 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:flex-1 ${
+                                    className={`product-variant-option !m-0 !flex !h-full flex-1 !w-full items-stretch rounded-[20px] border bg-white p-3 transition-all duration-200 [&>span:last-child]:flex [&>span:last-child]:w-full [&>span:last-child]:flex-1 ${
                                       isSelected
-                                        ? 'border-blue-500 bg-blue-50/70 shadow-[0_20px_40px_-30px_rgba(37,99,235,0.7)]'
-                                        : 'border-slate-200 hover:border-blue-300 hover:shadow-[0_18px_36px_-32px_rgba(15,23,42,0.5)]'
+                                        ? 'border-blue-500 bg-blue-50/60 shadow-[0_18px_36px_-30px_rgba(37,99,235,0.65)]'
+                                        : 'border-slate-200 hover:border-blue-300 hover:shadow-[0_14px_28px_-28px_rgba(15,23,42,0.55)]'
                                     }`}
                                   >
                                     <div className="h-full w-full">
-                                      <div className="flex h-full flex-col gap-4">
-                                        <div className="aspect-[16/10] w-full overflow-hidden rounded-2xl bg-slate-100">
+                                      <div className="flex h-full gap-3">
+                                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100 sm:h-24 sm:w-24">
                                           <img
                                             src={image}
                                             alt={`${product.name}-${variantLabel}`}
@@ -516,26 +517,22 @@ export const ProductDetailPage = () => {
                                           />
                                         </div>
 
-                                        <div className="flex min-h-[164px] flex-1 flex-col justify-between gap-4">
-                                          <div className="space-y-2 min-w-0">
+                                        <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
+                                          <div className="min-w-0 space-y-2">
                                             <Typography.Text
                                               strong
-                                              className="block line-clamp-2 !text-base !leading-6 sm:!text-lg"
+                                              className="block line-clamp-2 !text-sm !leading-5 sm:!text-base"
                                             >
                                               {variantLabel}
                                             </Typography.Text>
 
                                             <Typography.Text
                                               type="secondary"
-                                              className="block line-clamp-1 !text-sm"
+                                              className="block line-clamp-1 !text-xs sm:!text-sm"
                                             >
                                               SKU: {variant.sku}
                                             </Typography.Text>
 
-                                            <div className="pt-1">{renderVariantPrice(variant)}</div>
-                                          </div>
-
-                                          <div className="space-y-3">
                                             <div className="flex flex-wrap items-center gap-2">
                                               {variant.color ? (
                                                 <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
@@ -548,19 +545,26 @@ export const ProductDetailPage = () => {
                                                 </Tag>
                                               ) : null}
                                             </div>
+                                          </div>
 
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                          <div className="space-y-2">
+                                            <div>{renderVariantPrice(variant)}</div>
+
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
                                               <Space size={8} align="center">
                                                 {variant.colorHex ? (
                                                   <span
-                                                    className="inline-block h-6 w-6 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(148,163,184,0.55)]"
+                                                    className="inline-block h-5 w-5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(148,163,184,0.55)]"
                                                     style={{ backgroundColor: variant.colorHex }}
                                                   />
                                                 ) : (
-                                                  <span className="inline-block h-6 w-6 rounded-full bg-slate-100" />
+                                                  <span className="inline-block h-5 w-5 rounded-full bg-slate-100" />
                                                 )}
-                                                <Typography.Text type="secondary" className="text-xs">
-                                                  Tồn kho: {variant.stockQuantity}
+                                                <Typography.Text
+                                                  type="secondary"
+                                                  className="text-xs"
+                                                >
+                                                  Kho: {variant.stockQuantity}
                                                 </Typography.Text>
                                               </Space>
 
@@ -591,20 +595,20 @@ export const ProductDetailPage = () => {
                       <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                         <Button
                           icon={<LeftOutlined />}
-                          disabled={activeVariantSlide <= 0}
+                          disabled={resolvedActiveVariantSlide <= 0}
                           onClick={handleVariantSlidePrev}
                         >
                           Trước
                         </Button>
                         <Typography.Text type="secondary" className="text-xs sm:text-sm">
-                          {`Trang ${activeVariantSlide + 1}/${variantSlides.length}`}
+                          {`Trang ${resolvedActiveVariantSlide + 1}/${variantSlides.length}`}
                         </Typography.Text>
                         <Button
                           type="primary"
                           ghost
                           icon={<RightOutlined />}
                           iconPosition="end"
-                          disabled={activeVariantSlide >= variantSlides.length - 1}
+                          disabled={resolvedActiveVariantSlide >= variantSlides.length - 1}
                           onClick={handleVariantSlideNext}
                         >
                           Tiếp
@@ -624,7 +628,7 @@ export const ProductDetailPage = () => {
           </Card>
         </Col>
 
-        <Col xs={24} lg={11}>
+        <Col xs={24} lg={13}>
           <Card className="h-full">
             <Space direction="vertical" size="middle" className="w-full">
               <Typography.Title
