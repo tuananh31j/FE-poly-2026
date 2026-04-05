@@ -105,7 +105,7 @@ body {
 
 .product-variant-carousel .slick-list {
   margin-inline: -6px;
-  padding-block: 4px 12px;
+  padding-block: 4px 14px;
 }
 
 .product-variant-carousel .slick-slide {
@@ -118,7 +118,7 @@ body {
 }
 
 .product-variant-carousel .product-variant-option {
-  min-height: 220px;
+  min-height: 0;
   align-items: stretch;
 }
 

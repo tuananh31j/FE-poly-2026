@@ -99,10 +99,13 @@ const renderVariantPrice = (variant: ProductVariantItem) => {
   if (variant.originalPrice && variant.originalPrice > variant.price) {
     return (
       <Space direction="vertical" size={0}>
-        <Typography.Text strong className="!text-base !leading-6 !text-blue-700 sm:!text-lg">
+        <Typography.Text
+          strong
+          className="!text-lg !leading-7 !text-blue-700 !whitespace-nowrap xl:!text-[30px]"
+        >
           {formatVndCurrency(variant.price)}
         </Typography.Text>
-        <Typography.Text type="secondary" delete className="text-xs leading-4">
+        <Typography.Text type="secondary" delete className="text-xs leading-4 !whitespace-nowrap">
           {formatVndCurrency(variant.originalPrice)}
         </Typography.Text>
       </Space>
@@ -110,7 +113,10 @@ const renderVariantPrice = (variant: ProductVariantItem) => {
   }
 
   return (
-    <Typography.Text strong className="!text-base !leading-6 !text-blue-700 sm:!text-lg">
+    <Typography.Text
+      strong
+      className="!text-lg !leading-7 !text-blue-700 !whitespace-nowrap xl:!text-[30px]"
+    >
       {formatVndCurrency(variant.price)}
     </Typography.Text>
   )
@@ -272,7 +278,7 @@ export const ProductDetailPage = () => {
     return selectedVariant ?? product.variants[0]
   }, [product, selectedVariant])
 
-  const variantCardsPerSlide = screens.xl ? 4 : screens.lg ? 3 : screens.sm ? 2 : 1
+  const variantCardsPerSlide = screens.lg ? 3 : screens.sm ? 2 : 1
   const variantSlides = useMemo(() => {
     if (!product || product.variants.length === 0) {
       return []
@@ -301,13 +307,11 @@ export const ProductDetailPage = () => {
   const maxVariantSlideIndex = Math.max(variantSlides.length - 1, 0)
   const resolvedActiveVariantSlide = Math.min(activeVariantSlide, maxVariantSlideIndex)
   const hasMultipleVariantSlides = variantSlides.length > 1
-  const variantGridClassName = screens.xl
-    ? 'grid-cols-4'
-    : screens.lg
-      ? 'grid-cols-3'
-      : screens.sm
-        ? 'grid-cols-2'
-        : 'grid-cols-1'
+  const variantGridClassName = screens.lg
+    ? 'grid-cols-3'
+    : screens.sm
+      ? 'grid-cols-2'
+      : 'grid-cols-1'
   const resolvedActiveImageIndex = Math.min(activeImageIndex, Math.max(gallery.length - 1, 0))
 
   const relatedProducts = (relatedProductsQuery.data?.items ?? [])
@@ -818,56 +822,62 @@ export const ProductDetailPage = () => {
                                 : 'border-slate-200 hover:border-blue-300 hover:shadow-[0_18px_36px_-30px_rgba(15,23,42,0.45)]'
                             }`}
                           >
-                            <div className="flex w-full items-start gap-4">
-                              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
-                                <img
-                                  src={image}
-                                  alt={`${product.name}-${getVariantLabel(variant)}`}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-
-                              <div className="min-w-0 flex-1 space-y-3">
-                                <div className="space-y-1">
-                                  <Typography.Text strong className="block !text-base !leading-6">
-                                    {getVariantLabel(variant)}
-                                  </Typography.Text>
-                                  <Typography.Text type="secondary" className="block text-sm">
-                                    SKU: {variant.sku}
-                                  </Typography.Text>
+                            <div className="flex h-full w-full flex-col gap-4">
+                              <div className="flex items-start gap-4">
+                                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-slate-100">
+                                  <img
+                                    src={image}
+                                    alt={`${product.name}-${getVariantLabel(variant)}`}
+                                    className="h-full w-full object-cover"
+                                  />
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
-                                    {variant.color?.trim() || 'Mặc định'}
-                                  </Tag>
-                                  <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
-                                    {variant.size?.trim() || 'Tiêu chuẩn'}
-                                  </Tag>
-                                </div>
-
-                                <div className="flex items-end justify-between gap-4">
-                                  <div>{renderVariantPrice(variant)}</div>
-                                  <div className="text-right">
-                                    <Typography.Text type="secondary" className="block text-xs">
-                                      Tồn kho
+                                <div className="min-w-0 flex-1 space-y-2">
+                                  <div className="space-y-1">
+                                    <Typography.Text
+                                      strong
+                                      className="block !text-lg !leading-7"
+                                    >
+                                      {getVariantLabel(variant)}
                                     </Typography.Text>
-                                    <Typography.Text strong className="block text-sm">
-                                      {variant.stockQuantity}
+                                    <Typography.Text
+                                      type="secondary"
+                                      className="block truncate text-sm"
+                                    >
+                                      SKU: {variant.sku}
                                     </Typography.Text>
                                   </div>
+
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
+                                      {variant.color?.trim() || 'Mặc định'}
+                                    </Tag>
+                                    <Tag className="!m-0 !rounded-full !border-0 !bg-slate-100 !px-3 !py-1 !text-xs !text-slate-600">
+                                      {variant.size?.trim() || 'Tiêu chuẩn'}
+                                    </Tag>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-auto flex items-end justify-between gap-4 border-t border-slate-100 pt-4">
+                                <div className="min-w-0 flex-1">
+                                  {renderVariantPrice(variant)}
                                 </div>
 
-                                <Typography.Text
-                                  className={`block text-sm ${
-                                    availabilityLabel === 'Còn hàng'
-                                      ? 'text-lime-700'
-                                      : 'text-slate-500'
-                                  }`}
-                                >
-                                  {availabilityLabel}
-                                </Typography.Text>
+                                <div className="shrink-0 rounded-full bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                                  Kho: {variant.stockQuantity}
+                                </div>
                               </div>
+
+                              <Typography.Text
+                                className={`block text-sm font-medium ${
+                                  availabilityLabel === 'Còn hàng'
+                                    ? 'text-lime-700'
+                                    : 'text-slate-500'
+                                }`}
+                              >
+                                {availabilityLabel}
+                              </Typography.Text>
                             </div>
                           </Radio>
                         )
