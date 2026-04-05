@@ -2,6 +2,7 @@ export const ROUTE_PATHS = {
   ROOT: '/',
   ABOUT: '/about',
   PRODUCTS: '/products',
+  CART: '/cart',
   CHECKOUT: '/checkout',
   PAYMENT_SUCCESS: '/success',
   ACCOUNT: '/account',

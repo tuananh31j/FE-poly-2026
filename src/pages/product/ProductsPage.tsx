@@ -293,7 +293,7 @@ export const ProductsPage = () => {
               <Button
                 type="primary"
                 icon={<ShoppingCartOutlined />}
-                onClick={() => navigate(ROUTE_PATHS.CHECKOUT)}
+                onClick={() => navigate(ROUTE_PATHS.CART)}
               >
                 Xem giỏ hàng
               </Button>

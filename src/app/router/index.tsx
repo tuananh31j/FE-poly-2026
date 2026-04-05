@@ -13,6 +13,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+import { CartPage } from '@/pages/cart/CartPage'
 import { CheckoutPage } from '@/pages/checkout/CheckoutPage'
 import { AccountManagementPage } from '@/pages/dashboard/AccountManagementPage'
 import { ChatbotPresetManagementPage } from '@/pages/dashboard/ChatbotPresetManagementPage'
@@ -52,6 +53,10 @@ export const router = createBrowserRouter([
       {
         path: ROUTE_PATHS.PRODUCTS,
         element: <ProductsPage />,
+      },
+      {
+        path: ROUTE_PATHS.CART,
+        element: <CartPage />,
       },
       {
         path: ROUTE_PATHS.PRODUCT_DETAIL,

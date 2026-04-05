@@ -734,7 +734,7 @@ export const ProductDetailPage = () => {
 
             <Space size={[8, 8]} wrap>
               <Badge status="processing" text="COD" />
-              <Badge status="success" text="VNPay" />
+              {/* <Badge status="success" text="VNPay" /> */}
               <Badge status="success" text="ZaloPay" />
             </Space>
           </div>
