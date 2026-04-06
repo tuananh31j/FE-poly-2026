@@ -99,6 +99,15 @@ const toIsActiveParam = (value: ActiveFilter) => {
   return value === 'active'
 }
 
+const normalizeColorHex = (value?: string) => {
+  if (!value) {
+    return undefined
+  }
+
+  const normalizedValue = value.trim().toUpperCase()
+  return /^#([0-9A-F]{3}|[0-9A-F]{6})$/.test(normalizedValue) ? normalizedValue : undefined
+}
+
 const ActiveStatusTag = ({ active }: { active: boolean }) => {
   return <Tag color={active ? 'green' : 'default'}>{active ? 'Đang dùng' : 'Ngừng dùng'}</Tag>
 }
@@ -1106,7 +1115,7 @@ export const MasterDataManagementPage = () => {
           onFinish={(values) => {
             const payload: UpsertColorPayload = {
               name: values.name.trim(),
-              hexCode: values.hexCode?.trim() || undefined,
+              hexCode: normalizeColorHex(values.hexCode),
               isActive: values.isActive,
             }
 
@@ -1135,8 +1144,8 @@ export const MasterDataManagementPage = () => {
         allowClear
         disabledAlpha
         showText={(color) => color.toHexString().toUpperCase()}
-        onChange={(_, css) => {
-          colorForm.setFieldValue('hexCode', css.toUpperCase())
+        onChange={(value) => {
+          colorForm.setFieldValue('hexCode', value.toHexString().toUpperCase())
         }}
         onClear={() => {
           colorForm.setFieldValue('hexCode', undefined)
