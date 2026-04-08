@@ -19,7 +19,6 @@ export interface MasterBrandItem {
   id: string
   name: string
   description?: string
-  logoUrl?: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -63,7 +62,6 @@ export interface UpsertCategoryPayload {
 export interface UpsertBrandPayload {
   name: string
   description?: string
-  logoUrl?: string
   isActive?: boolean
 }
 
