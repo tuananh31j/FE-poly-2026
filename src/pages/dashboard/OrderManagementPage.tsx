@@ -629,7 +629,10 @@ export const OrderManagementPage = () => {
   ]
 
   const orders = ordersQuery.data?.items ?? []
-  const totalRevenue = sumBy(orders, (order) => order.totalAmount)
+  const totalRevenue = sumBy(
+    orders.filter((order) => order.status === 'completed'),
+    (order) => order.totalAmount
+  )
   const awaitingPaymentCount = orders.filter((order) => order.status === 'awaiting_payment').length
   const pendingCount = orders.filter((order) => order.status === 'pending').length
 
@@ -676,7 +679,7 @@ export const OrderManagementPage = () => {
         </Card>
         <Card>
           <Statistic
-            title="Doanh thu trang hiện tại"
+            title="Doanh thu hoàn thành"
             value={totalRevenue}
             formatter={(value) => formatVndCurrency(Number(value ?? 0))}
           />
