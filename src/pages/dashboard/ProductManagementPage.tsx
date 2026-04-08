@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, TagsOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, TagsOutlined, UploadOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
 import {
@@ -43,7 +43,11 @@ import type {
 } from '@/features/admin/model/product-management.types'
 import { queryKeys } from '@/shared/api/queryKeys'
 import { uploadImage } from '@/shared/api/upload.api'
-import { buildDashboardProductEditPath, ROUTE_PATHS } from '@/shared/constants/routes'
+import {
+  buildDashboardProductDetailPath,
+  buildDashboardProductEditPath,
+  ROUTE_PATHS,
+} from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -398,7 +402,7 @@ export const ProductManagementPage = () => {
       {
         title: 'Hành động',
         key: 'actions',
-        width: 320,
+        width: 360,
         render: (_, record) => (
           <Space wrap>
             <Button
@@ -407,6 +411,13 @@ export const ProductManagementPage = () => {
                 setActiveProductForVariants(record)
                 setVariantPage(1)
                 setVariantDrawerOpen(true)
+              }}
+            ></Button>
+
+            <Button
+              icon={<EyeOutlined />}
+              onClick={() => {
+                navigate(buildDashboardProductDetailPath(record.id))
               }}
             ></Button>
 

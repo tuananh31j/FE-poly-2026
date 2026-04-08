@@ -28,7 +28,7 @@ import type {
   DashboardTopVariantItem,
 } from '@/features/admin/model/dashboard-statistics.types'
 import { queryKeys } from '@/shared/api/queryKeys'
-import { buildProductDetailPath } from '@/shared/constants/routes'
+import { buildDashboardProductDetailPath } from '@/shared/constants/routes'
 import { formatVndCurrency } from '@/shared/utils/currency'
 import { formatDateTime } from '@/shared/utils/date'
 
@@ -74,7 +74,7 @@ const topProductColumns: ColumnsType<DashboardTopProductItem> = [
     render: (_, record) => (
       <Space direction="vertical" size={0} className="min-w-0">
         <Link
-          to={buildProductDetailPath(record.productId)}
+          to={buildDashboardProductDetailPath(record.productId)}
           className="font-medium text-blue-600 hover:text-blue-700"
         >
           {record.name}
@@ -121,7 +121,7 @@ const topVariantColumns: ColumnsType<DashboardTopVariantItem> = [
             {record.variantSku || 'SKU'}
           </Typography.Text>
           <Link
-            to={buildProductDetailPath(record.productId)}
+            to={buildDashboardProductDetailPath(record.productId)}
             className="text-xs text-blue-600 hover:text-blue-700"
           >
             {record.productName}
@@ -172,7 +172,7 @@ const useRevenueChartOptions = (stats?: DashboardStatisticsResponse) => {
     return {
       series: [
         {
-          name: 'Doanh thu đã giao',
+          name: 'Doanh thu hoàn thành',
           type: 'area' as const,
           data: data.map((item) => item.revenue),
         },
@@ -411,12 +411,12 @@ export const DashboardPage = () => {
           <DashboardMetricGroup
             title="Thống kê doanh thu"
             loading={isLoading}
-            primaryLabel="Doanh thu đã giao"
+            primaryLabel="Doanh thu hoàn thành"
             primaryValue={summary?.deliveredRevenue ?? 0}
             primaryFormatter={(value) => formatVndCurrency(Number(value ?? 0))}
             secondaryItems={[
               {
-                label: 'Giá trị đơn TB',
+                label: 'Giá trị đơn hoàn thành TB',
                 value: summary?.averageDeliveredOrderValue ?? 0,
                 formatter: (value) => formatVndCurrency(Number(value ?? 0)),
               },
@@ -431,7 +431,7 @@ export const DashboardPage = () => {
             primaryLabel="Tổng đơn hàng"
             primaryValue={summary?.totalOrders ?? 0}
             secondaryItems={[
-              { label: 'Đã giao/hoàn thành', value: summary?.deliveredOrders ?? 0 },
+              { label: 'Hoàn thành', value: summary?.deliveredOrders ?? 0 },
               { label: 'Đang xử lý', value: summary?.processingOrders ?? 0 },
               { label: 'Đã hủy/trả', value: summary?.cancelledOrders ?? 0 },
               // { label: 'Kênh thanh toán đang dùng', value: paymentMethodUsedCount },
@@ -465,7 +465,7 @@ export const DashboardPage = () => {
       </Row>
 
       <Card
-        title={`Doanh thu theo ngày trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
+        title={`Doanh thu hoàn thành theo ngày trong ${stats?.trends.label ?? 'phạm vi đã chọn'}`}
         loading={isLoading}
       >
         <Chart
