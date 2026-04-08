@@ -194,7 +194,7 @@ export const ProductAdminDetailPage = () => {
               navigate(buildDashboardProductEditPath(product.id))
             }}
           >
-            Chuyển đến form sửa
+            Chỉnh sửa
           </Button>
         </Space>
       </div>

@@ -1,4 +1,11 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, TagsOutlined, UploadOutlined } from '@ant-design/icons'
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  PlusOutlined,
+  TagsOutlined,
+  UploadOutlined,
+} from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { UploadProps } from 'antd'
 import {
@@ -367,9 +374,6 @@ export const ProductManagementPage = () => {
         render: (_, record) => (
           <Space direction="vertical" size={0}>
             <Typography.Text>{record.brand}</Typography.Text>
-            <Typography.Text type="secondary" className="text-xs">
-              {record.brandId ? `id: ${record.brandId}` : 'brand text'}
-            </Typography.Text>
           </Space>
         ),
       },

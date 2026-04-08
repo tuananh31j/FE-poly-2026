@@ -1,8 +1,9 @@
 import {
-  BellOutlined,
   AppstoreOutlined,
   BarChartOutlined,
+  BellOutlined,
   BgColorsOutlined,
+  CustomerServiceOutlined,
   DashboardOutlined,
   FolderOpenOutlined,
   GiftOutlined,
@@ -18,11 +19,21 @@ import {
   TeamOutlined,
   TrademarkOutlined,
   UnorderedListOutlined,
-  CustomerServiceOutlined,
-  RobotOutlined,
 } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Badge, Button, Empty, Layout, List, Menu, message, Popover, Space, Tag, Typography } from 'antd'
+import {
+  Badge,
+  Button,
+  Empty,
+  Layout,
+  List,
+  Menu,
+  message,
+  Popover,
+  Space,
+  Tag,
+  Typography,
+} from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
@@ -403,7 +414,7 @@ export const PrivateLayout = () => {
                   {
                     key: SUBMENU_KEYS.CATALOG,
                     icon: <AppstoreOutlined />,
-                    label: 'Catalog',
+                    label: 'Hệ danh mục',
                     children: [
                       {
                         key: SUBMENU_KEYS.PRODUCTS,
